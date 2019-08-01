@@ -1,0 +1,7 @@
+src/*.txt
+src/__pycache__
+src/*.pyc
+src/test_results/
+src/results/
+src/models/
+src/*.tar.gz
