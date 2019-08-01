@@ -87,13 +87,11 @@ class Network():
             self.set_network_params_op.append(
                 self.network_params[idx].assign(param))
         
-        self.policy_loss = - tf.reduce_mean(self.ppo2loss) \
+        self.loss = 0.5 * tflearn.mean_square(self.val, self.R) \
+            - tf.reduce_mean(self.ppo2loss) \
             + self.entropy_weight * tf.reduce_mean(self.entropy)
         
-        self.value_loss = tflearn.mean_square(self.val, self.R)
-        
-        self.policyop = tf.train.AdamOptimizer(self.lr_rate).minimize(self.policy_loss)
-        self.valueop = tf.train.AdamOptimizer(self.lr_rate).minimize(self.value_loss)
+        self.optimize = tf.train.AdamOptimizer(self.lr_rate).minimize(self.loss)
     
     def predict(self, input):
         action = self.sess.run(self.real_out, feed_dict={
@@ -115,19 +113,9 @@ class Network():
         else:
             return 0.1
 
-    def train_actor(self, s_batch, a_batch, p_batch, v_batch, epoch):
-        # s_batch, a_batch, p_batch, v_batch = tflearn.data_utils.shuffle(s_batch, a_batch, p_batch, v_batch)
-        self.sess.run(self.policyop, feed_dict={
-            self.inputs: s_batch,
-            self.acts: a_batch,
-            self.R: v_batch, 
-            self.old_pi: p_batch,
-            self.entropy_weight: self.get_entropy(epoch)
-        })
-
-    def train_critic(self, s_batch, a_batch, p_batch, v_batch, epoch):
-        # s_batch, a_batch, p_batch, v_batch = tflearn.data_utils.shuffle(s_batch, a_batch, p_batch, v_batch)
-        self.sess.run(self.valueop, feed_dict={
+    def train(self, s_batch, a_batch, p_batch, v_batch, epoch):
+        s_batch, a_batch, p_batch, v_batch = tflearn.data_utils.shuffle(s_batch, a_batch, p_batch, v_batch)
+        self.sess.run(self.optimize, feed_dict={
             self.inputs: s_batch,
             self.acts: a_batch,
             self.R: v_batch, 
