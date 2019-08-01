@@ -114,7 +114,10 @@ def central_agent(net_params_queues, exp_queues):
             p_batch = np.vstack(p)
             v_batch = np.vstack(g)
             for _ in range(PPO_TRAINING_EPO):
-                actor.train(s_batch, a_batch, p_batch, v_batch, epoch)
+                actor.train_actor(s_batch, a_batch, p_batch, v_batch, epoch)
+                
+            for _ in range(PPO_TRAINING_EPO):
+                actor.train_critic(s_batch, a_batch, p_batch, v_batch, epoch)
 
             if epoch % MODEL_SAVE_INTERVAL == 0:
                 # Save the neural net parameters to disk.

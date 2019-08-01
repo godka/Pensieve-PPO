@@ -69,7 +69,7 @@ def main():
         entropy_record = []
 
         video_count = 0
-        action = 10.
+        
         while True:  # serve video forever
             # the action is from the last decision
             # this is to make the framework similar to the real
@@ -98,7 +98,6 @@ def main():
                            str(rebuf) + '\t' +
                            str(video_chunk_size) + '\t' +
                            str(delay) + '\t' +
-                           str(action) + '\t' + 
                            str(reward) + '\n')
             log_file.flush()
 
