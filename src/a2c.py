@@ -6,7 +6,7 @@ import time
 os.environ['CUDA_VISIBLE_DEVICES'] = '2'
 import tflearn
 
-FEATURE_NUM = 64
+FEATURE_NUM = 128
 EPS = 1e-4
 GAMMA = 0.99
 
@@ -14,9 +14,9 @@ class Network():
     def CreateNetwork(self, inputs):
         with tf.variable_scope('actor'):
             split_0 = tflearn.fully_connected(
-                inputs[:, 0:1, :], FEATURE_NUM, activation='relu')
+                inputs[:, 0:1, -1], FEATURE_NUM, activation='relu')
             split_1 = tflearn.fully_connected(
-                inputs[:, 1:2, :], FEATURE_NUM, activation='relu')
+                inputs[:, 1:2, -1], FEATURE_NUM, activation='relu')
             split_2 = tflearn.conv_1d(
                 inputs[:, 2:3, :], FEATURE_NUM, 4, activation='relu')
             split_3 = tflearn.conv_1d(
@@ -24,7 +24,7 @@ class Network():
             split_4 = tflearn.conv_1d(
                 inputs[:, 4:5, :self.a_dim], FEATURE_NUM, 4, activation='relu')
             split_5 = tflearn.fully_connected(
-                inputs[:, 5:6, :], FEATURE_NUM, activation='relu')
+                inputs[:, 5:6, -1], FEATURE_NUM, activation='relu')
 
             split_2_flat = tflearn.flatten(split_2)
             split_3_flat = tflearn.flatten(split_3)
@@ -35,7 +35,7 @@ class Network():
             net = tflearn.fully_connected(
                 net, FEATURE_NUM, activation='relu')
                 
-            pi = tflearn.fully_connected(net, 1, activation='softmax')
+            pi = tflearn.fully_connected(net, self.a_dim, activation='softmax')
             value = tflearn.fully_connected(net, 1, activation='linear')
             return pi, value
             
@@ -53,7 +53,7 @@ class Network():
         self.a_dim = action_dim
         self.lr_rate = learning_rate
         self.sess = sess
-        self.outputs = tf.placeholder(tf.float32, [None, self.a_dim])
+        self.outputs = tf.placeholder(tf.float32, [None, 1])
         self.inputs = tf.placeholder(tf.float32, [None, self.s_dim[0], self.s_dim[1]])
         self.acts = tf.placeholder(tf.float32, [None, self.a_dim])
         self.entropy_weight = tf.placeholder(tf.float32)
