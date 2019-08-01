@@ -119,16 +119,10 @@ def main():
             state[4, :A_DIM] = np.array(next_video_chunk_sizes) / M_IN_K / M_IN_K  # mega byte
             state[5, -1] = np.minimum(video_chunk_remain, CHUNK_TIL_VIDEO_END_CAP) / float(CHUNK_TIL_VIDEO_END_CAP)
 
-            action = actor.predict(np.reshape(state, (1, S_INFO, S_LEN)))
-            RESEVOIR = 5.
-            CUSHION = action
-            if buffer_size < RESEVOIR:
-                bit_rate = 0
-            elif buffer_size >= RESEVOIR + CUSHION:
-                bit_rate = A_DIM - 1
-            else:
-                bit_rate = (A_DIM - 1) * (buffer_size - RESEVOIR) / float(CUSHION)
-            bit_rate = int(bit_rate)
+            action_prob = actor.predict(np.reshape(state, (1, S_INFO, S_LEN)))
+            action_cumsum = np.cumsum(action_prob)
+            bit_rate = (action_cumsum > np.random.randint(
+                1, RAND_RANGE) / float(RAND_RANGE)).argmax()
             
             s_batch.append(state)
             entropy_record.append(0.)
