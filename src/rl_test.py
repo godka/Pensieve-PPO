@@ -4,7 +4,7 @@ os.environ['CUDA_VISIBLE_DEVICES']='-1'
 import numpy as np
 import tensorflow as tf
 import load_trace
-import network
+import ppo2 as network
 import fixed_env as env
 
 

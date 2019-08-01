@@ -37,7 +37,7 @@ class Network():
             net = tflearn.fully_connected(
                 net, FEATURE_NUM, activation='relu')
                 
-            pi = tflearn.fully_connected(net, 1, activation='softmax')
+            pi = tflearn.fully_connected(net, self.a_dim, activation='softmax')
             value = tflearn.fully_connected(net, 1, activation='linear')
             return pi, value
             
@@ -114,8 +114,7 @@ class Network():
             return 0.1
 
     def train(self, s_batch, a_batch, p_batch, v_batch, epoch):
-        # print s_batch.shape, a_batch.shape, v_batch.shape
-        s_batch, a_batch, v_batch = tflearn.data_utils.shuffle(s_batch, a_batch, v_batch)
+        s_batch, a_batch, p_batch, v_batch = tflearn.data_utils.shuffle(s_batch, a_batch, p_batch, v_batch)
         self.sess.run(self.optimize, feed_dict={
             self.inputs: s_batch,
             self.acts: a_batch,
