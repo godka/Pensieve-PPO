@@ -4,7 +4,7 @@ import logging
 import os
 import sys
 from abr import ABREnv
-import a2c as network
+import ppo2 as network
 import tensorflow as tf
 
 os.environ['CUDA_VISIBLE_DEVICES'] = '3'
@@ -14,7 +14,7 @@ S_DIM = [6, 8]
 A_DIM = 6
 ACTOR_LR_RATE =1e-4
 CRITIC_LR_RATE = 1e-3
-NUM_AGENTS = 25
+NUM_AGENTS = 20
 TRAIN_SEQ_LEN = 300  # take as a train batch
 TRAIN_EPOCH = 1000000
 MODEL_SAVE_INTERVAL = 300
@@ -54,7 +54,7 @@ def testing(epoch, nn_model, log_file):
                     reward.append(float(parse[-1]))
                 except IndexError:
                     break
-        rewards.append(np.sum(reward[1:]))
+        rewards.append(np.mean(reward[1:]))
 
     rewards = np.array(rewards)
 
@@ -102,20 +102,20 @@ def central_agent(net_params_queues, exp_queues):
             for i in range(NUM_AGENTS):
                 net_params_queues[i].put(actor_net_params)
 
-            s, a, p, g = [], [], [], []
+            # s, a, p, g = [], [], [], []
             for i in range(NUM_AGENTS):
-                s_, a_, p_, g_ = exp_queues[i].get()
-                s += s_
-                a += a_
-                p += p_
-                g += g_
-            s_batch = np.stack(s, axis=0)
-            a_batch = np.vstack(a)
-            p_batch = np.vstack(p)
-            v_batch = np.vstack(g)
-            # for _ in range(PPO_TRAINING_EPO):
-            #     actor.train(s_batch, a_batch, p_batch, v_batch, epoch)
-            actor.train(s_batch, a_batch, v_batch, epoch)
+                s, a, p, g = exp_queues[i].get()
+                # s += s_
+                # a += a_
+                # p += p_
+                # g += g_
+                s_batch = np.stack(s, axis=0)
+                a_batch = np.vstack(a)
+                p_batch = np.vstack(p)
+                v_batch = np.vstack(g)
+                for _ in range(PPO_TRAINING_EPO):
+                    actor.train(s_batch, a_batch, p_batch, v_batch, epoch)
+            # actor.train(s_batch, a_batch, v_batch, epoch)
             
             if epoch % MODEL_SAVE_INTERVAL == 0:
                 # Save the neural net parameters to disk.

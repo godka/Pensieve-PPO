@@ -32,11 +32,12 @@ class Network():
             split_3_flat = tflearn.flatten(split_3)
             split_4_flat = tflearn.flatten(split_4)
 
-            net = tf.stack([split_0, split_1, split_2_flat,
-                            split_3_flat, split_4_flat, split_5], axis=1)
+            merge_net = tflearn.merge(
+                [split_0, split_1, split_2_flat, split_3_flat, split_4_flat, split_5], 'concat')
+
             net = tflearn.fully_connected(
-                net, FEATURE_NUM, activation='relu')
-                
+                merge_net, FEATURE_NUM, activation='relu')
+
             pi = tflearn.fully_connected(net, self.a_dim, activation='softmax')
             value = tflearn.fully_connected(net, 1, activation='linear')
             return pi, value
@@ -87,7 +88,7 @@ class Network():
             self.set_network_params_op.append(
                 self.network_params[idx].assign(param))
         
-        self.loss = 0.5 * tflearn.mean_square(self.val, self.R) \
+        self.loss = tflearn.mean_square(self.val, self.R) \
             - tf.reduce_mean(self.ppo2loss) \
             + self.entropy_weight * tf.reduce_mean(self.entropy)
         
@@ -120,19 +121,19 @@ class Network():
             self.acts: a_batch,
             self.R: v_batch, 
             self.old_pi: p_batch,
-            self.entropy_weight: self.get_entropy(epoch)
+            self.entropy_weight: self.get_entropy(epoch) / 10.
         })
 
     def compute_v(self, s_batch, a_batch, r_batch, terminal):
         ba_size = len(s_batch)
-        v_batch = self.sess.run(self.val, feed_dict={
-            self.inputs: s_batch
-        })
         R_batch = np.zeros([len(r_batch), 1])
 
         if terminal:
             R_batch[-1, 0] = 0  # terminal state
-        else:
+        else:    
+            v_batch = self.sess.run(self.val, feed_dict={
+                self.inputs: s_batch
+            })
             R_batch[-1, 0] = v_batch[-1, 0]  # boot strap from last state
         for t in reversed(range(ba_size - 1)):
             R_batch[t, 0] = r_batch[t] + GAMMA * R_batch[t + 1, 0]

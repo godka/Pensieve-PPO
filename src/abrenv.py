@@ -3,7 +3,7 @@ import numpy as np
 MILLISECONDS_IN_SECOND = 1000.0
 B_IN_MB = 1000000.0
 BITS_IN_BYTE = 8.0
-RANDOM_SEED = 4200
+RANDOM_SEED = 42
 VIDEO_CHUNCK_LEN = 4000.0  # millisec, every time add this amount to buffer
 BITRATE_LEVELS = 6
 TOTAL_VIDEO_CHUNCK = 48
@@ -164,3 +164,4 @@ class Environment:
             next_video_chunk_sizes, \
             end_of_video, \
             video_chunk_remain
+            
