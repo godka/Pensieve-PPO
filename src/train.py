@@ -102,19 +102,20 @@ def central_agent(net_params_queues, exp_queues):
             for i in range(NUM_AGENTS):
                 net_params_queues[i].put(actor_net_params)
 
-            # s, a, p, g = [], [], [], []
+            s, a, p, g = [], [], [], []
             for i in range(NUM_AGENTS):
-                s, a, p, g = exp_queues[i].get()
-                # s += s_
-                # a += a_
-                # p += p_
-                # g += g_
+                s_, a_, p_, g_ = exp_queues[i].get()
+                s += s_
+                a += a_
+                p += p_
+                g += g_
                 s_batch = np.stack(s, axis=0)
                 a_batch = np.vstack(a)
                 p_batch = np.vstack(p)
                 v_batch = np.vstack(g)
-                for _ in range(PPO_TRAINING_EPO):
-                    actor.train(s_batch, a_batch, p_batch, v_batch, epoch)
+
+            for _ in range(PPO_TRAINING_EPO):
+                actor.train(s_batch, a_batch, p_batch, v_batch, epoch)
             # actor.train(s_batch, a_batch, v_batch, epoch)
             
             if epoch % MODEL_SAVE_INTERVAL == 0:

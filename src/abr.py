@@ -28,7 +28,8 @@ class ABREnv():
         np.random.seed(random_seed)
         all_cooked_time, all_cooked_bw, _ = load_trace.load_trace()
         self.net_env = abrenv.Environment(all_cooked_time=all_cooked_time,
-                                          all_cooked_bw=all_cooked_bw)
+                                          all_cooked_bw=all_cooked_bw,
+                                          random_seed=RANDOM_SEED)
 
         self.last_bit_rate = DEFAULT_QUALITY
         self.buffer_size = 0.

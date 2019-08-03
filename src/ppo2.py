@@ -89,8 +89,8 @@ class Network():
                 self.network_params[idx].assign(param))
         
         self.loss = tflearn.mean_square(self.val, self.R) \
-            - tf.reduce_mean(self.ppo2loss) \
-            + self.entropy_weight * tf.reduce_mean(self.entropy)
+            - tf.reduce_sum(self.ppo2loss) \
+            + self.entropy_weight * tf.reduce_sum(self.entropy)
         
         self.optimize = tf.train.AdamOptimizer(self.lr_rate).minimize(self.loss)
     
@@ -121,7 +121,7 @@ class Network():
             self.acts: a_batch,
             self.R: v_batch, 
             self.old_pi: p_batch,
-            self.entropy_weight: self.get_entropy(epoch) / 10.
+            self.entropy_weight: self.get_entropy(epoch)
         })
 
     def compute_v(self, s_batch, a_batch, r_batch, terminal):
