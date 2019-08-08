@@ -114,15 +114,21 @@ class Network():
         else:
             return 0.1
 
-    def train(self, s_batch, a_batch, p_batch, v_batch, epoch):
-        s_batch, a_batch, p_batch, v_batch = tflearn.data_utils.shuffle(s_batch, a_batch, p_batch, v_batch)
-        self.sess.run(self.optimize, feed_dict={
-            self.inputs: s_batch,
-            self.acts: a_batch,
-            self.R: v_batch, 
-            self.old_pi: p_batch,
-            self.entropy_weight: self.get_entropy(epoch)
-        })
+    def train(self, s_batch, a_batch, p_batch, v_batch, epoch, batch_size = 128):
+        s_batch, a_batch, p_batch, v_batch = \
+            tflearn.data_utils.shuffle(s_batch, a_batch, p_batch, v_batch)
+        # mini_batch
+        i, train_len = 0, s_batch.shape[0]
+        while train_len >= 0:
+            self.sess.run(self.optimize, feed_dict={
+                self.inputs: s_batch[i:i+batch_size],
+                self.acts: a_batch[i:i+batch_size],
+                self.R: v_batch[i:i+batch_size], 
+                self.old_pi: p_batch[i:i+batch_size],
+                self.entropy_weight: self.get_entropy(epoch)
+            })
+            train_len -= batch_size
+            i += batch_size
 
     def compute_v(self, s_batch, a_batch, r_batch, terminal):
         ba_size = len(s_batch)
