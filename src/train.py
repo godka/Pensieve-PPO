@@ -109,10 +109,10 @@ def central_agent(net_params_queues, exp_queues):
                 a += a_
                 p += p_
                 g += g_
-                s_batch = np.stack(s, axis=0)
-                a_batch = np.vstack(a)
-                p_batch = np.vstack(p)
-                v_batch = np.vstack(g)
+            s_batch = np.stack(s, axis=0)
+            a_batch = np.vstack(a)
+            p_batch = np.vstack(p)
+            v_batch = np.vstack(g)
 
             for _ in range(PPO_TRAINING_EPO):
                 actor.train(s_batch, a_batch, p_batch, v_batch, epoch)
