@@ -7,7 +7,7 @@ os.environ['CUDA_VISIBLE_DEVICES'] = '2'
 import tflearn
 
 FEATURE_NUM = 128
-ACTION_EPS = 1e-4
+ACTION_EPS = 1e-6
 GAMMA = 0.99
 # PPO2
 EPS = 0.1
@@ -70,7 +70,7 @@ class Network():
                 tf.reduce_sum(tf.multiply(self.old_pi, self.acts), reduction_indices=1, keepdims=True)
         
         self.ppo2loss = tf.minimum(self.ratio * self.adv, 
-                            tf.clip_by_value(self.ratio, 1 - self.cliprange, 1 + self.cliprange) * self.adv
+                            tf.clip_by_value(self.ratio, 1 - EPS, 1 + EPS) * self.adv
                         )
         
         # Get all network parameters
