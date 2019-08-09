@@ -10,7 +10,7 @@ FEATURE_NUM = 128
 ACTION_EPS = 1e-4
 GAMMA = 0.99
 # PPO2
-EPS = 0.2
+EPS = 0.1
 
 class Network():
     def CreateNetwork(self, inputs):
@@ -50,10 +50,6 @@ class Network():
             i: d for i, d in zip(self.input_network_params, input_network_params)
         })
 
-    def r(self, pi_new, pi_old, acts):
-        return tf.reduce_sum(tf.multiply(pi_new, acts), reduction_indices=1, keepdims=True) / \
-                tf.reduce_sum(tf.multiply(pi_old, acts), reduction_indices=1, keepdims=True)
-
     def __init__(self, sess, state_dim, action_dim, learning_rate):
         self.quality = 0
         self.s_dim = state_dim
@@ -65,15 +61,18 @@ class Network():
         self.old_pi = tf.placeholder(tf.float32, [None, self.a_dim])
         self.acts = tf.placeholder(tf.float32, [None, self.a_dim])
         self.entropy_weight = tf.placeholder(tf.float32)
+
         self.pi, self.val = self.CreateNetwork(inputs=self.inputs)
         self.real_out = tf.clip_by_value(self.pi, ACTION_EPS, 1. - ACTION_EPS)
-        self.log_prob = tf.log(tf.reduce_sum(tf.multiply(self.real_out, self.acts), reduction_indices=1, keepdims=True))
         self.entropy = tf.multiply(self.real_out, tf.log(self.real_out))
         self.adv = tf.stop_gradient(self.R - self.val)
-        self.ppo2loss = tf.minimum(self.r(self.real_out, self.old_pi, self.acts) * self.adv, 
-                            tf.clip_by_value(self.r(self.real_out, self.old_pi, self.acts), 1 - EPS, 1 + EPS) * self.adv
+        self.ratio = tf.reduce_sum(tf.multiply(self.real_out, self.acts), reduction_indices=1, keepdims=True) / \
+                tf.reduce_sum(tf.multiply(self.old_pi, self.acts), reduction_indices=1, keepdims=True)
+        
+        self.ppo2loss = tf.minimum(self.ratio * self.adv, 
+                            tf.clip_by_value(self.ratio, 1 - self.cliprange, 1 + self.cliprange) * self.adv
                         )
-        self.a2closs = self.log_prob * self.adv
+        
         # Get all network parameters
         self.network_params = \
             tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES, scope='actor')
@@ -101,18 +100,7 @@ class Network():
         return action[0]
 
     def get_entropy(self, step):
-        if step < 20000:
-            return 5.
-        elif step < 50000:
-            return 3.
-        elif step < 70000:
-            return 1.
-        elif step < 90000:
-            return 0.5
-        elif step < 120000:
-            return 0.3
-        else:
-            return 0.1
+        return 0.5
 
     def train(self, s_batch, a_batch, p_batch, v_batch, epoch, batch_size = 128):
         s_batch, a_batch, p_batch, v_batch = \
