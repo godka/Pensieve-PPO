@@ -10,7 +10,7 @@ FEATURE_NUM = 128
 ACTION_EPS = 1e-6
 GAMMA = 0.99
 # PPO2
-EPS = 0.1
+EPS = 0.2
 
 class Network():
     def CreateNetwork(self, inputs):
@@ -100,9 +100,21 @@ class Network():
         return action[0]
 
     def get_entropy(self, step):
-        return 0.5
+        if step < 20000:
+            return 5.
+        elif step < 50000:
+            return 1.
+        elif step < 70000:
+            return 0.7
+        elif step < 90000:
+            return 0.5
+        elif step < 120000:
+            return 0.3
+        else:
+            return 0.1
 
     def train(self, s_batch, a_batch, p_batch, v_batch, epoch, batch_size = 128):
+        # shuffle is all you need
         s_batch, a_batch, p_batch, v_batch = \
             tflearn.data_utils.shuffle(s_batch, a_batch, p_batch, v_batch)
         # mini_batch

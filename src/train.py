@@ -116,7 +116,6 @@ def central_agent(net_params_queues, exp_queues):
 
             for _ in range(PPO_TRAINING_EPO):
                 actor.train(s_batch, a_batch, p_batch, v_batch, epoch)
-            # actor.train(s_batch, a_batch, v_batch, epoch)
             
             if epoch % MODEL_SAVE_INTERVAL == 0:
                 # Save the neural net parameters to disk.
