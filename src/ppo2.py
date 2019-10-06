@@ -88,8 +88,8 @@ class Network():
                 self.network_params[idx].assign(param))
         
         self.loss = tflearn.mean_square(self.val, self.R) \
-            - tf.reduce_sum(self.ppo2loss) \
-            + self.entropy_weight * tf.reduce_sum(self.entropy)
+            - tf.reduce_mean(self.ppo2loss) \
+            + self.entropy_weight * tf.reduce_mean(self.entropy)
         
         self.optimize = tf.train.AdamOptimizer(self.lr_rate).minimize(self.loss)
     
