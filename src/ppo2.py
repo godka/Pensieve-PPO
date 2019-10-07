@@ -15,33 +15,38 @@ EPS = 0.2
 class Network():
     def CreateNetwork(self, inputs):
         with tf.variable_scope('actor'):
-            split_0 = tflearn.fully_connected(
-                inputs[:, 0:1, -1], FEATURE_NUM, activation='relu')
-            split_1 = tflearn.fully_connected(
-                inputs[:, 1:2, -1], FEATURE_NUM, activation='relu')
-            split_2 = tflearn.conv_1d(
-                inputs[:, 2:3, :], FEATURE_NUM, 4, activation='relu')
-            split_3 = tflearn.conv_1d(
-                inputs[:, 3:4, :], FEATURE_NUM, 4, activation='relu')
-            split_4 = tflearn.conv_1d(
-                inputs[:, 4:5, :self.a_dim], FEATURE_NUM, 4, activation='relu')
-            split_5 = tflearn.fully_connected(
-                inputs[:, 5:6, -1], FEATURE_NUM, activation='relu')
-
-            split_2_flat = tflearn.flatten(split_2)
-            split_3_flat = tflearn.flatten(split_3)
-            split_4_flat = tflearn.flatten(split_4)
-
-            merge_net = tflearn.merge(
-                [split_0, split_1, split_2_flat, split_3_flat, split_4_flat, split_5], 'concat')
-
-            net = tflearn.fully_connected(
-                merge_net, FEATURE_NUM, activation='relu')
-
-            pi = tflearn.fully_connected(net, self.a_dim, activation='softmax')
-            value = tflearn.fully_connected(net, 1, activation='linear')
-            return pi, value
+            net_pi = self.CreateCore(inputs)
+            pi = tflearn.fully_connected(net_pi, self.a_dim, activation='softmax')
             
+            net_value = self.CreateCore(inputs)
+            value = tflearn.fully_connected(net_value, 1, activation='linear')
+            return pi, value
+
+    def CreateCore(self, inputs):
+        split_0 = tflearn.fully_connected(
+            inputs[:, 0:1, -1], FEATURE_NUM, activation='relu')
+        split_1 = tflearn.fully_connected(
+            inputs[:, 1:2, -1], FEATURE_NUM, activation='relu')
+        split_2 = tflearn.conv_1d(
+            inputs[:, 2:3, :], FEATURE_NUM, 4, activation='relu')
+        split_3 = tflearn.conv_1d(
+            inputs[:, 3:4, :], FEATURE_NUM, 4, activation='relu')
+        split_4 = tflearn.conv_1d(
+            inputs[:, 4:5, :self.a_dim], FEATURE_NUM, 4, activation='relu')
+        split_5 = tflearn.fully_connected(
+            inputs[:, 5:6, -1], FEATURE_NUM, activation='relu')
+
+        split_2_flat = tflearn.flatten(split_2)
+        split_3_flat = tflearn.flatten(split_3)
+        split_4_flat = tflearn.flatten(split_4)
+
+        merge_net = tflearn.merge(
+            [split_0, split_1, split_2_flat, split_3_flat, split_4_flat, split_5], 'concat')
+
+        net = tflearn.fully_connected(
+            merge_net, FEATURE_NUM, activation='relu')
+        return net
+
     def get_network_params(self):
         return self.sess.run(self.network_params)
 
@@ -87,11 +92,13 @@ class Network():
             self.set_network_params_op.append(
                 self.network_params[idx].assign(param))
         
-        self.loss = tflearn.mean_square(self.val, self.R) \
-            - tf.reduce_mean(self.ppo2loss) \
+        self.loss = - tf.reduce_mean(self.ppo2loss) \
             + self.entropy_weight * tf.reduce_mean(self.entropy)
         
         self.optimize = tf.train.AdamOptimizer(self.lr_rate).minimize(self.loss)
+
+        self.val_loss = tflearn.mean_square(self.val, self.R)
+        self.val_optimize = tf.train.AdamOptimizer(self.lr_rate * 10.).minimize(self.val_loss)
     
     def predict(self, input):
         action = self.sess.run(self.real_out, feed_dict={
@@ -119,16 +126,17 @@ class Network():
             tflearn.data_utils.shuffle(s_batch, a_batch, p_batch, v_batch)
         # mini_batch
         i, train_len = 0, s_batch.shape[0]
-        while train_len >= 0:
-            self.sess.run(self.optimize, feed_dict={
-                self.inputs: s_batch[i:i+batch_size],
-                self.acts: a_batch[i:i+batch_size],
-                self.R: v_batch[i:i+batch_size], 
-                self.old_pi: p_batch[i:i+batch_size],
+        while train_len > 0:
+            _batch_size = np.minimum(batch_size, train_len)
+            self.sess.run([self.optimize, self.val_optimize], feed_dict={
+                self.inputs: s_batch[i:i+_batch_size],
+                self.acts: a_batch[i:i+_batch_size],
+                self.R: v_batch[i:i+_batch_size], 
+                self.old_pi: p_batch[i:i+_batch_size],
                 self.entropy_weight: self.get_entropy(epoch)
             })
-            train_len -= batch_size
-            i += batch_size
+            train_len -= _batch_size
+            i += _batch_size
 
     def compute_v(self, s_batch, a_batch, r_batch, terminal):
         ba_size = len(s_batch)

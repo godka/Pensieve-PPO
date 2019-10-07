@@ -25,7 +25,7 @@ MODEL_DIR = './models'
 TRAIN_TRACES = './cooked_traces/'
 TEST_LOG_FOLDER = './test_results/'
 LOG_FILE = './results/log'
-PPO_TRAINING_EPO = 10
+PPO_TRAINING_EPO = 5
 # create result directory
 if not os.path.exists(SUMMARY_DIR):
     os.makedirs(SUMMARY_DIR)
@@ -127,7 +127,7 @@ def central_agent(net_params_queues, exp_queues):
 
 def agent(agent_id, net_params_queue, exp_queue):
     env = ABREnv(agent_id)
-    with tf.Session() as sess, open(SUMMARY_DIR + '/log_agent_' + str(agent_id), 'w') as log_file:
+    with tf.Session() as sess:
         actor = network.Network(sess,
                                 state_dim=S_DIM, action_dim=A_DIM,
                                 learning_rate=ACTOR_LR_RATE)
