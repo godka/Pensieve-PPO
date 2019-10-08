@@ -106,15 +106,17 @@ class Network():
 
     def get_entropy(self, step):
         if step < 20000:
-            return 0.5
+            return 10.
         elif step < 50000:
-            return 0.1
+            return 5.
         elif step < 70000:
-            return 0.05
+            return 3.
+        elif step < 90000:
+            return 1.
         elif step < 120000:
-            return 0.03
+            return 0.5
         else:
-            return 0.01
+            return 0.1
 
     def train(self, s_batch, a_batch, p_batch, v_batch, epoch, batch_size = 128):
         # shuffle is all you need
