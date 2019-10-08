@@ -4,6 +4,7 @@ import logging
 import os
 import sys
 from abr import ABREnv
+#import a2c as network
 import ppo2 as network
 import tensorflow as tf
 

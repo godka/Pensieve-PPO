@@ -7,7 +7,7 @@ os.environ['CUDA_VISIBLE_DEVICES'] = '2'
 import tflearn
 
 FEATURE_NUM = 128
-ACTION_EPS = 1e-6
+ACTION_EPS = 1e-2
 GAMMA = 0.99
 # PPO2
 EPS = 0.2
@@ -70,7 +70,7 @@ class Network():
         self.pi, self.val = self.CreateNetwork(inputs=self.inputs)
         self.real_out = tf.clip_by_value(self.pi, ACTION_EPS, 1. - ACTION_EPS)
         self.entropy = tf.multiply(self.real_out, tf.log(self.real_out))
-        self.adv = tf.stop_gradient(self.R - self.val)
+        self.adv = self.R - self.val
         self.ratio = tf.reduce_sum(tf.multiply(self.real_out, self.acts), reduction_indices=1, keepdims=True) / \
                 tf.reduce_sum(tf.multiply(self.old_pi, self.acts), reduction_indices=1, keepdims=True)
         
