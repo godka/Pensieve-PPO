@@ -55,7 +55,7 @@ class Network():
             i: d for i, d in zip(self.input_network_params, input_network_params)
         })
 
-    def __init__(self, sess, state_dim, action_dim, learning_rate):
+    def __init__(self, sess, state_dim, action_dim, learning_rate, entropy = 0.5):
         self.quality = 0
         self.s_dim = state_dim
         self.a_dim = action_dim
@@ -65,6 +65,7 @@ class Network():
         self.inputs = tf.placeholder(tf.float32, [None, self.s_dim[0], self.s_dim[1]])
         self.old_pi = tf.placeholder(tf.float32, [None, self.a_dim])
         self.acts = tf.placeholder(tf.float32, [None, self.a_dim])
+        self.entropy_ = entropy
         self.entropy_weight = tf.placeholder(tf.float32)
 
         self.pi, self.val = self.CreateNetwork(inputs=self.inputs)
@@ -133,7 +134,7 @@ class Network():
                 self.acts: a_batch[i:i+_batch_size],
                 self.R: v_batch[i:i+_batch_size], 
                 self.old_pi: p_batch[i:i+_batch_size],
-                self.entropy_weight: self.get_entropy(epoch)
+                self.entropy_weight: self.entropy_
             })
             train_len -= _batch_size
             i += _batch_size
