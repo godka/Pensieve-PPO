@@ -17,9 +17,7 @@ class Network():
         with tf.variable_scope('actor'):
             net_pi = self.CreateCore(inputs)
             pi = tflearn.fully_connected(net_pi, self.a_dim, activation='softmax')
-            
-            net_value = self.CreateCore(inputs)
-            value = tflearn.fully_connected(net_value, 1, activation='linear')
+            value = tflearn.fully_connected(net_pi, 1, activation='linear')
             return pi, value
 
     def CreateCore(self, inputs):
@@ -55,7 +53,7 @@ class Network():
             i: d for i, d in zip(self.input_network_params, input_network_params)
         })
 
-    def __init__(self, sess, state_dim, action_dim, learning_rate, entropy = 0.5):
+    def __init__(self, sess, state_dim, action_dim, learning_rate):
         self.quality = 0
         self.s_dim = state_dim
         self.a_dim = action_dim
@@ -65,15 +63,14 @@ class Network():
         self.inputs = tf.placeholder(tf.float32, [None, self.s_dim[0], self.s_dim[1]])
         self.old_pi = tf.placeholder(tf.float32, [None, self.a_dim])
         self.acts = tf.placeholder(tf.float32, [None, self.a_dim])
-        self.entropy_ = entropy
         self.entropy_weight = tf.placeholder(tf.float32)
 
         self.pi, self.val = self.CreateNetwork(inputs=self.inputs)
         self.real_out = tf.clip_by_value(self.pi, ACTION_EPS, 1. - ACTION_EPS)
         self.entropy = tf.multiply(self.real_out, tf.log(self.real_out))
-        self.adv = self.R - self.val
-        self.ratio = tf.reduce_sum(tf.multiply(self.real_out, self.acts), reduction_indices=1, keepdims=True) / \
-                tf.reduce_sum(tf.multiply(self.old_pi, self.acts), reduction_indices=1, keepdims=True)
+        self.adv = self.R - tf.stop_gradient(self.val)
+        self.ratio = tf.exp(tf.log(tf.reduce_sum(tf.multiply(self.real_out, self.acts), reduction_indices=1, keepdims=True)) - \
+                tf.log(tf.reduce_sum(tf.multiply(self.old_pi, self.acts), reduction_indices=1, keepdims=True)))
         
         self.ppo2loss = tf.minimum(self.ratio * self.adv, 
                             tf.clip_by_value(self.ratio, 1 - EPS, 1 + EPS) * self.adv
@@ -98,7 +95,7 @@ class Network():
         
         self.optimize = tf.train.AdamOptimizer(self.lr_rate).minimize(self.loss)
 
-        self.val_loss = tflearn.mean_square(self.val, self.R)
+        self.val_loss = 0.5 * tflearn.mean_square(self.val, self.R)
         self.val_optimize = tf.train.AdamOptimizer(self.lr_rate * 10.).minimize(self.val_loss)
     
     def predict(self, input):
@@ -109,17 +106,15 @@ class Network():
 
     def get_entropy(self, step):
         if step < 20000:
-            return 5.
-        elif step < 50000:
-            return 1.
-        elif step < 70000:
-            return 0.7
-        elif step < 90000:
             return 0.5
-        elif step < 120000:
-            return 0.3
-        else:
+        elif step < 50000:
             return 0.1
+        elif step < 70000:
+            return 0.05
+        elif step < 120000:
+            return 0.03
+        else:
+            return 0.01
 
     def train(self, s_batch, a_batch, p_batch, v_batch, epoch, batch_size = 128):
         # shuffle is all you need
@@ -134,7 +129,7 @@ class Network():
                 self.acts: a_batch[i:i+_batch_size],
                 self.R: v_batch[i:i+_batch_size], 
                 self.old_pi: p_batch[i:i+_batch_size],
-                self.entropy_weight: self.entropy_
+                self.entropy_weight: self.get_entropy(epoch)
             })
             train_len -= _batch_size
             i += _batch_size
