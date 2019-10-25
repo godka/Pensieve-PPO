@@ -1,4 +1,4 @@
-# Pensieve PPO2
+# Pensieve PPO
 This is an easy tensorflow implementation of Pensieve[1]. 
 In details, we trained Pensieve via PPO2 rather than A3C.
 It's a stable version, which has already prepared the training set and the test set, and you can run the repo easily: just type
