@@ -15,7 +15,7 @@ S_DIM = [6, 8]
 A_DIM = 6
 ACTOR_LR_RATE =1e-4
 CRITIC_LR_RATE = 1e-3
-NUM_AGENTS = 20
+NUM_AGENTS = 12
 TRAIN_SEQ_LEN = 300  # take as a train batch
 TRAIN_EPOCH = 300000
 MODEL_SAVE_INTERVAL = 300
@@ -88,7 +88,7 @@ def central_agent(net_params_queues, exp_queues):
                 learning_rate=ACTOR_LR_RATE)
 
         sess.run(tf.global_variables_initializer())
-        saver = tf.train.Saver(max_to_keep=1000)  # save neural net parameters
+        saver = tf.train.Saver(max_to_keep=100)  # save neural net parameters
 
         # restore neural net parameters
         nn_model = NN_MODEL
@@ -105,11 +105,13 @@ def central_agent(net_params_queues, exp_queues):
 
             s, a, p, g = [], [], [], []
             for i in range(NUM_AGENTS):
-                s_, a_, p_, g_ = exp_queues[i].get()
+                s_, a_, p_, g_, done = exp_queues[i].get()
+                v_, td_ = actor.compute_gae_v(s_, a_, g_, done)
                 s += s_
                 a += a_
                 p += p_
-                g += g_
+                g += v_
+
             s_batch = np.stack(s, axis=0)
             a_batch = np.vstack(a)
             p_batch = np.vstack(p)
@@ -160,8 +162,7 @@ def agent(agent_id, net_params_queue, exp_queue):
                 p_batch.append(action_prob)
                 if done:
                     break
-            v_batch = actor.compute_v(s_batch, a_batch, r_batch, done)
-            exp_queue.put([s_batch, a_batch, p_batch, v_batch])
+            exp_queue.put([s_batch, a_batch, p_batch, r_batch, done])
 
             actor_net_params = net_params_queue.get()
             actor.set_network_params(actor_net_params)

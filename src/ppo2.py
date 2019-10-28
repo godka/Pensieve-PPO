@@ -3,7 +3,7 @@ import numpy as np
 import tensorflow as tf
 import os
 import time
-os.environ['CUDA_VISIBLE_DEVICES'] = '2'
+os.environ['CUDA_VISIBLE_DEVICES'] = '-1'
 import tflearn
 
 FEATURE_NUM = 128
@@ -15,9 +15,8 @@ EPS = 0.2
 class Network():
     def CreateNetwork(self, inputs):
         with tf.variable_scope('actor'):
-            net_pi = self.CreateCore(inputs)
-            pi = tflearn.fully_connected(net_pi, self.a_dim, activation='softmax')
-            value = tflearn.fully_connected(net_pi, 1, activation='linear')
+            pi = tflearn.fully_connected(self.CreateCore(inputs), self.a_dim, activation='softmax')
+            value = tflearn.fully_connected(self.CreateCore(inputs), 1, activation='linear')
             return pi, value
 
     def CreateCore(self, inputs):
@@ -106,15 +105,13 @@ class Network():
 
     def get_entropy(self, step):
         if step < 20000:
-            return 10.
-        elif step < 50000:
             return 5.
-        elif step < 70000:
-            return 3.
-        elif step < 90000:
+        elif step < 50000:
             return 1.
-        elif step < 120000:
+        elif step < 70000:
             return 0.5
+        elif step < 120000:
+            return 0.3
         else:
             return 0.1
 
@@ -151,3 +148,23 @@ class Network():
             R_batch[t, 0] = r_batch[t] + GAMMA * R_batch[t + 1, 0]
 
         return list(R_batch)
+
+    def compute_gae_v(self, s_batch, a_batch, r_batch, terminal, GAE_LAMBDA = 0.95):
+        ba_size = len(s_batch)
+        R_batch = np.zeros([len(r_batch), 1])
+        mb_advs = np.zeros_like(R_batch)
+        lastgaelam = 0.
+
+        v_batch = self.sess.run(self.val, feed_dict={
+            self.inputs: s_batch
+        })
+        if terminal:
+            v_batch[-1, 0] = 0  # terminal state
+
+        for t in reversed(range(ba_size - 1)):
+            delta = r_batch[t] + GAMMA * v_batch[t+1] - v_batch[t] 
+            mb_advs[t] = lastgaelam = delta + GAMMA * GAE_LAMBDA * lastgaelam 
+        R_batch = mb_advs + v_batch
+        
+        return list(R_batch), list(mb_advs)
+        
