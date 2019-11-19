@@ -68,8 +68,8 @@ class Network():
         self.real_out = tf.clip_by_value(self.pi, ACTION_EPS, 1. - ACTION_EPS)
         self.entropy = self.real_out * tf.log(self.real_out)
         self.adv = self.R - tf.stop_gradient(self.val)
-        self.ratio = tf.exp(tf.log(tf.reduce_sum(self.real_out * self.acts, axis=1)) - \
-                tf.log(tf.reduce_sum(self.old_pi * self.acts, axis=1)))
+        self.ratio = tf.reduce_sum(self.real_out * self.acts, axis=1) / \
+                tf.reduce_sum(self.old_pi * self.acts, axis=1)
         
         self.ppo2loss = tf.minimum(self.ratio * self.adv, 
                             tf.clip_by_value(self.ratio, 1 - EPS, 1 + EPS) * self.adv
