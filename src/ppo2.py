@@ -66,10 +66,10 @@ class Network():
 
         self.pi, self.val = self.CreateNetwork(inputs=self.inputs)
         self.real_out = tf.clip_by_value(self.pi, ACTION_EPS, 1. - ACTION_EPS)
-        self.entropy = tf.multiply(self.real_out, tf.log(self.real_out))
+        self.entropy = self.real_out * tf.log(self.real_out)
         self.adv = self.R - tf.stop_gradient(self.val)
-        self.ratio = tf.exp(tf.log(tf.reduce_sum(tf.multiply(self.real_out, self.acts), reduction_indices=1, keepdims=True)) - \
-                tf.log(tf.reduce_sum(tf.multiply(self.old_pi, self.acts), reduction_indices=1, keepdims=True)))
+        self.ratio = tf.exp(tf.log(tf.reduce_sum(self.real_out * self.acts, axis=1)) - \
+                tf.log(tf.reduce_sum(self.old_pi * self.acts, axis=1)))
         
         self.ppo2loss = tf.minimum(self.ratio * self.adv, 
                             tf.clip_by_value(self.ratio, 1 - EPS, 1 + EPS) * self.adv
@@ -89,8 +89,8 @@ class Network():
             self.set_network_params_op.append(
                 self.network_params[idx].assign(param))
         
-        self.loss = - tf.reduce_sum(self.ppo2loss, axis=1) \
-            + self.entropy_weight * tf.reduce_sum(self.entropy, axis=1)
+        self.loss = - tf.reduce_sum(self.ppo2loss) \
+            + self.entropy_weight * tf.reduce_sum(self.entropy)
         
         self.optimize = tf.train.AdamOptimizer(self.lr_rate).minimize(self.loss)
 
