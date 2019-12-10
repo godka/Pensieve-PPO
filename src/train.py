@@ -118,13 +118,13 @@ def central_agent(net_params_queues, exp_queues):
             v_batch = np.vstack(g)
 
             for _ in range(PPO_TRAINING_EPO):
-                actor.train(s_batch, a_batch, p_batch, v_batch, epoch)
+                actor.train(s_batch, a_batch, p_batch, v_batch, epoch, 32)
             
             if epoch % MODEL_SAVE_INTERVAL == 0:
                 # Save the neural net parameters to disk.
-                save_path = saver.save(sess, SUMMARY_DIR + "/nn_model_ep_lastest.ckpt")
+                save_path = saver.save(sess, SUMMARY_DIR + '/nn_model_ep_' + str(epoch) + '.ckpt')
                 testing(epoch,
-                    SUMMARY_DIR + "/nn_model_ep_lastest.ckpt", 
+                    SUMMARY_DIR + '/nn_model_ep_' + str(epoch) + '.ckpt', 
                     test_log_file)
 
 def agent(agent_id, net_params_queue, exp_queue):

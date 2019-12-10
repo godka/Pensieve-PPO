@@ -66,7 +66,7 @@ class Network():
 
         self.pi, self.val = self.CreateNetwork(inputs=self.inputs)
         self.real_out = tf.clip_by_value(self.pi, ACTION_EPS, 1. - ACTION_EPS)
-        self.entropy = self.real_out * tf.log(self.real_out)
+        self.entropy = -self.real_out * tf.log(self.real_out)
         self.adv = self.R - tf.stop_gradient(self.val)
         self.ratio = tf.reduce_sum(self.real_out * self.acts, axis=1) / \
                 tf.reduce_sum(self.old_pi * self.acts, axis=1)
@@ -89,13 +89,11 @@ class Network():
             self.set_network_params_op.append(
                 self.network_params[idx].assign(param))
         
-        self.loss = - tf.reduce_sum(self.ppo2loss) \
-            + self.entropy_weight * tf.reduce_sum(self.entropy)
+        self.loss = - tf.reduce_mean(self.ppo2loss) \
+            + self.entropy_weight * tf.reduce_mean(self.entropy) \
+            + tflearn.mean_square(self.val, self.R)
         
         self.optimize = tf.train.AdamOptimizer(self.lr_rate).minimize(self.loss)
-
-        self.val_loss = 0.5 * tflearn.mean_square(self.val, self.R)
-        self.val_optimize = tf.train.AdamOptimizer(self.lr_rate * 10.).minimize(self.val_loss)
     
     def predict(self, input):
         action = self.sess.run(self.real_out, feed_dict={
@@ -104,16 +102,17 @@ class Network():
         return action[0]
 
     def get_entropy(self, step):
-        if step < 20000:
-            return 5.
-        elif step < 50000:
-            return 1.
-        elif step < 70000:
-            return 0.5
-        elif step < 120000:
-            return 0.3
-        else:
-            return 0.1
+        return 0.01
+        # if step < 20000:
+        #     return 5.
+        # elif step < 50000:
+        #     return 1.
+        # elif step < 70000:
+        #     return 0.5
+        # elif step < 120000:
+        #     return 0.3
+        # else:
+        #     return 0.1
 
     def train(self, s_batch, a_batch, p_batch, v_batch, epoch, batch_size = 128):
         # shuffle is all you need
@@ -123,7 +122,7 @@ class Network():
         i, train_len = 0, s_batch.shape[0]
         while train_len > 0:
             _batch_size = np.minimum(batch_size, train_len)
-            self.sess.run([self.optimize, self.val_optimize], feed_dict={
+            self.sess.run(self.optimize, feed_dict={
                 self.inputs: s_batch[i:i+_batch_size],
                 self.acts: a_batch[i:i+_batch_size],
                 self.R: v_batch[i:i+_batch_size], 
