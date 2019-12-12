@@ -123,7 +123,7 @@ def main():
             action_cumsum = np.cumsum(action_prob)
             bit_rate = (action_cumsum > np.random.randint(
                 1, RAND_RANGE) / float(RAND_RANGE)).argmax()
-             
+            
             s_batch.append(state)
             entropy_record.append(-np.dot(action_prob[0], np.log(action_prob[0])))
 
