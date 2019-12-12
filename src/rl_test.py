@@ -123,9 +123,9 @@ def main():
             action_cumsum = np.cumsum(action_prob)
             bit_rate = (action_cumsum > np.random.randint(
                 1, RAND_RANGE) / float(RAND_RANGE)).argmax()
-            
+             
             s_batch.append(state)
-            entropy_record.append(0.)
+            entropy_record.append(-np.dot(action_prob[0], np.log(action_prob[0])))
 
             if end_of_video:
                 log_file.write('\n')
@@ -143,6 +143,7 @@ def main():
 
                 s_batch.append(np.zeros((S_INFO, S_LEN)))
                 a_batch.append(action_vec)
+                print(np.mean(entropy_record))
                 entropy_record = []
 
                 video_count += 1

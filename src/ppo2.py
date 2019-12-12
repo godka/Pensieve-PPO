@@ -3,11 +3,11 @@ import numpy as np
 import tensorflow as tf
 import os
 import time
-os.environ['CUDA_VISIBLE_DEVICES'] = '-1'
+os.environ['CUDA_VISIBLE_DEVICES'] = '2'
 import tflearn
 
 FEATURE_NUM = 128
-ACTION_EPS = 1e-2
+ACTION_EPS = 1e-4
 GAMMA = 0.99
 # PPO2
 EPS = 0.2
@@ -15,35 +15,34 @@ EPS = 0.2
 class Network():
     def CreateNetwork(self, inputs):
         with tf.variable_scope('actor'):
-            pi = tflearn.fully_connected(self.CreateCore(inputs), self.a_dim, activation='softmax')
-            value = tflearn.fully_connected(self.CreateCore(inputs), 1, activation='linear')
+            split_0 = tflearn.fully_connected(
+                inputs[:, 0:1, -1], FEATURE_NUM, activation='relu')
+            split_1 = tflearn.fully_connected(
+                inputs[:, 1:2, -1], FEATURE_NUM, activation='relu')
+            split_2 = tflearn.conv_1d(
+                inputs[:, 2:3, :], FEATURE_NUM, 4, activation='relu')
+            split_3 = tflearn.conv_1d(
+                inputs[:, 3:4, :], FEATURE_NUM, 4, activation='relu')
+            split_4 = tflearn.conv_1d(
+                inputs[:, 4:5, :self.a_dim], FEATURE_NUM, 4, activation='relu')
+            split_5 = tflearn.fully_connected(
+                inputs[:, 5:6, -1], FEATURE_NUM, activation='relu')
+
+            split_2_flat = tflearn.flatten(split_2)
+            split_3_flat = tflearn.flatten(split_3)
+            split_4_flat = tflearn.flatten(split_4)
+
+            merge_net = tflearn.merge(
+                [split_0, split_1, split_2_flat, split_3_flat, split_4_flat, split_5], 'concat')
+
+            pi_net = tflearn.fully_connected(
+                merge_net, FEATURE_NUM, activation='relu')
+            value_net = tflearn.fully_connected(
+                merge_net, FEATURE_NUM, activation='relu')
+            pi = tflearn.fully_connected(pi_net, self.a_dim, activation='softmax') 
+            value = tflearn.fully_connected(value_net, 1, activation='linear')
             return pi, value
-
-    def CreateCore(self, inputs):
-        split_0 = tflearn.fully_connected(
-            inputs[:, 0:1, -1], FEATURE_NUM, activation='relu')
-        split_1 = tflearn.fully_connected(
-            inputs[:, 1:2, -1], FEATURE_NUM, activation='relu')
-        split_2 = tflearn.conv_1d(
-            inputs[:, 2:3, :], FEATURE_NUM, 4, activation='relu')
-        split_3 = tflearn.conv_1d(
-            inputs[:, 3:4, :], FEATURE_NUM, 4, activation='relu')
-        split_4 = tflearn.conv_1d(
-            inputs[:, 4:5, :self.a_dim], FEATURE_NUM, 4, activation='relu')
-        split_5 = tflearn.fully_connected(
-            inputs[:, 5:6, -1], FEATURE_NUM, activation='relu')
-
-        split_2_flat = tflearn.flatten(split_2)
-        split_3_flat = tflearn.flatten(split_3)
-        split_4_flat = tflearn.flatten(split_4)
-
-        merge_net = tflearn.merge(
-            [split_0, split_1, split_2_flat, split_3_flat, split_4_flat, split_5], 'concat')
-
-        net = tflearn.fully_connected(
-            merge_net, FEATURE_NUM, activation='relu')
-        return net
-
+            
     def get_network_params(self):
         return self.sess.run(self.network_params)
 
@@ -51,6 +50,10 @@ class Network():
         self.sess.run(self.set_network_params_op, feed_dict={
             i: d for i, d in zip(self.input_network_params, input_network_params)
         })
+
+    def r(self, pi_new, pi_old, acts):
+        return tf.reduce_sum(tf.multiply(pi_new, acts), reduction_indices=1, keepdims=True) / \
+                tf.reduce_sum(tf.multiply(pi_old, acts), reduction_indices=1, keepdims=True)
 
     def __init__(self, sess, state_dim, action_dim, learning_rate):
         self.quality = 0
@@ -63,18 +66,15 @@ class Network():
         self.old_pi = tf.placeholder(tf.float32, [None, self.a_dim])
         self.acts = tf.placeholder(tf.float32, [None, self.a_dim])
         self.entropy_weight = tf.placeholder(tf.float32)
-
         self.pi, self.val = self.CreateNetwork(inputs=self.inputs)
         self.real_out = tf.clip_by_value(self.pi, ACTION_EPS, 1. - ACTION_EPS)
-        self.entropy = -self.real_out * tf.log(self.real_out)
-        self.adv = self.R - tf.stop_gradient(self.val)
-        self.ratio = tf.reduce_sum(self.real_out * self.acts, axis=1) / \
-                tf.reduce_sum(self.old_pi * self.acts, axis=1)
-        
-        self.ppo2loss = tf.minimum(self.ratio * self.adv, 
-                            tf.clip_by_value(self.ratio, 1 - EPS, 1 + EPS) * self.adv
+        self.log_prob = tf.log(tf.reduce_sum(tf.multiply(self.real_out, self.acts), reduction_indices=1, keepdims=True))
+        self.entropy = tf.multiply(self.real_out, tf.log(self.real_out))
+        self.adv = tf.stop_gradient(self.R - self.val)
+        self.ppo2loss = tf.minimum(self.r(self.real_out, self.old_pi, self.acts) * self.adv, 
+                            tf.clip_by_value(self.r(self.real_out, self.old_pi, self.acts), 1 - EPS, 1 + EPS) * self.adv
                         )
-        
+        self.a2closs = self.log_prob * self.adv
         # Get all network parameters
         self.network_params = \
             tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES, scope='actor')
@@ -89,12 +89,14 @@ class Network():
             self.set_network_params_op.append(
                 self.network_params[idx].assign(param))
         
-        self.loss = - tf.reduce_mean(self.ppo2loss) \
-            + self.entropy_weight * tf.reduce_mean(self.entropy) \
-            + tflearn.mean_square(self.val, self.R)
+        self.loss = tflearn.mean_square(self.val, self.R) \
+            - tf.reduce_sum(self.ppo2loss) \
+            + self.entropy_weight * tf.reduce_sum(self.entropy)
         
         self.optimize = tf.train.AdamOptimizer(self.lr_rate).minimize(self.loss)
-    
+        self.val_loss = tflearn.mean_square(self.val, self.R)
+        self.val_opt = tf.train.AdamOptimizer(self.lr_rate * 10.).minimize(self.val_loss)
+
     def predict(self, input):
         action = self.sess.run(self.real_out, feed_dict={
             self.inputs: input
@@ -102,35 +104,29 @@ class Network():
         return action[0]
 
     def get_entropy(self, step):
-        return 0.01
-        # if step < 20000:
-        #     return 5.
-        # elif step < 50000:
-        #     return 1.
-        # elif step < 70000:
-        #     return 0.5
-        # elif step < 120000:
-        #     return 0.3
-        # else:
-        #     return 0.1
+        return 0.1
+        #if step < 20000:
+        #    return 5.
+        #elif step < 50000:
+        #    return 3.
+        #elif step < 70000:
+        #    return 1.
+        #elif step < 90000:
+        #    return 0.5
+        #elif step < 120000:
+        #    return 0.3
+        #else:
+        #    return 0.1
 
-    def train(self, s_batch, a_batch, p_batch, v_batch, epoch, batch_size = 128):
-        # shuffle is all you need
-        s_batch, a_batch, p_batch, v_batch = \
-            tflearn.data_utils.shuffle(s_batch, a_batch, p_batch, v_batch)
-        # mini_batch
-        i, train_len = 0, s_batch.shape[0]
-        while train_len > 0:
-            _batch_size = np.minimum(batch_size, train_len)
-            self.sess.run(self.optimize, feed_dict={
-                self.inputs: s_batch[i:i+_batch_size],
-                self.acts: a_batch[i:i+_batch_size],
-                self.R: v_batch[i:i+_batch_size], 
-                self.old_pi: p_batch[i:i+_batch_size],
-                self.entropy_weight: self.get_entropy(epoch)
-            })
-            train_len -= _batch_size
-            i += _batch_size
+    def train(self, s_batch, a_batch, p_batch, v_batch, epoch):
+        s_batch, a_batch, p_batch, v_batch = tflearn.data_utils.shuffle(s_batch, a_batch, p_batch, v_batch)
+        self.sess.run([self.optimize, self.val_opt], feed_dict={
+            self.inputs: s_batch,
+            self.acts: a_batch,
+            self.R: v_batch, 
+            self.old_pi: p_batch,
+            self.entropy_weight: self.get_entropy(epoch)
+        })
 
     def compute_v(self, s_batch, a_batch, r_batch, terminal):
         ba_size = len(s_batch)
@@ -147,23 +143,3 @@ class Network():
             R_batch[t, 0] = r_batch[t] + GAMMA * R_batch[t + 1, 0]
 
         return list(R_batch)
-
-    def compute_gae_v(self, s_batch, a_batch, r_batch, terminal, GAE_LAMBDA = 0.95):
-        ba_size = len(s_batch)
-        R_batch = np.zeros([len(r_batch), 1])
-        mb_advs = np.zeros_like(R_batch)
-        lastgaelam = 0.
-
-        v_batch = self.sess.run(self.val, feed_dict={
-            self.inputs: s_batch
-        })
-        if terminal:
-            v_batch[-1, 0] = 0  # terminal state
-
-        for t in reversed(range(ba_size - 1)):
-            delta = r_batch[t] + GAMMA * v_batch[t+1] - v_batch[t] 
-            mb_advs[t] = lastgaelam = delta + GAMMA * GAE_LAMBDA * lastgaelam 
-        R_batch = mb_advs + v_batch
-        
-        return list(R_batch), list(mb_advs)
-        

@@ -4,7 +4,6 @@ import logging
 import os
 import sys
 from abr import ABREnv
-#import a2c as network
 import ppo2 as network
 import tensorflow as tf
 
@@ -15,9 +14,9 @@ S_DIM = [6, 8]
 A_DIM = 6
 ACTOR_LR_RATE =1e-4
 CRITIC_LR_RATE = 1e-3
-NUM_AGENTS = 12
+NUM_AGENTS = 20
 TRAIN_SEQ_LEN = 300  # take as a train batch
-TRAIN_EPOCH = 300000
+TRAIN_EPOCH = 1000000
 MODEL_SAVE_INTERVAL = 300
 RANDOM_SEED = 42
 RAND_RANGE = 10000
@@ -31,7 +30,7 @@ PPO_TRAINING_EPO = 5
 if not os.path.exists(SUMMARY_DIR):
     os.makedirs(SUMMARY_DIR)
 
-NN_MODEL = None
+NN_MODEL = None    
 
 def testing(epoch, nn_model, log_file):
     # clean up the test results folder
@@ -81,14 +80,16 @@ def central_agent(net_params_queues, exp_queues):
 
     assert len(net_params_queues) == NUM_AGENTS
     assert len(exp_queues) == NUM_AGENTS
-    with tf.Session() as sess, open(LOG_FILE + '_test.txt', 'w') as test_log_file:
+    tf_config=tf.ConfigProto(intra_op_parallelism_threads=5,
+                            inter_op_parallelism_threads=5)
+    with tf.Session(config = tf_config) as sess, open(LOG_FILE + '_test.txt', 'w') as test_log_file:
 
         actor = network.Network(sess,
                 state_dim=S_DIM, action_dim=A_DIM,
                 learning_rate=ACTOR_LR_RATE)
 
         sess.run(tf.global_variables_initializer())
-        saver = tf.train.Saver(max_to_keep=100)  # save neural net parameters
+        saver = tf.train.Saver(max_to_keep=1000)  # save neural net parameters
 
         # restore neural net parameters
         nn_model = NN_MODEL
@@ -105,31 +106,31 @@ def central_agent(net_params_queues, exp_queues):
 
             s, a, p, g = [], [], [], []
             for i in range(NUM_AGENTS):
-                s_, a_, p_, g_, done = exp_queues[i].get()
-                v_, td_ = actor.compute_gae_v(s_, a_, g_, done)
+                s_, a_, p_, g_ = exp_queues[i].get()
                 s += s_
                 a += a_
                 p += p_
-                g += v_
-
-            s_batch = np.stack(s, axis=0)
-            a_batch = np.vstack(a)
-            p_batch = np.vstack(p)
-            v_batch = np.vstack(g)
+                g += g_
+                s_batch = np.stack(s, axis=0)
+                a_batch = np.vstack(a)
+                p_batch = np.vstack(p)
+                v_batch = np.vstack(g)
 
             for _ in range(PPO_TRAINING_EPO):
-                actor.train(s_batch, a_batch, p_batch, v_batch, epoch, 32)
+                actor.train(s_batch, a_batch, p_batch, v_batch, epoch)
+            # actor.train(s_batch, a_batch, v_batch, epoch)
             
             if epoch % MODEL_SAVE_INTERVAL == 0:
                 # Save the neural net parameters to disk.
-                save_path = saver.save(sess, SUMMARY_DIR + '/nn_model_ep_' + str(epoch) + '.ckpt')
+                save_path = saver.save(sess, SUMMARY_DIR + "/nn_model_ep_" +
+                                       str(epoch) + ".ckpt")
                 testing(epoch,
-                    SUMMARY_DIR + '/nn_model_ep_' + str(epoch) + '.ckpt', 
+                    SUMMARY_DIR + "/nn_model_ep_" + str(epoch) + ".ckpt", 
                     test_log_file)
 
 def agent(agent_id, net_params_queue, exp_queue):
     env = ABREnv(agent_id)
-    with tf.Session() as sess:
+    with tf.Session() as sess, open(SUMMARY_DIR + '/log_agent_' + str(agent_id), 'w') as log_file:
         actor = network.Network(sess,
                                 state_dim=S_DIM, action_dim=A_DIM,
                                 learning_rate=ACTOR_LR_RATE)
@@ -162,7 +163,8 @@ def agent(agent_id, net_params_queue, exp_queue):
                 p_batch.append(action_prob)
                 if done:
                     break
-            exp_queue.put([s_batch, a_batch, p_batch, r_batch, done])
+            v_batch = actor.compute_v(s_batch, a_batch, r_batch, done)
+            exp_queue.put([s_batch, a_batch, p_batch, v_batch])
 
             actor_net_params = net_params_queue.get()
             actor.set_network_params(actor_net_params)
