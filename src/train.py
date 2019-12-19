@@ -83,12 +83,14 @@ def central_agent(net_params_queues, exp_queues):
     tf_config=tf.ConfigProto(intra_op_parallelism_threads=5,
                             inter_op_parallelism_threads=5)
     with tf.Session(config = tf_config) as sess, open(LOG_FILE + '_test.txt', 'w') as test_log_file:
+        summary_ops, summary_vars = build_summaries()
 
         actor = network.Network(sess,
                 state_dim=S_DIM, action_dim=A_DIM,
                 learning_rate=ACTOR_LR_RATE)
 
         sess.run(tf.global_variables_initializer())
+        writer = tf.summary.FileWriter(SUMMARY_DIR, sess.graph)  # training monitor
         saver = tf.train.Saver(max_to_keep=1000)  # save neural net parameters
 
         # restore neural net parameters
@@ -124,9 +126,17 @@ def central_agent(net_params_queues, exp_queues):
                 # Save the neural net parameters to disk.
                 save_path = saver.save(sess, SUMMARY_DIR + "/nn_model_ep_" +
                                        str(epoch) + ".ckpt")
-                testing(epoch,
+                avg_reward = testing(epoch,
                     SUMMARY_DIR + "/nn_model_ep_" + str(epoch) + ".ckpt", 
                     test_log_file)
+
+                summary_str = sess.run(summary_ops, feed_dict={
+                    summary_vars[0]: 0.,
+                    summary_vars[1]: avg_reward,
+                    summary_vars[2]: 0.
+                })
+                writer.add_summary(summary_str, epoch)
+                writer.flush()
 
 def agent(agent_id, net_params_queue, exp_queue):
     env = ABREnv(agent_id)
@@ -168,6 +178,19 @@ def agent(agent_id, net_params_queue, exp_queue):
 
             actor_net_params = net_params_queue.get()
             actor.set_network_params(actor_net_params)
+
+def build_summaries():
+    td_loss = tf.Variable(0.)
+    tf.summary.scalar("TD_loss", td_loss)
+    eps_total_reward = tf.Variable(0.)
+    tf.summary.scalar("Reward", eps_total_reward)
+    entropy = tf.Variable(0.)
+    tf.summary.scalar("Entropy", entropy)
+
+    summary_vars = [td_loss, eps_total_reward, entropy]
+    summary_ops = tf.summary.merge_all()
+
+    return summary_ops, summary_vars
 
 def main():
 

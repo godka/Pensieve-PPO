@@ -55,7 +55,7 @@ class Network():
         self.a_dim = action_dim
         self.lr_rate = learning_rate
         self.sess = sess
-        self.outputs = tf.placeholder(tf.float32, [None, 1])
+        self.R = tf.placeholder(tf.float32, [None, 1])
         self.inputs = tf.placeholder(
             tf.float32, [None, self.s_dim[0], self.s_dim[1]])
         self.acts = tf.placeholder(tf.float32, [None, self.a_dim])
@@ -80,12 +80,11 @@ class Network():
             self.set_network_params_op.append(
                 self.network_params[idx].assign(param))
 
-        self.loss = tflearn.mean_square(self.val, self.outputs) \
-            - tf.reduce_mean(self.log_prob * tf.stop_gradient(self.outputs - self.val)) \
+        self.loss = 0.5 * tflearn.mean_square(self.val, self.R) \
+            - tf.reduce_mean(self.log_prob * tf.stop_gradient(self.R - self.val)) \
             + self.entropy_weight * tf.reduce_mean(self.entropy)
 
-        self.optimize = tf.train.AdamOptimizer(
-            self.lr_rate).minimize(self.loss)
+        self.optimize = tf.train.AdamOptimizer(self.lr_rate).minimize(self.loss)
 
     def predict(self, input):
         action = self.sess.run(self.real_out, feed_dict={
@@ -108,15 +107,21 @@ class Network():
             return 0.1
 
     def train(self, s_batch, a_batch, v_batch, epoch):
-        # print s_batch.shape, a_batch.shape, v_batch.shape
-        # s_batch, a_batch, v_batch = tflearn.data_utils.shuffle(
-        #    s_batch, a_batch, v_batch)
-        self.sess.run(self.optimize, feed_dict={
-            self.inputs: s_batch,
-            self.acts: a_batch,
-            self.outputs: v_batch,
-            self.entropy_weight: self.get_entropy(epoch)
-        })
+        # shuffle is all you need
+        s_batch, a_batch, v_batch = \
+            tflearn.data_utils.shuffle(s_batch, a_batch, v_batch)
+        # mini_batch
+        i, train_len = 0, s_batch.shape[0]
+        while train_len > 0:
+            _batch_size = np.minimum(batch_size, train_len)
+            self.sess.run(self.optimize, feed_dict={
+                self.inputs: s_batch[i:i+_batch_size],
+                self.acts: a_batch[i:i+_batch_size],
+                self.R: v_batch[i:i+_batch_size], 
+                self.entropy_weight: self.get_entropy(epoch)
+            })
+            train_len -= _batch_size
+            i += _batch_size
 
     def compute_v(self, s_batch, a_batch, r_batch, terminal):
         ba_size = len(s_batch)
