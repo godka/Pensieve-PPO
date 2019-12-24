@@ -104,19 +104,18 @@ class Network():
         return action[0]
 
     def get_entropy(self, step):
-        return 0.1
-        #if step < 20000:
-        #    return 5.
-        #elif step < 50000:
-        #    return 3.
-        #elif step < 70000:
-        #    return 1.
-        #elif step < 90000:
-        #    return 0.5
-        #elif step < 120000:
-        #    return 0.3
-        #else:
-        #    return 0.1
+        # max_lr = 0.5
+        # min_lr = 0.05
+        # return np.maximum(min_lr, min_lr + 0.5 * (max_lr - min_lr) * (1 + np.cos(step * np.pi / 100000)))
+        # return np.clip(0.5 - step / 20000, 0.5, 0.01)
+        if step < 2000:
+            return 5.
+        elif step < 5000:
+            return 3.
+        elif step < 10000:
+            return 1.
+        else:
+            return np.clip(1. - step / 50000, 0.1, 1.)
 
     def train(self, s_batch, a_batch, p_batch, v_batch, epoch):
         s_batch, a_batch, p_batch, v_batch = tflearn.data_utils.shuffle(s_batch, a_batch, p_batch, v_batch)

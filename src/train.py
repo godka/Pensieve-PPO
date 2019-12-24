@@ -14,7 +14,7 @@ S_DIM = [6, 8]
 A_DIM = 6
 ACTOR_LR_RATE =1e-4
 CRITIC_LR_RATE = 1e-3
-NUM_AGENTS = 20
+NUM_AGENTS = 4
 TRAIN_SEQ_LEN = 300  # take as a train batch
 TRAIN_EPOCH = 1000000
 MODEL_SAVE_INTERVAL = 300
@@ -43,18 +43,20 @@ def testing(epoch, nn_model, log_file):
     os.system('python rl_test.py ' + nn_model)
 
     # append test performance to the log
-    rewards = []
+    rewards, entropies = [], []
     test_log_files = os.listdir(TEST_LOG_FOLDER)
     for test_log_file in test_log_files:
-        reward = []
+        reward, entropy = [], []
         with open(TEST_LOG_FOLDER + test_log_file, 'rb') as f:
             for line in f:
                 parse = line.split()
                 try:
+                    entropy.append(float(parse[-2]))
                     reward.append(float(parse[-1]))
                 except IndexError:
                     break
         rewards.append(np.mean(reward[1:]))
+        entropies.append(np.mean(entropy[1:]))
 
     rewards = np.array(rewards)
 
@@ -74,7 +76,7 @@ def testing(epoch, nn_model, log_file):
                    str(rewards_max) + '\n')
     log_file.flush()
 
-    return rewards_mean
+    return rewards_mean, np.mean(entropies)
 
 def central_agent(net_params_queues, exp_queues):
 
@@ -126,14 +128,14 @@ def central_agent(net_params_queues, exp_queues):
                 # Save the neural net parameters to disk.
                 save_path = saver.save(sess, SUMMARY_DIR + "/nn_model_ep_" +
                                        str(epoch) + ".ckpt")
-                avg_reward = testing(epoch,
+                avg_reward, avg_entropy = testing(epoch,
                     SUMMARY_DIR + "/nn_model_ep_" + str(epoch) + ".ckpt", 
                     test_log_file)
 
                 summary_str = sess.run(summary_ops, feed_dict={
-                    summary_vars[0]: 0.,
+                    summary_vars[0]: actor.get_entropy(epoch),
                     summary_vars[1]: avg_reward,
-                    summary_vars[2]: 0.
+                    summary_vars[2]: avg_entropy
                 })
                 writer.add_summary(summary_str, epoch)
                 writer.flush()
@@ -181,7 +183,7 @@ def agent(agent_id, net_params_queue, exp_queue):
 
 def build_summaries():
     td_loss = tf.Variable(0.)
-    tf.summary.scalar("TD_loss", td_loss)
+    tf.summary.scalar("Beta", td_loss)
     eps_total_reward = tf.Variable(0.)
     tf.summary.scalar("Reward", eps_total_reward)
     entropy = tf.Variable(0.)
