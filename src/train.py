@@ -14,7 +14,7 @@ S_DIM = [6, 8]
 A_DIM = 6
 ACTOR_LR_RATE =1e-4
 CRITIC_LR_RATE = 1e-3
-NUM_AGENTS = 4
+NUM_AGENTS = 12
 TRAIN_SEQ_LEN = 300  # take as a train batch
 TRAIN_EPOCH = 1000000
 MODEL_SAVE_INTERVAL = 300
@@ -77,7 +77,7 @@ def testing(epoch, nn_model, log_file):
     log_file.flush()
 
     return rewards_mean, np.mean(entropies)
-
+        
 def central_agent(net_params_queues, exp_queues):
 
     assert len(net_params_queues) == NUM_AGENTS
@@ -100,7 +100,9 @@ def central_agent(net_params_queues, exp_queues):
         if nn_model is not None:  # nn_model is the path to file
             saver.restore(sess, nn_model)
             print("Model restored.")
-
+        
+        max_reward, max_epoch = -10000., 0
+        tick_gap = 0
         # while True:  # assemble experiences from agents, compute the gradients
         for epoch in range(TRAIN_EPOCH):
             # synchronize the network parameters of work agent
@@ -132,11 +134,24 @@ def central_agent(net_params_queues, exp_queues):
                     SUMMARY_DIR + "/nn_model_ep_" + str(epoch) + ".ckpt", 
                     test_log_file)
 
+                if avg_reward > max_reward:
+                    max_reward = avg_reward
+                    max_epoch = epoch
+                    tick_gap = 0
+                else:
+                    tick_gap += 1
+                
+                if tick_gap >= 20:
+                    saver.restore(sess, SUMMARY_DIR + "/nn_model_ep_" + str(max_epoch) + ".ckpt")
+                    actor.set_entropy_decay()
+                    tick_gap = 0
+
                 summary_str = sess.run(summary_ops, feed_dict={
                     summary_vars[0]: actor.get_entropy(epoch),
                     summary_vars[1]: avg_reward,
                     summary_vars[2]: avg_entropy
                 })
+
                 writer.add_summary(summary_str, epoch)
                 writer.flush()
 
