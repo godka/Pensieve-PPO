@@ -103,8 +103,8 @@ class Network():
             self.inputs: input
         })
         return action[0]
-    def set_entropy_decay(self, decay=0.8):
-        self._entropy *= 0.8
+    def set_entropy_decay(self, decay=0.6):
+        self._entropy *= decay
 
     def get_entropy(self, step):
         return np.clip(self._entropy, 0.01, 5.)

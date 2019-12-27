@@ -4,7 +4,7 @@ import logging
 import os
 import sys
 from abr import ABREnv
-import ppo2 as network
+import a2c as network
 import tensorflow as tf
 
 os.environ['CUDA_VISIBLE_DEVICES'] = '3'
@@ -122,10 +122,8 @@ def central_agent(net_params_queues, exp_queues):
                 p_batch = np.vstack(p)
                 v_batch = np.vstack(g)
 
-            for _ in range(PPO_TRAINING_EPO):
-                actor.train(s_batch, a_batch, p_batch, v_batch, epoch)
-            # actor.train(s_batch, a_batch, v_batch, epoch)
-            
+            actor.train(s_batch, a_batch, p_batch, v_batch, epoch)
+
             if epoch % MODEL_SAVE_INTERVAL == 0:
                 # Save the neural net parameters to disk.
                 save_path = saver.save(sess, SUMMARY_DIR + "/nn_model_ep_" +
