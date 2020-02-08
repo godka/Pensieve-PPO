@@ -17,7 +17,7 @@ instead. Results will be evaluated on the test set (from HSDPA) every 300 epochs
 We report the training curve of entropy weight beta, reward, and entropy respectively. Results are evaluated over the Oboe network traces.
 
 <p align="center">
-    <img src="beta.png" width="200"><img src="reward.png" width="200"><img src="entropy.png" width="200">
+    <img src="beta.png" width="30%"><img src="reward.png" width="30%"><img src="entropy.png" width="30%">
 </p>
 
 
