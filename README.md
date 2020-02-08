@@ -14,12 +14,17 @@ instead. Results will be evaluated on the test set (from HSDPA) every 300 epochs
 
 ## Experimental Results
 
-We report the training curve of entropy weight beta, reward, and entropy respectively. Results are evaluated over the Oboe network traces.
+We reported the training curve of entropy weight beta, reward, and entropy respectively. Results were evaluated over the Oboe network traces.
 
 <p align="center">
     <img src="beta.png" width="30%"><img src="reward.png" width="30%"><img src="entropy.png" width="30%">
 </p>
 
+## Pretrained Model
+
+Furthermore, we have also added the pretrained model in https://github.com/godka/Pensieve-PPO/tree/master/src/pretrain
+
+The model improves 5.38% on average QoE compared with the original pensive model [1].
 
 Please feel free to let me know if you have any questions.
 
