@@ -177,9 +177,12 @@ def agent(agent_id, net_params_queue, exp_queue):
                 action_prob = actor.predict(
                     np.reshape(obs, (1, S_DIM[0], S_DIM[1])))
 
-                action_cumsum = np.cumsum(action_prob)
-                bit_rate = (action_cumsum > np.random.randint(
-                    1, RAND_RANGE) / float(RAND_RANGE)).argmax()
+                #action_cumsum = np.cumsum(action_prob)
+                #bit_rate = (action_cumsum > np.random.randint(
+                #    1, RAND_RANGE) / float(RAND_RANGE)).argmax()
+                # gumbel noise
+                noise = np.random.gumbel(size=len(action_prob))
+                bit_rate = np.argmax(np.log(action_prob) + noise)
 
                 obs, rew, done, info = env.step(bit_rate)
 
