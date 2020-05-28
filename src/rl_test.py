@@ -123,7 +123,7 @@ def main():
             bit_rate, _, action_prob = actor.predict(np.reshape(state, (1, S_INFO, S_LEN)))
             
             s_batch.append(state)
-            entropy_ = 0.-np.dot(action_prob[0], np.log(action_prob[0]))
+            entropy_ = 0.-np.dot(action_prob, np.log(action_prob))
             entropy_record.append(entropy_)
 
             if end_of_video:
