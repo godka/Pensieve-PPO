@@ -14,7 +14,7 @@ S_DIM = [6, 8]
 A_DIM = 6
 ACTOR_LR_RATE =1e-4
 CRITIC_LR_RATE = 1e-3
-NUM_AGENTS = 12
+NUM_AGENTS = 2
 TRAIN_SEQ_LEN = 300  # take as a train batch
 TRAIN_EPOCH = 1000000
 MODEL_SAVE_INTERVAL = 300
@@ -40,7 +40,7 @@ def testing(epoch, nn_model, log_file):
     if not os.path.exists(TEST_LOG_FOLDER):
         os.makedirs(TEST_LOG_FOLDER)
     # run test script
-    os.system('python rl_test.py ' + nn_model)
+    os.system('python3 rl_test.py ' + nn_model)
 
     # append test performance to the log
     rewards, entropies = [], []
@@ -174,23 +174,15 @@ def agent(agent_id, net_params_queue, exp_queue):
             for step in range(TRAIN_SEQ_LEN):
                 s_batch.append(obs)
 
-                action_prob = actor.predict(
+                act, prob, _ = actor.predict(
                     np.reshape(obs, (1, S_DIM[0], S_DIM[1])))
+                    
+                obs, rew, done, info = env.step(act)
 
-                #action_cumsum = np.cumsum(action_prob)
-                #bit_rate = (action_cumsum > np.random.randint(
-                #    1, RAND_RANGE) / float(RAND_RANGE)).argmax()
-                # gumbel noise
-                noise = np.random.gumbel(size=len(action_prob))
-                bit_rate = np.argmax(np.log(action_prob) + noise)
-
-                obs, rew, done, info = env.step(bit_rate)
-
-                action_vec = np.zeros(A_DIM)
-                action_vec[bit_rate] = 1
-                a_batch.append(action_vec)
+                a_batch.append([act])
+                p_batch.append([prob])
                 r_batch.append(rew)
-                p_batch.append(action_prob)
+
                 if done:
                     break
             v_batch = actor.compute_v(s_batch, a_batch, r_batch, done)
