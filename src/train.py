@@ -40,7 +40,7 @@ def testing(epoch, nn_model, log_file):
     if not os.path.exists(TEST_LOG_FOLDER):
         os.makedirs(TEST_LOG_FOLDER)
     # run test script
-    os.system('python3 rl_test.py ' + nn_model)
+    os.system('python rl_test.py ' + nn_model)
 
     # append test performance to the log
     rewards, entropies = [], []
@@ -176,7 +176,7 @@ def agent(agent_id, net_params_queue, exp_queue):
 
                 act, prob, _ = actor.predict(
                     np.reshape(obs, (1, S_DIM[0], S_DIM[1])))
-                    
+
                 obs, rew, done, info = env.step(act)
 
                 a_batch.append([act])
