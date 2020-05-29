@@ -69,8 +69,8 @@ class Network():
         })
 
     def r(self, pi_new, pi_old_log, acts):
-        log_ratio = tf.nn.sparse_softmax_cross_entropy_with_logits(logits=pi_new, labels=tf.squeeze(acts)) - pi_old_log
-        return tf.exp(-log_ratio)
+        log_ratio = -tf.nn.sparse_softmax_cross_entropy_with_logits(logits=pi_new, labels=tf.squeeze(acts)) - pi_old_log
+        return tf.exp(log_ratio)
 
     def sample(self, logits):
         noise = tf.random_uniform(tf.shape(logits))
@@ -129,7 +129,7 @@ class Network():
         prob, action = self.sess.run([self.real_out, self.action], feed_dict={
             self.inputs: input
         })
-        pi_log = -np.log(prob[0, action[0]])
+        pi_log = np.log(prob[0, action[0]])
         return action[0], pi_log, prob[0]
 
     def set_entropy_decay(self, decay=0.6):
