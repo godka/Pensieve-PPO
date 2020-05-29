@@ -174,15 +174,23 @@ def agent(agent_id, net_params_queue, exp_queue):
             for step in range(TRAIN_SEQ_LEN):
                 s_batch.append(obs)
 
-                act, prob, _ = actor.predict(
+                action_prob = actor.predict(
                     np.reshape(obs, (1, S_DIM[0], S_DIM[1])))
 
-                obs, rew, done, info = env.step(act)
+                #action_cumsum = np.cumsum(action_prob)
+                #bit_rate = (action_cumsum > np.random.randint(
+                #    1, RAND_RANGE) / float(RAND_RANGE)).argmax()
+                # gumbel noise
+                noise = np.random.gumbel(size=len(action_prob))
+                bit_rate = np.argmax(np.log(action_prob) + noise)
 
-                a_batch.append([act])
-                p_batch.append([prob])
+                obs, rew, done, info = env.step(bit_rate)
+
+                action_vec = np.zeros(A_DIM)
+                action_vec[bit_rate] = 1
+                a_batch.append(action_vec)
                 r_batch.append(rew)
-
+                p_batch.append(action_prob)
                 if done:
                     break
             v_batch = actor.compute_v(s_batch, a_batch, r_batch, done)
