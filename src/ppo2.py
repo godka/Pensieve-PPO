@@ -49,16 +49,14 @@ class Network():
             value_net = tflearn.fully_connected(
                 merge_net, FEATURE_NUM, activation='relu')
 
-            pi = tflearn.fully_connected(pi_net, self.a_dim, activation='linear')
-            out = tf.nn.softmax(pi)
-            real_out = tf.clip_by_value(out, ACTION_EPS, 1. - ACTION_EPS)
-            
-            bit_rate = self.sample(real_out)
+            pi = tflearn.fully_connected(pi_net, self.a_dim, activation='softmax')
+
+            bit_rate = self.gumbel_softmax(pi)
             # log_pi = tf.nn.sparse_softmax_cross_entropy_with_logits(real_out, bit_rate)
 
             value = tflearn.fully_connected(value_net, 1, activation='linear')
 
-            return real_out, pi, value, bit_rate
+            return pi, value, bit_rate
             
     def get_network_params(self):
         return self.sess.run(self.network_params)
@@ -68,9 +66,10 @@ class Network():
             i: d for i, d in zip(self.input_network_params, input_network_params)
         })
 
-    def r(self, pi_new, pi_old_log, acts):
-        log_ratio = -tf.nn.sparse_softmax_cross_entropy_with_logits(logits=pi_new, labels=tf.squeeze(acts)) - pi_old_log
-        return tf.exp(log_ratio)
+    def r(self, pi_new, pi_old, acts):
+        ratio = tf.reduce_sum(pi_new * tf.one_hot(tf.squeeze(acts), self.a_dim), axis=1) \
+            / (pi_old + ACTION_EPS)
+        return ratio
 
     def sample(self, logits):
         noise = tf.random_uniform(tf.shape(logits))
@@ -90,13 +89,14 @@ class Network():
         self.acts = tf.placeholder(tf.int32, [None, 1])
 
         self.entropy_weight = tf.placeholder(tf.float32)
-        self.real_out, self.linear_out, self.val, self.action = self.CreateNetwork(inputs=self.inputs)
-        
+        self.pi, self.val, self.action = self.CreateNetwork(inputs=self.inputs)
+        self.real_out = tf.clip_by_value(self.pi, ACTION_EPS, 1. - ACTION_EPS)
+
         self.entropy = tf.multiply(self.real_out, tf.log(self.real_out))
         self.adv = tf.stop_gradient(self.R - self.val)
 
-        self.ppo2loss = tf.minimum(self.r(self.linear_out, self.old_log_pi, self.acts) * self.adv, 
-                            tf.clip_by_value(self.r(self.linear_out, self.old_log_pi, self.acts), 1 - EPS, 1 + EPS) * self.adv
+        self.ppo2loss = tf.minimum(self.r(self.real_out, self.old_log_pi, self.acts) * self.adv, 
+                            tf.clip_by_value(self.r(self.real_out, self.old_log_pi, self.acts), 1 - EPS, 1 + EPS) * self.adv
                         )
         # https://arxiv.org/pdf/1912.09729.pdf
         self.dualppo = tf.cast(tf.less(self.adv, 0.), dtype=tf.float32)  * \
@@ -129,8 +129,8 @@ class Network():
         prob, action = self.sess.run([self.real_out, self.action], feed_dict={
             self.inputs: input
         })
-        pi_log = np.log(prob[0, action[0]])
-        return action[0], pi_log, prob[0]
+        action_prob = prob[0, action[0]]
+        return action[0], action_prob, prob[0]
 
     def set_entropy_decay(self, decay=0.6):
         self._entropy *= decay
