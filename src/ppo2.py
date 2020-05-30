@@ -47,8 +47,7 @@ class Network():
             # for multiple video, mask out the invalid actions
             pi_value = tflearn.fully_connected(pi_net, self.a_dim, activation='linear')
             mask = inputs[:, 6, :]
-            pi_value *= mask
-            pi = pi_value / tf.tensordot(mask, tf.exp(pi_value), axes=1)
+            pi = (tf.exp(pi_value) * mask) / tf.tensordot(mask, tf.exp(pi_value), axes=1)
         
             value = tflearn.fully_connected(value_net, 1, activation='linear')
             return pi, value
