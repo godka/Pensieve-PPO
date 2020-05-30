@@ -104,7 +104,7 @@ def central_agent(net_params_queues, exp_queues):
         max_reward, max_epoch = -10000., 0
         tick_gap = 0
         # while True:  # assemble experiences from agents, compute the gradients
-        for epoch in range(1, TRAIN_EPOCH):
+        for epoch in range(TRAIN_EPOCH):
             # synchronize the network parameters of work agent
             actor_net_params = actor.get_network_params()
             for i in range(NUM_AGENTS):
