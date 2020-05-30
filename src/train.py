@@ -104,7 +104,7 @@ def central_agent(net_params_queues, exp_queues):
         max_reward, max_epoch = -10000., 0
         tick_gap = 0
         # while True:  # assemble experiences from agents, compute the gradients
-        for epoch in range(TRAIN_EPOCH):
+        for epoch in range(1, TRAIN_EPOCH):
             # synchronize the network parameters of work agent
             actor_net_params = actor.get_network_params()
             for i in range(NUM_AGENTS):
@@ -175,7 +175,7 @@ def agent(agent_id, net_params_queue, exp_queue):
                 s_batch.append(obs)
 
                 action_prob = actor.predict(
-                    np.reshape(obs, (1, S_DIM[0], S_DIM[1])))
+                    np.reshape(obs, (-1, S_DIM[0], S_DIM[1])))
                 # gumbel noise
                 mask = np.array(env.mask)
                 # how many '1' in the mask?
@@ -184,7 +184,6 @@ def agent(agent_id, net_params_queue, exp_queue):
                 # the masked action
                 act_mask = np.argmax(np.log(action_prob_mask) + noise_mask)
                 # the real action.
-                # print(act_mask, mask)
                 bit_rate = np.where(mask > 0)[0][act_mask]
 
                 obs, rew, done, info = env.step(act_mask)

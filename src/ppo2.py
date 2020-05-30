@@ -45,10 +45,7 @@ class Network():
                 merge_net, FEATURE_NUM, activation='relu')
             
             # for multiple video, mask out the invalid actions
-            pi_lin = tflearn.fully_connected(pi_net, self.a_dim, activation='linear')
-            mask = tf.stop_gradient(inputs[:, 6, :])
-            pi = mask * tf.exp(pi_lin) / tf.reduce_sum(mask * tf.exp(pi_lin) + ACTION_EPS) 
-            
+            pi = tflearn.fully_connected(pi_net, self.a_dim, activation='linear')
             value = tflearn.fully_connected(value_net, 1, activation='linear')
             return pi, value
             
@@ -61,7 +58,8 @@ class Network():
         })
 
     def r(self, pi_new, pi_old, acts):
-        return tf.reduce_sum(tf.multiply(pi_new, acts), reduction_indices=1, keepdims=True) / \
+        pi_new = tf.nn.softmax(pi_new)
+        return tf.reduce_sum(tf.multiply(tf.nn.softmax(pi_new), acts), reduction_indices=1, keepdims=True) / \
                 tf.reduce_sum(tf.multiply(pi_old, acts), reduction_indices=1, keepdims=True)
 
     def __init__(self, sess, state_dim, action_dim, learning_rate):
@@ -76,13 +74,13 @@ class Network():
         self.old_pi = tf.placeholder(tf.float32, [None, None])
         self.acts = tf.placeholder(tf.float32, [None, None])
         self.entropy_weight = tf.placeholder(tf.float32)
-        self.pi, self.val = self.CreateNetwork(inputs=self.inputs)
-        self.real_out = tf.clip_by_value(self.pi, ACTION_EPS, 1. - ACTION_EPS)
-        self.log_prob = tf.log(tf.reduce_sum(tf.multiply(self.real_out, self.acts), reduction_indices=1, keepdims=True))
-        self.entropy = tf.multiply(self.real_out, tf.log(self.real_out))
+        self.real_out, self.val = self.CreateNetwork(inputs=self.inputs)
+        self.pi_softmax = tf.nn.softmax(self.real_out)
+        
+        self.entropy = tf.multiply(self.pi_softmax, tf.log(self.pi_softmax))
         self.adv = tf.stop_gradient(self.R - self.val)
-        self.ppo2loss = tf.minimum(self.r(self.real_out, self.old_pi, self.acts) * self.adv, 
-                            tf.clip_by_value(self.r(self.real_out, self.old_pi, self.acts), 1 - EPS, 1 + EPS) * self.adv
+        self.ppo2loss = tf.minimum(self.r(self.pi_softmax, self.old_pi, self.acts) * self.adv, 
+                            tf.clip_by_value(self.r(self.pi_softmax, self.old_pi, self.acts), 1 - EPS, 1 + EPS) * self.adv
                         )
 
         # https://arxiv.org/pdf/1912.09729.pdf
@@ -91,7 +89,6 @@ class Network():
             tf.cast(tf.greater_equal(self.adv, 0.), dtype=tf.float32) * \
             self.ppo2loss
         
-        self.a2closs = self.log_prob * self.adv
         # Get all network parameters
         self.network_params = \
             tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES, scope='actor')
@@ -117,7 +114,10 @@ class Network():
         action = self.sess.run(self.real_out, feed_dict={
             self.inputs: input
         })
-        return action[0]
+        # we hack the proposed scheme locally.
+        mask = input[:, 6, :]
+        real_action = mask * np.exp(action) / np.sum(mask * np.exp(action) + ACTION_EPS)
+        return real_action[0]
 
     def set_entropy_decay(self, decay=0.6):
         self._entropy *= decay

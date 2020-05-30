@@ -58,11 +58,9 @@ class ABREnv():
         return action
         
     def reset(self):
-        # self.net_env.reset_ptr()
         self.time_stamp = 0
 
-        action = self.bitrate_to_action(
-            DEFAULT_QUALITY, self.net_env.video_masks[self.net_env.video_idx])
+        action = DEFAULT_QUALITY
         self.last_action = action
 
         self.state = np.zeros((S_INFO, S_LEN))
@@ -73,7 +71,6 @@ class ABREnv():
                 video_chunk_remain, video_num_chunks, \
                 next_video_chunk_size, self.mask = \
                 self.net_env.get_video_chunk(self.last_action)
-
         state = np.roll(self.state, -1, axis=1)
         
         # this should be S_INFO number of terms
