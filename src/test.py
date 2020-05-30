@@ -151,16 +151,15 @@ def main():
             state[6, -A_DIM:] = mask
 
             action_prob = actor.predict(np.reshape(state, (1, S_INFO, S_LEN)))
-
-            # the action probability should correspond to number of bit rates
-            assert len(action_prob[0]) == np.sum(mask)
-
-            action_cumsum = np.cumsum(action_prob)
-            bit_rate = (action_cumsum > np.random.randint(
-                1, RAND_RANGE) / float(RAND_RANGE)).argmax()
-            # Note: we need to discretize the probability into 1/RAND_RANGE steps,
-            # because there is an intrinsic discrepancy in passing single state and batch states
-            action = bitrate_to_action(bit_rate, mask)
+            
+            # gumbel noise
+            # how many '1' in the mask?
+            action_prob_mask = action_prob[np.where(mask > 0)]
+            noise_mask = np.random.gumbel(size=len(action_prob_mask))
+            # the masked action
+            bit_rate = np.argmax(np.log(action_prob_mask) + noise_mask)
+            # the real action.
+            action = np.where(mask > 0)[0][bit_rate]
 
             s_batch.append(state)
 

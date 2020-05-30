@@ -176,14 +176,18 @@ def agent(agent_id, net_params_queue, exp_queue):
 
                 action_prob = actor.predict(
                     np.reshape(obs, (1, S_DIM[0], S_DIM[1])))
-
                 # gumbel noise
-                noise = np.random.gumbel(size=len(action_prob))
-                action = np.argmax(np.log(action_prob) + noise)
-                # hack from the original pensieve
-                bit_rate = env.bitrate_to_action(action, env.mask)
-                
-                obs, rew, done, info = env.step(bit_rate)
+                mask = np.array(env.mask)
+                # how many '1' in the mask?
+                action_prob_mask = action_prob[np.where(mask > 0)]
+                noise_mask = np.random.gumbel(size=len(action_prob_mask))
+                # the masked action
+                act_mask = np.argmax(np.log(action_prob_mask) + noise_mask)
+                # the real action.
+                # print(act_mask, mask)
+                bit_rate = np.where(mask > 0)[0][act_mask]
+
+                obs, rew, done, info = env.step(act_mask)
 
                 action_vec = np.zeros(A_DIM)
                 action_vec[bit_rate] = 1
