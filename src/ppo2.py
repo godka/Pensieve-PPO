@@ -50,7 +50,8 @@ class Network():
             mask = tf.stop_gradient(inputs[:, 6, :])
             # pi = tf.nn.softmax(mask * pi_clipped)
             pi_all = mask * tf.exp(pi_value)
-            pi = pi_all / (tf.reduce_sum(pi_all) + ACTION_EPS)
+            pi = pi_all / (tf.reduce_sum(pi_all, reduction_indices=1, keepdims=True) + ACTION_EPS)
+            pi = tf.clip_by_value(pi, ACTION_EPS, 1 - ACTION_EPS)
         
             value = tflearn.fully_connected(value_net, 1, activation='linear')
             return pi, value
