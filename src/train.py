@@ -185,6 +185,7 @@ def agent(agent_id, net_params_queue, exp_queue):
                 act_mask = np.argmax(np.log(action_prob_mask) + noise_mask)
                 # the real action.
                 bit_rate = np.where(mask > 0)[0][act_mask]
+                assert mask[bit_rate] > 0
 
                 obs, rew, done, info = env.step(act_mask)
 

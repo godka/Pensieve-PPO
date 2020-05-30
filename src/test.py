@@ -151,7 +151,7 @@ def main():
             state[6, -A_DIM:] = mask
 
             action_prob = actor.predict(np.reshape(state, (1, S_INFO, S_LEN)))
-            
+            mask = np.array(mask)
             # gumbel noise
             # how many '1' in the mask?
             action_prob_mask = action_prob[np.where(mask > 0)]
@@ -163,7 +163,7 @@ def main():
 
             s_batch.append(state)
 
-            entropy_ = -np.dot(action_prob, np.log(action_prob))
+            entropy_ = -np.dot(action_prob, np.log(action_prob + 1e-6))
             entropy_record.append(entropy_)
             
             if end_of_video:
