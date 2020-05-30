@@ -10,8 +10,8 @@ import tensorflow as tf
 os.environ['CUDA_VISIBLE_DEVICES'] = '3'
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 
-S_DIM = [6, 8]
-A_DIM = 6
+S_DIM = [7, 10]
+A_DIM = 10
 ACTOR_LR_RATE =1e-4
 CRITIC_LR_RATE = 1e-3
 NUM_AGENTS = 16
@@ -30,7 +30,7 @@ PPO_TRAINING_EPO = 5
 if not os.path.exists(SUMMARY_DIR):
     os.makedirs(SUMMARY_DIR)
 
-NN_MODEL = None    
+NN_MODEL = None
 
 def testing(epoch, nn_model, log_file):
     # clean up the test results folder
@@ -40,7 +40,7 @@ def testing(epoch, nn_model, log_file):
     if not os.path.exists(TEST_LOG_FOLDER):
         os.makedirs(TEST_LOG_FOLDER)
     # run test script
-    os.system('python rl_test.py ' + nn_model)
+    os.system('python test.py ' + nn_model)
 
     # append test performance to the log
     rewards, entropies = [], []
@@ -177,13 +177,12 @@ def agent(agent_id, net_params_queue, exp_queue):
                 action_prob = actor.predict(
                     np.reshape(obs, (1, S_DIM[0], S_DIM[1])))
 
-                #action_cumsum = np.cumsum(action_prob)
-                #bit_rate = (action_cumsum > np.random.randint(
-                #    1, RAND_RANGE) / float(RAND_RANGE)).argmax()
                 # gumbel noise
                 noise = np.random.gumbel(size=len(action_prob))
-                bit_rate = np.argmax(np.log(action_prob) + noise)
-
+                action = np.argmax(np.log(action_prob) + noise)
+                # hack from the original pensieve
+                bit_rate = env.bitrate_to_action(action, env.mask)
+                
                 obs, rew, done, info = env.step(bit_rate)
 
                 action_vec = np.zeros(A_DIM)
