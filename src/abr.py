@@ -62,15 +62,18 @@ class ABREnv():
 
         action = DEFAULT_QUALITY
         self.last_action = action
+        self.mask = np.array(self.net_env.video_masks[self.net_env.video_idx])
+
+        self.last_bit_rate = np.where(self.mask > 0)[0][action]
 
         self.state = np.zeros((S_INFO, S_LEN))
         self.buffer_size = 0.
 
         delay, sleep_time, self.buffer_size, \
-                rebuf, video_chunk_size, end_of_video, \
-                video_chunk_remain, video_num_chunks, \
-                next_video_chunk_size, self.mask = \
-                self.net_env.get_video_chunk(self.last_action)
+            rebuf, video_chunk_size, end_of_video, \
+            video_chunk_remain, video_num_chunks, \
+            next_video_chunk_size, self.mask = \
+            self.net_env.get_video_chunk(self.last_action)
         state = np.roll(self.state, -1, axis=1)
         
         # this should be S_INFO number of terms
@@ -100,6 +103,9 @@ class ABREnv():
 
     def step(self, action):
 
+        mask = np.array(self.mask)
+        bit_rate = np.where(mask > 0)[0][action]
+
         delay, sleep_time, self.buffer_size, \
                 rebuf, video_chunk_size, end_of_video, \
                 video_chunk_remain, video_num_chunks, \
@@ -110,12 +116,14 @@ class ABREnv():
         self.time_stamp += sleep_time  # in ms
 
         
-        reward = VIDEO_BIT_RATE[action] / M_IN_K \
+        reward = VIDEO_BIT_RATE[bit_rate] / M_IN_K \
             - REBUF_PENALTY * rebuf \
-            - SMOOTH_PENALTY * np.abs(VIDEO_BIT_RATE[action] -
-                                        VIDEO_BIT_RATE[self.last_action]) / M_IN_K
+            - SMOOTH_PENALTY * np.abs(VIDEO_BIT_RATE[bit_rate] -
+                                        VIDEO_BIT_RATE[self.last_bit_rate]) / M_IN_K
 
         self.last_action = action
+        self.last_bit_rate = bit_rate
+
         state = np.roll(self.state, -1, axis=1)
 
         # this should be S_INFO number of terms

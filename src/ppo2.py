@@ -47,8 +47,9 @@ class Network():
             # for multiple video, mask out the invalid actions
             pi_value = tflearn.fully_connected(pi_net, self.a_dim, activation='linear')
             mask = tf.stop_gradient(inputs[:, 6, :])
-            pi_all = mask * tf.exp(pi_value)
-            pi = pi_all / tf.reduce_sum(pi_all, reduction_indices=1, keepdims=True)
+            pi = tf.nn.softmax(mask * pi_value)
+            # pi_all = mask * tf.exp(pi_value)
+            # pi = pi_all / tf.reduce_sum(pi_all, reduction_indices=1, keepdims=True)
         
             value = tflearn.fully_connected(value_net, 1, activation='linear')
             return pi, value
