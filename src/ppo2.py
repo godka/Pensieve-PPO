@@ -111,12 +111,11 @@ class Network():
             self.set_network_params_op.append(
                 self.network_params[idx].assign(param))
 
-        self.mask = self.inputs[:, 6, :]
-        self.mask_mse = tflearn.mean_square(self.real_out, \
-            tf.stop_gradient(self.mask * self.real_out))
+        # self.mask = self.inputs[:, 6, :]
+        # self.mask_mse = tflearn.mean_square(self.real_out, \
+        #     tf.stop_gradient(self.mask * self.real_out))
 
         self.loss = - tf.reduce_sum(self.dualppo) \
-            + 0.5 * self.mask_mse \
             + self.entropy_weight * tf.reduce_sum(self.entropy)
         
         self.optimize = tf.train.AdamOptimizer(self.lr_rate).minimize(self.loss)
