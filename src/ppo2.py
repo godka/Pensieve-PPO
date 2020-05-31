@@ -46,12 +46,11 @@ class Network():
             
             # for multiple video, mask out the invalid actions
             pi_value = tflearn.fully_connected(pi_net, self.a_dim, activation='linear')
+            pi_max = tf.reduce_max(pi_value, reduction_indices=1, keepdims=True)
+            pi_value = pi_value - pi_max
             mask = inputs[:, 6, :]
-            values = mask * pi_value
             
-            max = tf.reduce_max(values, reduction_indices=1, keepdims=True)
-            
-            e = tf.exp(values - max)
+            e = mask * tf.exp(pi_value)
             pi = e / (tf.reduce_sum(e, reduction_indices=1, keepdims=True) + ACTION_EPS)
             pi = tf.clip_by_value(pi, ACTION_EPS, 1 - ACTION_EPS)
         
