@@ -24,11 +24,11 @@ class Network():
             split_3 = tflearn.conv_1d(
                 inputs[:, 3:4, :], FEATURE_NUM, 4, activation='relu')
             split_4 = tflearn.fully_connected(
-                inputs[:, 5:6, -1], FEATURE_NUM, activation='relu')
+                inputs[:, 4:5, -1], FEATURE_NUM, activation='relu')
             split_5 = tflearn.conv_1d(
-                inputs[:, 4:5, :], FEATURE_NUM, 4, activation='relu')
-            split_6 = tflearn.conv_1d(
                 inputs[:, 5:6, :], FEATURE_NUM, 4, activation='relu')
+            split_6 = tflearn.conv_1d(
+                inputs[:, 6:7, :], FEATURE_NUM, 4, activation='relu')
             
             split_2_flat = tflearn.flatten(split_2)
             split_3_flat = tflearn.flatten(split_3)
