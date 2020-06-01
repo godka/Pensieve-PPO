@@ -71,7 +71,7 @@ class Network():
                 tf.reduce_sum(tf.multiply(pi_old, acts), reduction_indices=1, keepdims=True)
 
     def __init__(self, sess, state_dim, action_dim, learning_rate):
-        self._entropy = 5.
+        self._entropy = 1.
         self.quality = 0
         self.s_dim = state_dim
         self.a_dim = action_dim
@@ -128,7 +128,7 @@ class Network():
         # we hack the proposed scheme locally.
         return action[0]
 
-    def set_entropy_decay(self, decay=0.6):
+    def set_entropy_decay(self, decay=0.9):
         self._entropy *= decay
 
     def get_entropy(self, step):
