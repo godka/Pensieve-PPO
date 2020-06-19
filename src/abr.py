@@ -77,7 +77,7 @@ class ABREnv():
         state = np.roll(self.state, -1, axis=1)
         
         # this should be S_INFO number of terms
-        state[0, -1] = VIDEO_BIT_RATE[action] / \
+        state[0, -1] = VIDEO_BIT_RATE[self.last_bit_rate] / \
             float(np.max(VIDEO_BIT_RATE))  # last quality
         state[1, -1] = self.buffer_size / BUFFER_NORM_FACTOR
         state[2, -1] = float(video_chunk_size) / \
@@ -127,7 +127,7 @@ class ABREnv():
         state = np.roll(self.state, -1, axis=1)
 
         # this should be S_INFO number of terms
-        state[0, -1] = VIDEO_BIT_RATE[action] / \
+        state[0, -1] = VIDEO_BIT_RATE[bit_rate] / \
             float(np.max(VIDEO_BIT_RATE))  # last quality
         state[1, -1] = self.buffer_size / BUFFER_NORM_FACTOR
         state[2, -1] = float(video_chunk_size) / \
