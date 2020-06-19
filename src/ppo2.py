@@ -13,6 +13,41 @@ GAMMA = 0.99
 EPS = 0.2
 
 class Network():
+    
+    # https://github.com/tensorflow/tensorflow/issues/11756
+    def masked_softmax(self, logits, mask):
+        """
+        Masked softmax over dim 1, mask broadcasts over dim 2
+        :param logits: (N, L, T)
+        :param mask: (N, L)
+        :return: probabilities (N, L, T)
+        """
+        v = tf.shape(logits)[2]
+        indices = tf.cast(tf.where(tf.logical_not(mask)), tf.int32)
+        inf = tf.constant(np.array([[np.inf]], dtype=np.float32), dtype=tf.float32)
+        infs = tf.tile(inf, [tf.shape(indices)[0], v])
+        infmask = tf.scatter_nd(
+            indices=indices,
+            updates=infs,
+            shape=tf.shape(logits))
+        _p = tf.nn.softmax(logits - infmask, axis=1)
+        return _p
+
+    def masked_softmax_v2(self, logits, mask):
+        """
+        Masked softmax over dim 1
+        :param logits: (N, L)
+        :param mask: (N, L)
+        :return: probabilities (N, L)
+        """
+        indices = tf.where(mask)
+        values = tf.gather_nd(logits, indices)
+        denseShape = tf.cast(tf.shape(logits), tf.int64)
+        sparseResult = tf.sparse_softmax(tf.SparseTensor(indices, values, denseShape))
+        result = tf.scatter_nd(sparseResult.indices, sparseResult.values, sparseResult.dense_shape)
+        result.set_shape(logits.shape)
+        return result
+
     def CreateNetwork(self, inputs):
         with tf.variable_scope('actor'):
             split_0 = tflearn.fully_connected(
@@ -46,12 +81,9 @@ class Network():
             
             # for multiple video, mask out the invalid actions
             pi_value = tflearn.fully_connected(pi_net, self.a_dim, activation='linear')
-            pi_max = tf.reduce_max(pi_value, reduction_indices=1, keepdims=True)
-            pi_value = pi_value - pi_max
             mask = inputs[:, 6, :]
-            
-            e = mask * tf.exp(pi_value)
-            pi = e / (tf.reduce_sum(e, reduction_indices=1, keepdims=True) + ACTION_EPS)
+
+            pi = self.masked_softmax_v2(pi_value, mask)
             pi = tf.clip_by_value(pi, ACTION_EPS, 1 - ACTION_EPS)
         
             value = tflearn.fully_connected(value_net, 1, activation='linear')
