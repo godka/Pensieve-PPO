@@ -41,7 +41,7 @@ class Network():
             value = tflearn.fully_connected(pi_net, self.a_dim, activation='linear') 
             
             # wow, softmax!
-            pi = tf.nn.softmax(value)
+            pi = tf.nn.softmax(value / 10.)
 
             return pi, value
             
