@@ -117,10 +117,10 @@ def central_agent(net_params_queues, exp_queues):
                 g += g_
             s_batch = np.stack(s, axis=0)
             a_batch = np.vstack(a)
-            p_batch = np.vstack(p)
+            next_s_batch = np.vstack(p)
             v_batch = np.vstack(g)
 
-            actor.train(s_batch, a_batch, p_batch, v_batch, epoch)
+            actor.train(s_batch, a_batch, next_s_batch, v_batch, epoch)
             # actor.train(s_batch, a_batch, v_batch, epoch)
             
             if epoch % MODEL_SAVE_INTERVAL == 0:
@@ -155,7 +155,7 @@ def agent(agent_id, net_params_queue, exp_queue):
 
         for epoch in range(TRAIN_EPOCH):
             obs = env.reset()
-            s_batch, a_batch, p_batch, r_batch = [], [], [], []
+            s_batch, a_batch, next_s_batch, r_batch = [], [], [], []
             for step in range(TRAIN_SEQ_LEN):
                 s_batch.append(obs)
 
@@ -179,11 +179,12 @@ def agent(agent_id, net_params_queue, exp_queue):
                 action_vec[bit_rate] = 1
                 a_batch.append(action_vec)
                 r_batch.append(rew)
-                p_batch.append(action_prob)
+                next_s_batch.append(obs)
                 if done:
                     break
-            v_batch = actor.compute_v(s_batch, a_batch, r_batch, done)
-            exp_queue.put([s_batch, a_batch, p_batch, v_batch])
+            # next state
+            v_batch = actor.compute_v(next_s_batch, a_batch, r_batch, done)
+            exp_queue.put([s_batch, a_batch, next_s_batch, v_batch])
 
             actor_net_params = net_params_queue.get()
             actor.set_network_params(actor_net_params)
