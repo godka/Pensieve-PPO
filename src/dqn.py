@@ -97,19 +97,21 @@ class Network():
                 pop_item = np.random.randint(len(self.pool))
                 self.pool.pop(pop_item)
         
-        s_batch, a_batch, v_batch = [], [], []
-        for p in range(512):
-            pop_item = np.random.randint(len(self.pool))
-            s_, a_, v_ = self.pool[pop_item]
-            s_batch.append(s_)
-            a_batch.append(a_)
-            v_batch.append(v_)
+        if len(self.pool) > 4096:
+            s_batch, a_batch, v_batch = [], [], []
 
-        self.sess.run(self.val_opt, feed_dict={
-            self.inputs: s_batch,
-            self.acts: a_batch,
-            self.R: v_batch
-        })
+            for p in range(512):
+                pop_item = np.random.randint(len(self.pool))
+                s_, a_, v_ = self.pool[pop_item]
+                s_batch.append(s_)
+                a_batch.append(a_)
+                v_batch.append(v_)
+
+            self.sess.run(self.val_opt, feed_dict={
+                self.inputs: s_batch,
+                self.acts: a_batch,
+                self.R: v_batch
+            })
 
     def compute_v(self, s_batch, a_batch, r_batch, terminal):
         ba_size = len(s_batch)
