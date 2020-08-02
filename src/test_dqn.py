@@ -4,7 +4,8 @@ os.environ['CUDA_VISIBLE_DEVICES']='-1'
 import numpy as np
 import tensorflow as tf
 import load_trace
-import ppo2 as network
+#import a2c as network
+import dqn as network
 import fixed_env as env
 
 
@@ -67,7 +68,7 @@ def main():
         a_batch = [action_vec]
         r_batch = []
         entropy_record = []
-
+        entropy_ = 0.5
         video_count = 0
         
         while True:  # serve video forever
@@ -98,6 +99,7 @@ def main():
                            str(rebuf) + '\t' +
                            str(video_chunk_size) + '\t' +
                            str(delay) + '\t' +
+                           str(entropy_) + '\t' + 
                            str(reward) + '\n')
             log_file.flush()
 
@@ -118,14 +120,13 @@ def main():
             state[4, :A_DIM] = np.array(next_video_chunk_sizes) / M_IN_K / M_IN_K  # mega byte
             state[5, -1] = np.minimum(video_chunk_remain, CHUNK_TIL_VIDEO_END_CAP) / float(CHUNK_TIL_VIDEO_END_CAP)
 
+            # dqn
             action_prob = actor.predict(np.reshape(state, (1, S_INFO, S_LEN)))
-            print(np.round(action_prob, 2))
-            action_cumsum = np.cumsum(action_prob)
-            bit_rate = (action_cumsum > np.random.randint(
-                1, RAND_RANGE) / float(RAND_RANGE)).argmax()
+            action_cumsum = np.argmax(action_prob)
             
             s_batch.append(state)
-            entropy_record.append(0.)
+            entropy_ = -np.dot(action_prob, np.log(action_prob))
+            entropy_record.append(entropy_)
 
             if end_of_video:
                 log_file.write('\n')
@@ -143,6 +144,7 @@ def main():
 
                 s_batch.append(np.zeros((S_INFO, S_LEN)))
                 a_batch.append(action_vec)
+                # print(np.mean(entropy_record))
                 entropy_record = []
 
                 video_count += 1
