@@ -62,7 +62,7 @@ class Network():
         self.inputs = tf.placeholder(tf.float32, [None, self.s_dim[0], self.s_dim[1]])
         self.acts = tf.placeholder(tf.float32, [None, self.a_dim])
         self.pi, self.val = self.CreateNetwork(inputs=self.inputs)
-        # self.real_out = tf.clip_by_value(self.pi, ACTION_EPS, 1. - ACTION_EPS)
+        self.real_out = tf.clip_by_value(self.pi, ACTION_EPS, 1. - ACTION_EPS)
         self.pool = []
         # Get all network parameters
         self.network_params = \
@@ -85,7 +85,7 @@ class Network():
         self.val_opt = tf.train.AdamOptimizer(self.lr_rate).minimize(self.loss)
 
     def predict(self, input):
-        action = self.sess.run(self.val, feed_dict={
+        action = self.sess.run(self.real_out, feed_dict={
             self.inputs: input
         })
         return action[0]
@@ -96,20 +96,20 @@ class Network():
             if len(self.pool) > MAX_POOL_NUM:
                 pop_item = np.random.randint(len(self.pool))
                 self.pool.pop(pop_item)
-        if len(self.pool) > 4096:
-            s_batch, a_batch, v_batch = [], [], []
-            for p in range(512):
-                pop_item = np.random.randint(len(self.pool))
-                s_, a_, v_ = self.pool[pop_item]
-                s_batch.append(s_)
-                a_batch.append(a_)
-                v_batch.append(v_)
+        
+        s_batch, a_batch, v_batch = [], [], []
+        for p in range(512):
+            pop_item = np.random.randint(len(self.pool))
+            s_, a_, v_ = self.pool[pop_item]
+            s_batch.append(s_)
+            a_batch.append(a_)
+            v_batch.append(v_)
 
-            self.sess.run(self.val_opt, feed_dict={
-                self.inputs: s_batch,
-                self.acts: a_batch,
-                self.R: v_batch
-            })
+        self.sess.run(self.val_opt, feed_dict={
+            self.inputs: s_batch,
+            self.acts: a_batch,
+            self.R: v_batch
+        })
 
     def compute_v(self, s_batch, a_batch, r_batch, terminal):
         ba_size = len(s_batch)

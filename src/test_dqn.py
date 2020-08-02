@@ -122,7 +122,7 @@ def main():
 
             # dqn
             action_prob = actor.predict(np.reshape(state, (1, S_INFO, S_LEN)))
-            action_cumsum = np.argmax(action_prob)
+            bit_rate = np.argmax(action_prob)
             
             s_batch.append(state)
             # entropy_ = -np.dot(action_prob, np.log(action_prob))
