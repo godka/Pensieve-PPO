@@ -40,7 +40,7 @@ def testing(epoch, nn_model, log_file):
     if not os.path.exists(TEST_LOG_FOLDER):
         os.makedirs(TEST_LOG_FOLDER)
     # run test script
-    os.system('python rl_test.py ' + nn_model)
+    os.system('python test_dqn.py ' + nn_model)
 
     # append test performance to the log
     rewards, entropies = [], []
@@ -162,12 +162,10 @@ def agent(agent_id, net_params_queue, exp_queue):
                 action_prob = actor.predict(
                     np.reshape(obs, (1, S_DIM[0], S_DIM[1])))
 
-                #action_cumsum = np.cumsum(action_prob)
-                #bit_rate = (action_cumsum > np.random.randint(
-                #    1, RAND_RANGE) / float(RAND_RANGE)).argmax()
-                # gumbel noise
-                noise = np.random.gumbel(size=len(action_prob))
-                bit_rate = np.argmax(np.log(action_prob) + noise)
+                if np.random.uniform() > 0.2:
+                    bit_rate = np.argmax(action_prob)
+                else:
+                    bit_rate = np.random.randint(A_DIM)
 
                 obs, rew, done, info = env.step(bit_rate)
 
