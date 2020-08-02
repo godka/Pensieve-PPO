@@ -125,7 +125,7 @@ def main():
             action_cumsum = np.argmax(action_prob)
             
             s_batch.append(state)
-            entropy_ = -np.dot(action_prob, np.log(action_prob))
+            # entropy_ = -np.dot(action_prob, np.log(action_prob))
             entropy_record.append(entropy_)
 
             if end_of_video:
