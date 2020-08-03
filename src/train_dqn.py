@@ -162,7 +162,7 @@ def agent(agent_id, net_params_queue, exp_queue):
                 action_prob = actor.predict(
                     np.reshape(obs, (1, S_DIM[0], S_DIM[1])))
                 
-                if np.random.uniform() < 0.2:
+                if np.random.uniform() < 0.1:
                     bit_rate = np.random.randint(A_DIM)
                 else:
                     bit_rate = np.argmax(action_prob)

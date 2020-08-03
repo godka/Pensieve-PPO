@@ -10,7 +10,7 @@ FEATURE_NUM = 128
 ACTION_EPS = 1e-4
 GAMMA = 0.99
 MAX_POOL_NUM = 10000
-
+TAU = 1e-5
 
 class Network():
     def CreateTarget(self, inputs):
@@ -67,7 +67,7 @@ class Network():
             net = tflearn.fully_connected(
                 merge_net, FEATURE_NUM, activation='relu')
 
-            value = tflearn.fully_connected(net, self.a_dim, activation='linear') 
+            value = tflearn.fully_connected(net, self.a_dim, activation='linear')
             
             return value
             
@@ -101,6 +101,13 @@ class Network():
 
         self.pool = []
 
+        self.eval_params = \
+            tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES, scope='eval')
+        self.target_params = \
+            tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES, scope='target')
+        self.soft_update = [tf.assign(ta, (1 - TAU) * ta + TAU * ea)
+                for ta, ea in zip(self.target_params, self.eval_params)]
+        
         # Get all network parameters
         self.network_params = \
             tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES, scope='eval')
@@ -142,16 +149,18 @@ class Network():
 
             for p in range(512):
                 pop_item = np.random.randint(len(self.pool))
-                s_, a_, v_ = self.pool[pop_item]
+                s_, a_, v_, n_ = self.pool[pop_item]
                 s_batch.append(s_)
                 a_batch.append(a_)
                 v_batch.append(v_)
 
-            self.sess.run([self.val_opt, self.update], feed_dict={
+            self.sess.run(self.val_opt, feed_dict={
                 self.inputs: s_batch,
                 self.acts: a_batch,
                 self.R: v_batch
             })
+            self.sess.run(self.soft_update)
+            # self.update()
 
     def compute_v(self, s_batch, a_batch, r_batch, terminal):
         ba_size = len(s_batch)
@@ -163,12 +172,12 @@ class Network():
                 self.inputs: s_batch
             })
             for t in range(ba_size - 1):
-                R_batch[t, 0] = r_batch[t] + GAMMA * v_batch[t + 1, 0]
+                R_batch[t, 0] = r_batch[t] + GAMMA * v_batch[t]
         else:
             v_batch = self.sess.run(self.max_target, feed_dict={
                 self.inputs: s_batch
             })
             for t in range(ba_size):
-                R_batch[t, 0] = r_batch[t] + GAMMA * v_batch[t + 1, 0]
+                R_batch[t, 0] = r_batch[t] + GAMMA * v_batch[t]
 
         return list(R_batch)

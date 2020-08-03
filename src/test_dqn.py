@@ -122,6 +122,7 @@ def main():
 
             # dqn
             action_prob = actor.predict(np.reshape(state, (1, S_INFO, S_LEN)))
+            # print(action_prob)
             bit_rate = np.argmax(action_prob)
             
             s_batch.append(state)
