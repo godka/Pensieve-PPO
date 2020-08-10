@@ -14,10 +14,10 @@ S_DIM = [6, 8]
 A_DIM = 6
 ACTOR_LR_RATE =1e-4
 CRITIC_LR_RATE = 1e-3
-NUM_AGENTS = 12
+NUM_AGENTS = 16
 TRAIN_SEQ_LEN = 300  # take as a train batch
 TRAIN_EPOCH = 1000000
-MODEL_SAVE_INTERVAL = 300
+MODEL_SAVE_INTERVAL = 1000
 RANDOM_SEED = 42
 RAND_RANGE = 10000
 SUMMARY_DIR = './results'
@@ -162,7 +162,10 @@ def agent(agent_id, net_params_queue, exp_queue):
                 action_prob = actor.predict(
                     np.reshape(obs, (1, S_DIM[0], S_DIM[1])))
                 
-                if np.random.uniform() < 0.1:
+                prob_ = (0.001 - 0.2) / (800000) * epoch + 0.2
+                prob_ = np.clip(prob_, 0.001, 0.2)
+
+                if np.random.uniform() < prob_:
                     bit_rate = np.random.randint(A_DIM)
                 else:
                     bit_rate = np.argmax(action_prob)

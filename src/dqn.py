@@ -98,6 +98,8 @@ class Network():
         self.val = self.CreateNetwork(inputs=self.inputs)
         self.target = self.CreateTarget(inputs=self.inputs)
         self.max_target = tf.reduce_max(self.target, axis=-1)
+        self.double_target = tf.reduce_sum(tf.multiply(self.target, \
+                                tf.one_hot(tf.argmax(self.val, axis=-1), self.a_dim)), reduction_indices=1, keepdims=True)
 
         self.pool = []
 
@@ -168,7 +170,7 @@ class Network():
 
         if terminal:
             R_batch[-1, 0] = r_batch[-1]  # terminal state
-            v_batch = self.sess.run(self.max_target, feed_dict={
+            v_batch = self.sess.run(self.double_target, feed_dict={
                 self.inputs: s_batch
             })
             for t in range(ba_size - 1):
