@@ -126,7 +126,7 @@ def main():
                 1, RAND_RANGE) / float(RAND_RANGE)).argmax()
             
             s_batch.append(state)
-            entropy_ = -np.dot(action_prob[0], np.log(action_prob[0]))
+            entropy_ = -np.dot(action_prob, np.log(action_prob))
             entropy_record.append(entropy_)
 
             if end_of_video:

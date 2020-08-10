@@ -75,7 +75,11 @@ class Network():
         self.ppo2loss = tf.minimum(self.r(self.real_out, self.old_pi, self.acts) * self.adv, 
                             tf.clip_by_value(self.r(self.real_out, self.old_pi, self.acts), 1 - EPS, 1 + EPS) * self.adv
                         )
-        self.dual_loss = tf.maximum(self.ppo2loss, 1.5 * self.adv)
+        self.dual_loss = tf.cast(tf.less(self.adv, 0.), dtype=tf.float32)  * \
+            tf.maximum(self.ppo2loss, 3. * self.adv) + \
+            tf.cast(tf.greater_equal(self.adv, 0.), dtype=tf.float32) * \
+            self.ppo2loss
+        
         self.a2closs = self.log_prob * self.adv
         # Get all network parameters
         self.network_params = \
@@ -103,6 +107,7 @@ class Network():
             self.inputs: input
         })
         return action[0]
+    
     def set_entropy_decay(self, decay=0.6):
         self._entropy *= decay
 
