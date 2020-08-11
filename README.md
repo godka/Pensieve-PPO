@@ -26,7 +26,7 @@ Tips: the orange curve: pensieve-ppo; the blue curve: pensieve-a2c
 
 Furthermore, we have also added the pretrained model in https://github.com/godka/Pensieve-PPO/tree/master/src/pretrain
 
-The model improves 5.38% on average QoE compared with the original Pensieve model [1].
+The model improves 7.03% (0.924->0.989) on average QoE compared with the original Pensieve model [1].
 
 Please feel free to let me know if you have any questions.
 
