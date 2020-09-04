@@ -37,11 +37,8 @@ class Network():
 
             pi_net = tflearn.fully_connected(
                 merge_net, FEATURE_NUM, activation='relu')
-            value_net = tflearn.fully_connected(
-                merge_net, FEATURE_NUM, activation='relu')
             pi = tflearn.fully_connected(pi_net, self.a_dim, activation='softmax') 
-            value = tflearn.fully_connected(value_net, 1, activation='linear')
-            return pi, value
+            return pi
             
     def get_network_params(self):
         return self.sess.run(self.network_params)
@@ -57,6 +54,7 @@ class Network():
 
     def __init__(self, sess, state_dim, action_dim, learning_rate):
         self._entropy = 5.
+        self.quality = 0
         self.s_dim = state_dim
         self.a_dim = action_dim
         self.lr_rate = learning_rate
@@ -66,13 +64,11 @@ class Network():
         self.old_pi = tf.placeholder(tf.float32, [None, self.a_dim])
         self.acts = tf.placeholder(tf.float32, [None, self.a_dim])
         self.entropy_weight = tf.placeholder(tf.float32)
-        self.pi, self.val = self.CreateNetwork(inputs=self.inputs)
+        self.pi = self.CreateNetwork(inputs=self.inputs)
         self.real_out = tf.clip_by_value(self.pi, ACTION_EPS, 1. - ACTION_EPS)
         self.log_prob = tf.log(tf.reduce_sum(tf.multiply(self.real_out, self.acts), reduction_indices=1, keepdims=True))
         self.entropy = tf.multiply(self.real_out, tf.log(self.real_out))
-        # Maximum Entropy Actor Critic: SAC
-        # https://arxiv.org/abs/1801.01290
-        self.adv = tf.stop_gradient(self.R - self.val) # - self.entropy_weight * tf.reduce_mean(self.entropy)
+        self.adv = self.R
         self.ppo2loss = tf.minimum(self.r(self.real_out, self.old_pi, self.acts) * self.adv, 
                             tf.clip_by_value(self.r(self.real_out, self.old_pi, self.acts), 1 - EPS, 1 + EPS) * self.adv
                         )
@@ -96,9 +92,8 @@ class Network():
             self.set_network_params_op.append(
                 self.network_params[idx].assign(param))
         
-        self.loss = - tf.reduce_mean(self.dual_loss) + \
-                self.entropy_weight * tf.reduce_mean(self.entropy) + \
-                tflearn.mean_square(self.val, self.R)
+        self.loss = - tf.reduce_sum(self.dual_loss) \
+            + self.entropy_weight * tf.reduce_sum(self.entropy)
         
         self.optimize = tf.train.AdamOptimizer(self.lr_rate).minimize(self.loss)
 
@@ -128,13 +123,7 @@ class Network():
         ba_size = len(s_batch)
         R_batch = np.zeros([len(r_batch), 1])
 
-        if terminal:
-            R_batch[-1, 0] = 0  # terminal state
-        else:    
-            v_batch = self.sess.run(self.val, feed_dict={
-                self.inputs: s_batch
-            })
-            R_batch[-1, 0] = v_batch[-1, 0]  # boot strap from last state
+        R_batch[-1, 0] = 0  # terminal state
         for t in reversed(range(ba_size - 1)):
             R_batch[t, 0] = r_batch[t] + GAMMA * R_batch[t + 1, 0]
 

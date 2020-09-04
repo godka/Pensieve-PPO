@@ -4,7 +4,7 @@ import logging
 import os
 import sys
 from abr import ABREnv
-import ppo2 as network
+import ppo2_mse as network
 import tensorflow as tf
 
 os.environ['CUDA_VISIBLE_DEVICES'] = '3'
@@ -20,12 +20,12 @@ TRAIN_EPOCH = 1000000
 MODEL_SAVE_INTERVAL = 300
 RANDOM_SEED = 42
 RAND_RANGE = 10000
-SUMMARY_DIR = './ppo-fast'
+SUMMARY_DIR = './ppo-mse-10'
 MODEL_DIR = './models'
 TRAIN_TRACES = './cooked_traces/'
 TEST_LOG_FOLDER = './test_results/'
-LOG_FILE = './ppo-fast/log'
-PPO_TRAINING_EPO = 5
+LOG_FILE = './ppo-mse-10/log'
+PPO_TRAINING_EPO = 1
 # create result directory
 if not os.path.exists(SUMMARY_DIR):
     os.makedirs(SUMMARY_DIR)

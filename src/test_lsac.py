@@ -5,7 +5,7 @@ import numpy as np
 import tensorflow as tf
 import load_trace
 #import a2c as network
-import ppo2_mse as network
+import lsac as network
 import fixed_env as env
 
 

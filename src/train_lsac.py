@@ -4,7 +4,7 @@ import logging
 import os
 import sys
 from abr import ABREnv
-import ppo2 as network
+import lsac as network
 import tensorflow as tf
 
 os.environ['CUDA_VISIBLE_DEVICES'] = '3'
@@ -20,11 +20,11 @@ TRAIN_EPOCH = 1000000
 MODEL_SAVE_INTERVAL = 300
 RANDOM_SEED = 42
 RAND_RANGE = 10000
-SUMMARY_DIR = './ppo-fast'
+SUMMARY_DIR = './lsac'
 MODEL_DIR = './models'
 TRAIN_TRACES = './cooked_traces/'
 TEST_LOG_FOLDER = './test_results/'
-LOG_FILE = './ppo-fast/log'
+LOG_FILE = './lsac/log'
 PPO_TRAINING_EPO = 5
 # create result directory
 if not os.path.exists(SUMMARY_DIR):
@@ -40,7 +40,7 @@ def testing(epoch, nn_model, log_file):
     if not os.path.exists(TEST_LOG_FOLDER):
         os.makedirs(TEST_LOG_FOLDER)
     # run test script
-    os.system('python rl_test.py ' + nn_model)
+    os.system('python test_lsac.py ' + nn_model)
 
     # append test performance to the log
     rewards, entropies = [], []

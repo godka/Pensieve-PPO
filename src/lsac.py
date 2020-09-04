@@ -68,20 +68,13 @@ class Network():
         self.entropy_weight = tf.placeholder(tf.float32)
         self.pi, self.val = self.CreateNetwork(inputs=self.inputs)
         self.real_out = tf.clip_by_value(self.pi, ACTION_EPS, 1. - ACTION_EPS)
-        self.log_prob = tf.log(tf.reduce_sum(tf.multiply(self.real_out, self.acts), reduction_indices=1, keepdims=True))
-        self.entropy = tf.multiply(self.real_out, tf.log(self.real_out))
-        # Maximum Entropy Actor Critic: SAC
-        # https://arxiv.org/abs/1801.01290
-        self.adv = tf.stop_gradient(self.R - self.val) # - self.entropy_weight * tf.reduce_mean(self.entropy)
-        self.ppo2loss = tf.minimum(self.r(self.real_out, self.old_pi, self.acts) * self.adv, 
-                            tf.clip_by_value(self.r(self.real_out, self.old_pi, self.acts), 1 - EPS, 1 + EPS) * self.adv
-                        )
-        self.dual_loss = tf.cast(tf.less(self.adv, 0.), dtype=tf.float32)  * \
-            tf.maximum(self.ppo2loss, 3. * self.adv) + \
-            tf.cast(tf.greater_equal(self.adv, 0.), dtype=tf.float32) * \
-            self.ppo2loss
+        self.gini = tf.square(self.real_out)
+        self.adv = tf.stop_gradient(self.R - self.val)
+        # important sampling here
+        self.a2c_mse_loss = self.adv * tf.square( \
+                tf.stop_gradient(self.real_out / self.old_pi) * \
+                self.acts - self.real_out)
         
-        self.a2closs = self.log_prob * self.adv
         # Get all network parameters
         self.network_params = \
             tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES, scope='actor')
@@ -96,9 +89,8 @@ class Network():
             self.set_network_params_op.append(
                 self.network_params[idx].assign(param))
         
-        self.loss = - tf.reduce_mean(self.dual_loss) + \
-                self.entropy_weight * tf.reduce_mean(self.entropy) + \
-                tflearn.mean_square(self.val, self.R)
+        self.loss = tf.reduce_mean(self.a2c_mse_loss) + self.entropy_weight * tf.reduce_mean(self.gini) \
+                + tflearn.mean_square(self.val, self.R)
         
         self.optimize = tf.train.AdamOptimizer(self.lr_rate).minimize(self.loss)
 
@@ -108,11 +100,11 @@ class Network():
         })
         return action[0]
     
-    def set_entropy_decay(self, decay=0.6):
+    def set_entropy_decay(self, decay=0.8):
         self._entropy *= decay
 
     def get_entropy(self, step):
-        return np.clip(self._entropy, 0.01, 5.)
+        return np.clip(self._entropy, 1e-3, 10.)
 
     def train(self, s_batch, a_batch, p_batch, v_batch, epoch):
         s_batch, a_batch, p_batch, v_batch = tflearn.data_utils.shuffle(s_batch, a_batch, p_batch, v_batch)
