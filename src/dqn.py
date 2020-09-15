@@ -42,6 +42,36 @@ class Network():
             
             return value
 
+    def CreatePolicy(self, inputs):
+        with tf.variable_scope('eval'):
+            split_0 = tflearn.fully_connected(
+                inputs[:, 0:1, -1], FEATURE_NUM, activation='relu')
+            split_1 = tflearn.fully_connected(
+                inputs[:, 1:2, -1], FEATURE_NUM, activation='relu')
+            split_2 = tflearn.conv_1d(
+                inputs[:, 2:3, :], FEATURE_NUM, 4, activation='relu')
+            split_3 = tflearn.conv_1d(
+                inputs[:, 3:4, :], FEATURE_NUM, 4, activation='relu')
+            split_4 = tflearn.conv_1d(
+                inputs[:, 4:5, :self.a_dim], FEATURE_NUM, 4, activation='relu')
+            split_5 = tflearn.fully_connected(
+                inputs[:, 5:6, -1], FEATURE_NUM, activation='relu')
+
+            split_2_flat = tflearn.flatten(split_2)
+            split_3_flat = tflearn.flatten(split_3)
+            split_4_flat = tflearn.flatten(split_4)
+
+            merge_net = tflearn.merge(
+                [split_0, split_1, split_2_flat, split_3_flat, split_4_flat, split_5], 'concat')
+
+            net = tflearn.fully_connected(
+                merge_net, FEATURE_NUM, activation='relu')
+
+            pi = tflearn.fully_connected(net, self.a_dim, activation='softmax')
+            value = tflearn.fully_connected(net, 1, activation='linear')
+            
+            return pi, value
+
     def CreateNetwork(self, inputs):
         with tf.variable_scope('eval'):
             split_0 = tflearn.fully_connected(
@@ -95,6 +125,8 @@ class Network():
         self.R = tf.placeholder(tf.float32, [None, 1])
         self.inputs = tf.placeholder(tf.float32, [None, self.s_dim[0], self.s_dim[1]])
         self.acts = tf.placeholder(tf.float32, [None, self.a_dim])
+        self.pi_out, self.pi_val = self.CreateNetwork(inputs=self.inputs)
+        self.pi = tf.clip_by_value(self.pi_out, 1e-4, 1. - 1e-4)
         self.val = self.CreateNetwork(inputs=self.inputs)
         self.target = self.CreateTarget(inputs=self.inputs)
         self.max_target = tf.reduce_max(self.target, axis=-1)
@@ -129,8 +161,17 @@ class Network():
         self.loss = tflearn.mean_square(
             tf.reduce_sum(tf.multiply(self.val, self.acts), reduction_indices=1, keepdims=True),
             self.R)
-        
+
+        self.policy_loss = - tf.reduce_mean(
+            tf.reduce_sum(tf.multiply(self.pi, self.acts), reduction_indices=1, keepdims=True) * \
+            tf.stop_gradient( \
+                tf.abs(tf.reduce_sum(tf.multiply(self.val, self.acts), reduction_indices=1, keepdims=True) - self.R) - \
+                self.pi_val \
+            )
+            ) + 0.1 * tf.reduce_mean(tf.log(self.pi) * self.pi)
+
         self.val_opt = tf.train.AdamOptimizer(self.lr_rate).minimize(self.loss)
+        self.policy_opt = tf.train.AdamOptimizer(self.lr_rate).minimize(self.policy_loss)
 
     def predict(self, input):
         action = self.sess.run(self.val, feed_dict={
@@ -145,7 +186,13 @@ class Network():
             if len(self.pool) > MAX_POOL_NUM:
                 pop_item = np.random.randint(len(self.pool))
                 self.pool.pop(pop_item)
-        
+
+        self.sess.run(self.policy_opt, feed_dict={
+                self.inputs: s_batch,
+                self.acts: a_batch,
+                self.R: v_batch
+        })
+
         if len(self.pool) > 4096:
             s_batch, a_batch, v_batch = [], [], []
 
