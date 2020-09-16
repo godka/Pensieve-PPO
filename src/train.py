@@ -10,10 +10,9 @@ import tensorflow as tf
 os.environ['CUDA_VISIBLE_DEVICES'] = '3'
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 
-S_DIM = [6, 8]
+S_DIM = [7, 8]
 A_DIM = 6
-ACTOR_LR_RATE =1e-4
-CRITIC_LR_RATE = 1e-3
+ACTOR_LR_RATE =1e-3
 NUM_AGENTS = 16
 TRAIN_SEQ_LEN = 1000  # take as a train batch
 TRAIN_EPOCH = 1000000
