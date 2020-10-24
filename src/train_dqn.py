@@ -162,7 +162,7 @@ def agent(agent_id, net_params_queue, exp_queue):
                 action_prob = actor.predict(
                     np.reshape(obs, (1, S_DIM[0], S_DIM[1])))
                 
-                prob_ = (0.001 - 0.2) / (800000) * epoch + 0.2
+                prob_ = (0.001 - 0.2) / (80000) * epoch + 0.2
                 prob_ = np.clip(prob_, 0.001, 0.2)
 
                 if np.random.uniform() < prob_:
