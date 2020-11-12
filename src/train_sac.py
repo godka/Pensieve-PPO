@@ -115,8 +115,6 @@ def central_agent(net_params_queues, exp_queues):
 
         # while True:  # assemble experiences from agents, compute the gradients
         for epoch in range(1, TRAIN_EPOCH):
-            if epoch % 10 == 0:
-                print(epoch, replay_buffer.size)
             # synchronize the network parameters of work agent
             network_params = eval_net.get_network_params()
             # print(network_params[0].keys())
