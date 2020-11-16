@@ -124,7 +124,7 @@ def main():
             bit_rate = np.argmax(action_prob)
             
             s_batch.append(state)
-            entropy_ = -np.dot(action_prob, np.log(action_prob))
+            entropy_ = -1. * np.dot(action_prob, np.log(action_prob))
             entropy_record.append(entropy_)
 
             if end_of_video:

@@ -95,12 +95,11 @@ class Network():
             self.set_network_params_op.append(
                 self.network_params[idx].assign(param))
         
-        self.loss = - tf.reduce_sum(self.dual_loss) \
-            + self.entropy_weight * tf.reduce_sum(self.entropy)
+        self.loss = - tf.reduce_mean(self.dual_loss \
+            + self.entropy_weight * tf.reduce_sum(self.entropy, reduction_indices=1, keepdims=True)) \
+            + 0.5 * tflearn.mean_square(self.val, self.R)
         
-        self.optimize = tf.train.AdamOptimizer(self.lr_rate).minimize(self.loss)
-        self.val_loss = tflearn.mean_square(self.val, self.R)
-        self.val_opt = tf.train.AdamOptimizer(self.lr_rate * 10.).minimize(self.val_loss)
+        self.opt = tf.train.AdamOptimizer(self.lr_rate).minimize(self.loss)
 
     def predict(self, input):
         action = self.sess.run(self.real_out, feed_dict={
@@ -112,23 +111,11 @@ class Network():
         self._entropy *= decay
 
     def get_entropy(self, step):
-        return np.clip(self._entropy, 0.01, 5.)
-        # max_lr = 0.5
-        # min_lr = 0.05
-        # return np.maximum(min_lr, min_lr + 0.5 * (max_lr - min_lr) * (1 + np.cos(step * np.pi / 100000)))
-        # return np.clip(0.5 - step / 20000, 0.5, 0.01)
-        # if step < 20000:
-        #     return 5.
-        # elif step < 40000:
-        #     return 3.
-        # elif step < 70000:
-        #     return 1.
-        # else:
-        #     return np.clip(1. - step / 200000., 0.1, 1.)
+        return np.clip(self._entropy, 1e-10, 5.)
 
     def train(self, s_batch, a_batch, p_batch, v_batch, epoch):
         s_batch, a_batch, p_batch, v_batch = tflearn.data_utils.shuffle(s_batch, a_batch, p_batch, v_batch)
-        self.sess.run([self.optimize, self.val_opt], feed_dict={
+        self.sess.run(self.opt, feed_dict={
             self.inputs: s_batch,
             self.acts: a_batch,
             self.R: v_batch, 

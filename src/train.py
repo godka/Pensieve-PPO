@@ -5,6 +5,7 @@ import os
 import sys
 from abr import ABREnv
 import ppo2 as network
+import z_score
 import tensorflow as tf
 
 os.environ['CUDA_VISIBLE_DEVICES'] = '3'
@@ -40,7 +41,7 @@ def testing(epoch, nn_model, log_file):
     if not os.path.exists(TEST_LOG_FOLDER):
         os.makedirs(TEST_LOG_FOLDER)
     # run test script
-    os.system('python rl_test.py ' + nn_model)
+    os.system('python test.py ' + nn_model)
 
     # append test performance to the log
     rewards, entropies = [], []
@@ -94,6 +95,7 @@ def central_agent(net_params_queues, exp_queues):
         sess.run(tf.global_variables_initializer())
         writer = tf.summary.FileWriter(SUMMARY_DIR, sess.graph)  # training monitor
         saver = tf.train.Saver(max_to_keep=1000)  # save neural net parameters
+        z_ = z_score.Z_Score()
 
         # restore neural net parameters
         nn_model = NN_MODEL
@@ -110,17 +112,17 @@ def central_agent(net_params_queues, exp_queues):
             for i in range(NUM_AGENTS):
                 net_params_queues[i].put(actor_net_params)
 
-            s, a, p, g = [], [], [], []
+            s, a, p, r = [], [], [], []
             for i in range(NUM_AGENTS):
-                s_, a_, p_, g_ = exp_queues[i].get()
+                s_, a_, p_, r_ = exp_queues[i].get()
                 s += s_
                 a += a_
                 p += p_
-                g += g_
+                r += r_
             s_batch = np.stack(s, axis=0)
             a_batch = np.vstack(a)
             p_batch = np.vstack(p)
-            v_batch = np.vstack(g)
+            v_batch = z_.normalize(r) # np.vstack(r)
 
             for _ in range(PPO_TRAINING_EPO):
                 actor.train(s_batch, a_batch, p_batch, v_batch, epoch)
