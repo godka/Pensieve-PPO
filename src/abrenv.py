@@ -14,7 +14,7 @@ LINK_RTT = 80  # millisec
 PACKET_SIZE = 1500  # bytes
 NOISE_LOW = 0.9
 NOISE_HIGH = 1.1
-VIDEO_SIZE_FILE = './envivio/ideo_size_'
+VIDEO_SIZE_FILE = './envivio/video_size_'
 
 
 class Environment:

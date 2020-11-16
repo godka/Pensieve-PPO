@@ -95,7 +95,7 @@ def central_agent(net_params_queues, exp_queues):
         sess.run(tf.global_variables_initializer())
         writer = tf.summary.FileWriter(SUMMARY_DIR, sess.graph)  # training monitor
         saver = tf.train.Saver(max_to_keep=1000)  # save neural net parameters
-        z_ = z_score.Z_Score()
+        z = z_score.Z_Score()
 
         # restore neural net parameters
         nn_model = NN_MODEL
@@ -122,7 +122,7 @@ def central_agent(net_params_queues, exp_queues):
             s_batch = np.stack(s, axis=0)
             a_batch = np.vstack(a)
             p_batch = np.vstack(p)
-            v_batch = z_.normalize(r) # np.vstack(r)
+            v_batch = z.normalize(r) # np.vstack(r)
 
             for _ in range(PPO_TRAINING_EPO):
                 actor.train(s_batch, a_batch, p_batch, v_batch, epoch)

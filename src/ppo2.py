@@ -56,7 +56,7 @@ class Network():
                 tf.reduce_sum(tf.multiply(pi_old, acts), reduction_indices=1, keepdims=True)
 
     def __init__(self, sess, state_dim, action_dim, learning_rate):
-        self._entropy = 5.
+        self._entropy = 0.01
         self.quality = 0
         self.s_dim = state_dim
         self.a_dim = action_dim
@@ -96,7 +96,7 @@ class Network():
                 self.network_params[idx].assign(param))
         
         self.loss = - tf.reduce_mean(self.dual_loss \
-            + self.entropy_weight * tf.reduce_sum(self.entropy, reduction_indices=1, keepdims=True)) \
+            - self.entropy_weight * tf.reduce_sum(self.entropy, reduction_indices=1, keepdims=True)) \
             + 0.5 * tflearn.mean_square(self.val, self.R)
         
         self.opt = tf.train.AdamOptimizer(self.lr_rate).minimize(self.loss)
