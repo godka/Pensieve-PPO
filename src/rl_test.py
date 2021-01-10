@@ -2,7 +2,7 @@ import os
 import sys
 os.environ['CUDA_VISIBLE_DEVICES']='-1'
 import numpy as np
-import tensorflow as tf
+import tensorflow.compat.v1 as tf
 import load_trace
 #import a2c as network
 import ppo2 as network

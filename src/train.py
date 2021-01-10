@@ -5,7 +5,7 @@ import os
 import sys
 from abr import ABREnv
 import ppo2 as network
-import tensorflow as tf
+import tensorflow.compat.v1 as tf
 
 os.environ['CUDA_VISIBLE_DEVICES'] = '3'
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'

@@ -1,6 +1,6 @@
 import math
 import numpy as np
-import tensorflow as tf
+import tensorflow.compat.v1 as tf
 import os
 import time
 os.environ['CUDA_VISIBLE_DEVICES'] = '2'
