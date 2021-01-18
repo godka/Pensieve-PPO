@@ -6,3 +6,4 @@ src/results/
 src/ppo_gumbel/
 src/models/
 src/*.tar.gz
+src/.vscode

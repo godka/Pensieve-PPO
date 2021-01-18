@@ -24,7 +24,7 @@ DEFAULT_QUALITY = 1  # default video quality without agent
 RANDOM_SEED = 42
 RAND_RANGE = 1000
 LOG_FILE = './test_results/log_sim_rl'
-TEST_TRACES = './cooked_test_traces/'
+TEST_TRACES = './test/'
 # log in format of time_stamp bit_rate buffer_size rebuffer_time chunk_size download_time reward
 NN_MODEL = sys.argv[1]
     
