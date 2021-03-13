@@ -121,8 +121,9 @@ def main():
             state[5, -1] = np.minimum(video_chunk_remain, CHUNK_TIL_VIDEO_END_CAP) / float(CHUNK_TIL_VIDEO_END_CAP)
 
             action_prob = actor.predict(np.reshape(state, (1, S_INFO, S_LEN)))
-            bit_rate = np.argmax(action_prob)
-            
+            noise = np.random.gumbel(size=len(action_prob))
+            bit_rate = np.argmax(np.log(action_prob) + noise)
+
             s_batch.append(state)
             entropy_ = -np.dot(action_prob, np.log(action_prob))
             entropy_record.append(entropy_)

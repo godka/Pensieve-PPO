@@ -20,17 +20,18 @@ TRAIN_EPOCH = 1000000
 MODEL_SAVE_INTERVAL = 300
 RANDOM_SEED = 42
 RAND_RANGE = 10000
-SUMMARY_DIR = './results'
+SUMMARY_DIR = './auto'
 MODEL_DIR = './models'
 TRAIN_TRACES = './cooked_traces/'
 TEST_LOG_FOLDER = './test_results/'
-LOG_FILE = './results/log'
+LOG_FILE = './auto/log'
 PPO_TRAINING_EPO = 5
 # create result directory
 if not os.path.exists(SUMMARY_DIR):
     os.makedirs(SUMMARY_DIR)
 
-NN_MODEL = None    
+NN_MODEL = None
+# './results/nn_model_ep_235800.ckpt'    
 
 def testing(epoch, nn_model, log_file):
     # clean up the test results folder
@@ -101,9 +102,6 @@ def central_agent(net_params_queues, exp_queues):
             saver.restore(sess, nn_model)
             print("Model restored.")
         
-        max_reward, max_epoch = -10000., 0
-        tick_gap = 0
-        # while True:  # assemble experiences from agents, compute the gradients
         for epoch in range(TRAIN_EPOCH):
             # synchronize the network parameters of work agent
             actor_net_params = actor.get_network_params()
@@ -122,9 +120,7 @@ def central_agent(net_params_queues, exp_queues):
             p_batch = np.vstack(p)
             v_batch = np.vstack(g)
 
-            for _ in range(PPO_TRAINING_EPO):
-                actor.train(s_batch, a_batch, p_batch, v_batch, epoch)
-            # actor.train(s_batch, a_batch, v_batch, epoch)
+            actor.train(s_batch, a_batch, p_batch, v_batch, epoch)
             
             if epoch % MODEL_SAVE_INTERVAL == 0:
                 # Save the neural net parameters to disk.
@@ -134,20 +130,8 @@ def central_agent(net_params_queues, exp_queues):
                     SUMMARY_DIR + "/nn_model_ep_" + str(epoch) + ".ckpt", 
                     test_log_file)
 
-                if avg_reward > max_reward:
-                    max_reward = avg_reward
-                    max_epoch = epoch
-                    tick_gap = 0
-                else:
-                    tick_gap += 1
-                
-                if tick_gap >= 10:
-                    # saver.restore(sess, SUMMARY_DIR + "/nn_model_ep_" + str(max_epoch) + ".ckpt")
-                    actor.set_entropy_decay()
-                    tick_gap = 0
-
                 summary_str = sess.run(summary_ops, feed_dict={
-                    summary_vars[0]: actor.get_entropy(epoch),
+                    summary_vars[0]: actor._entropy,
                     summary_vars[1]: avg_reward,
                     summary_vars[2]: avg_entropy
                 })
@@ -177,9 +161,6 @@ def agent(agent_id, net_params_queue, exp_queue):
                 action_prob = actor.predict(
                     np.reshape(obs, (1, S_DIM[0], S_DIM[1])))
 
-                #action_cumsum = np.cumsum(action_prob)
-                #bit_rate = (action_cumsum > np.random.randint(
-                #    1, RAND_RANGE) / float(RAND_RANGE)).argmax()
                 # gumbel noise
                 noise = np.random.gumbel(size=len(action_prob))
                 bit_rate = np.argmax(np.log(action_prob) + noise)

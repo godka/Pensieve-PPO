@@ -56,10 +56,12 @@ class Network():
                 tf.reduce_sum(tf.multiply(pi_old, acts), reduction_indices=1, keepdims=True)
 
     def __init__(self, sess, state_dim, action_dim, learning_rate):
-        self._entropy = 5.
+        self.PPO_TRAINING_EPO = 5
+        self.H_target = 0.1
         self.quality = 0
         self.s_dim = state_dim
         self.a_dim = action_dim
+        self._entropy = -np.log(1. / self.a_dim)
         self.lr_rate = learning_rate
         self.sess = sess
         self.R = tf.placeholder(tf.float32, [None, 1])
@@ -107,34 +109,21 @@ class Network():
             self.inputs: input
         })
         return action[0]
-    
-    def set_entropy_decay(self, decay=0.6):
-        self._entropy *= decay
-
-    def get_entropy(self, step):
-        return np.clip(self._entropy, 0.01, 5.)
-        # max_lr = 0.5
-        # min_lr = 0.05
-        # return np.maximum(min_lr, min_lr + 0.5 * (max_lr - min_lr) * (1 + np.cos(step * np.pi / 100000)))
-        # return np.clip(0.5 - step / 20000, 0.5, 0.01)
-        # if step < 20000:
-        #     return 5.
-        # elif step < 40000:
-        #     return 3.
-        # elif step < 70000:
-        #     return 1.
-        # else:
-        #     return np.clip(1. - step / 200000., 0.1, 1.)
 
     def train(self, s_batch, a_batch, p_batch, v_batch, epoch):
-        s_batch, a_batch, p_batch, v_batch = tflearn.data_utils.shuffle(s_batch, a_batch, p_batch, v_batch)
-        self.sess.run([self.optimize, self.val_opt], feed_dict={
-            self.inputs: s_batch,
-            self.acts: a_batch,
-            self.R: v_batch, 
-            self.old_pi: p_batch,
-            self.entropy_weight: self.get_entropy(epoch)
-        })
+        for _ in range(self.PPO_TRAINING_EPO):
+            self.sess.run([self.optimize, self.val_opt], feed_dict={
+                self.inputs: s_batch,
+                self.acts: a_batch,
+                self.R: v_batch, 
+                self.old_pi: p_batch,
+                self.entropy_weight: self._entropy
+            })
+        # auto entropy_weight
+        # http://arxiv.org/pdf/2003.13590v2
+        _H = np.mean(np.sum(-np.log(p_batch) * p_batch, axis=1))
+        self._entropy += self.lr_rate * (self.H_target - _H)
+        self._entropy = np.maximum(1e-30, self._entropy)
 
     def compute_v(self, s_batch, a_batch, r_batch, terminal):
         ba_size = len(s_batch)

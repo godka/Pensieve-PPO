@@ -7,3 +7,6 @@ src/ppo_gumbel/
 src/models/
 src/*.tar.gz
 src/.vscode
+src/auto/
+src/oboe_traces/
+src/results*
