@@ -3,29 +3,28 @@ import numpy as np
 import logging
 import os
 import sys
-from abr import ABREnv
+from env import ABREnv
 import ppo2 as network
 import tensorflow.compat.v1 as tf
 
-os.environ['CUDA_VISIBLE_DEVICES'] = '3'
+os.environ['CUDA_VISIBLE_DEVICES'] = '-1'
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 
 S_DIM = [6, 8]
 A_DIM = 6
-ACTOR_LR_RATE =1e-4
-CRITIC_LR_RATE = 1e-3
+ACTOR_LR_RATE = 1e-4
 NUM_AGENTS = 16
 TRAIN_SEQ_LEN = 1000  # take as a train batch
-TRAIN_EPOCH = 1000000
+TRAIN_EPOCH = 500000
 MODEL_SAVE_INTERVAL = 300
 RANDOM_SEED = 42
-RAND_RANGE = 10000
-SUMMARY_DIR = './results'
+SUMMARY_DIR = './ppo'
 MODEL_DIR = './models'
-TRAIN_TRACES = './cooked_traces/'
+TRAIN_TRACES = './train/'
 TEST_LOG_FOLDER = './test_results/'
-LOG_FILE = './results/log'
+LOG_FILE = SUMMARY_DIR + '/log'
 PPO_TRAINING_EPO = 5
+
 # create result directory
 if not os.path.exists(SUMMARY_DIR):
     os.makedirs(SUMMARY_DIR)
@@ -40,7 +39,7 @@ def testing(epoch, nn_model, log_file):
     if not os.path.exists(TEST_LOG_FOLDER):
         os.makedirs(TEST_LOG_FOLDER)
     # run test script
-    os.system('python rl_test.py ' + nn_model)
+    os.system('python test.py ' + nn_model)
 
     # append test performance to the log
     rewards, entropies = [], []
@@ -82,8 +81,8 @@ def central_agent(net_params_queues, exp_queues):
 
     assert len(net_params_queues) == NUM_AGENTS
     assert len(exp_queues) == NUM_AGENTS
-    tf_config=tf.ConfigProto(intra_op_parallelism_threads=5,
-                            inter_op_parallelism_threads=5)
+    tf_config=tf.ConfigProto(intra_op_parallelism_threads=1,
+                            inter_op_parallelism_threads=1)
     with tf.Session(config = tf_config) as sess, open(LOG_FILE + '_test.txt', 'w') as test_log_file:
         summary_ops, summary_vars = build_summaries()
 
@@ -101,8 +100,6 @@ def central_agent(net_params_queues, exp_queues):
             saver.restore(sess, nn_model)
             print("Model restored.")
         
-        max_reward, max_epoch = -10000., 0
-        tick_gap = 0
         # while True:  # assemble experiences from agents, compute the gradients
         for epoch in range(TRAIN_EPOCH):
             # synchronize the network parameters of work agent
@@ -124,7 +121,6 @@ def central_agent(net_params_queues, exp_queues):
 
             for _ in range(PPO_TRAINING_EPO):
                 actor.train(s_batch, a_batch, p_batch, v_batch, epoch)
-            # actor.train(s_batch, a_batch, v_batch, epoch)
             
             if epoch % MODEL_SAVE_INTERVAL == 0:
                 # Save the neural net parameters to disk.
@@ -134,30 +130,17 @@ def central_agent(net_params_queues, exp_queues):
                     SUMMARY_DIR + "/nn_model_ep_" + str(epoch) + ".ckpt", 
                     test_log_file)
 
-                if avg_reward > max_reward:
-                    max_reward = avg_reward
-                    max_epoch = epoch
-                    tick_gap = 0
-                else:
-                    tick_gap += 1
-                
-                if tick_gap >= 10:
-                    # saver.restore(sess, SUMMARY_DIR + "/nn_model_ep_" + str(max_epoch) + ".ckpt")
-                    actor.set_entropy_decay()
-                    tick_gap = 0
-
                 summary_str = sess.run(summary_ops, feed_dict={
-                    summary_vars[0]: actor.get_entropy(epoch),
+                    summary_vars[0]: actor._entropy,
                     summary_vars[1]: avg_reward,
                     summary_vars[2]: avg_entropy
                 })
-
                 writer.add_summary(summary_str, epoch)
                 writer.flush()
 
 def agent(agent_id, net_params_queue, exp_queue):
     env = ABREnv(agent_id)
-    with tf.Session() as sess, open(SUMMARY_DIR + '/log_agent_' + str(agent_id), 'w') as log_file:
+    with tf.Session() as sess:
         actor = network.Network(sess,
                                 state_dim=S_DIM, action_dim=A_DIM,
                                 learning_rate=ACTOR_LR_RATE)
@@ -177,9 +160,6 @@ def agent(agent_id, net_params_queue, exp_queue):
                 action_prob = actor.predict(
                     np.reshape(obs, (1, S_DIM[0], S_DIM[1])))
 
-                #action_cumsum = np.cumsum(action_prob)
-                #bit_rate = (action_cumsum > np.random.randint(
-                #    1, RAND_RANGE) / float(RAND_RANGE)).argmax()
                 # gumbel noise
                 noise = np.random.gumbel(size=len(action_prob))
                 bit_rate = np.argmax(np.log(action_prob) + noise)
