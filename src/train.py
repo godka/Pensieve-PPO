@@ -180,8 +180,8 @@ def agent(agent_id, net_params_queue, exp_queue):
             actor.set_network_params(actor_net_params)
 
 def build_summaries():
-    beta = tf.Variable(0.)
-    tf.summary.scalar("Beta", beta)
+    entropy_weight = tf.Variable(0.)
+    tf.summary.scalar("Entropy Weight", entropy_weight)
     eps_total_reward = tf.Variable(0.)
     tf.summary.scalar("Reward", eps_total_reward)
     entropy = tf.Variable(0.)
