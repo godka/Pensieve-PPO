@@ -131,7 +131,7 @@ def central_agent(net_params_queues, exp_queues):
                     test_log_file)
 
                 summary_str = sess.run(summary_ops, feed_dict={
-                    summary_vars[0]: actor._entropy,
+                    summary_vars[0]: actor._entropy_weight,
                     summary_vars[1]: avg_reward,
                     summary_vars[2]: avg_entropy
                 })
