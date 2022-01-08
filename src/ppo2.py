@@ -68,7 +68,7 @@ class Network():
         self.a_dim = action_dim
         self.lr_rate = learning_rate
         self.sess = sess
-        self._entropy = np.log(self.a_dim)
+        self._entropy_weight = np.log(self.a_dim)
         self.H_target = 0.1
 
         self.R = tf.placeholder(tf.float32, [None, 1])
@@ -119,13 +119,14 @@ class Network():
             self.acts: a_batch,
             self.R: v_batch, 
             self.old_pi: p_batch,
-            self.entropy_weight: self._entropy
+            self.entropy_weight: self._entropy_weight
         })
         # adaptive entropy weight
+        # https://arxiv.org/abs/2003.13590
         p_batch = np.clip(p_batch, ACTION_EPS, 1. - ACTION_EPS)
         _H = np.mean(np.sum(-np.log(p_batch) * p_batch, axis=1))
         _g = _H - self.H_target
-        self._entropy -= self.lr_rate * _g * 0.1
+        self._entropy_weight -= self.lr_rate * _g * 0.1
 
     def compute_v(self, s_batch, a_batch, r_batch, terminal):
         ba_size = len(s_batch)
