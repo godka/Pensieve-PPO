@@ -187,7 +187,7 @@ def build_summaries():
     entropy = tf.Variable(0.)
     tf.summary.scalar("Entropy", entropy)
 
-    summary_vars = [td_loss, eps_total_reward, entropy]
+    summary_vars = [entropy_weight, eps_total_reward, entropy]
     summary_ops = tf.summary.merge_all()
 
     return summary_ops, summary_vars
