@@ -5,7 +5,7 @@ import os
 import sys
 from abr import ABREnv
 import dqn as network
-import tensorflow as tf
+import tensorflow.compat.v1 as tf
 
 os.environ['CUDA_VISIBLE_DEVICES'] = '3'
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
@@ -20,12 +20,12 @@ TRAIN_EPOCH = 1000000
 MODEL_SAVE_INTERVAL = 1000
 RANDOM_SEED = 42
 RAND_RANGE = 10000
-SUMMARY_DIR = './results'
+SUMMARY_DIR = './dqn'
 MODEL_DIR = './models'
 TRAIN_TRACES = './cooked_traces/'
 TEST_LOG_FOLDER = './test_results/'
-LOG_FILE = './results/log'
-PPO_TRAINING_EPO = 5
+LOG_FILE = './dqn/log'
+
 # create result directory
 if not os.path.exists(SUMMARY_DIR):
     os.makedirs(SUMMARY_DIR)
@@ -152,7 +152,7 @@ def agent(agent_id, net_params_queue, exp_queue):
         actor.set_network_params(actor_net_params)
 
         time_stamp = 0
-
+        prob_ = 1.
         for epoch in range(TRAIN_EPOCH):
             obs = env.reset()
             s_batch, a_batch, next_s_batch, r_batch = [], [], [], []
@@ -162,19 +162,13 @@ def agent(agent_id, net_params_queue, exp_queue):
                 action_prob = actor.predict(
                     np.reshape(obs, (1, S_DIM[0], S_DIM[1])))
                 
-                prob_ = (0.001 - 0.2) / (80000) * epoch + 0.2
-                prob_ = np.clip(prob_, 0.001, 0.2)
+                prob_ *= 0.99997
+                prob_ = np.clip(prob_, 1e-2, 1. - 1e-2)
 
                 if np.random.uniform() < prob_:
                     bit_rate = np.random.randint(A_DIM)
                 else:
                     bit_rate = np.argmax(action_prob)
-                #action_cumsum = np.cumsum(action_prob)
-                #bit_rate = (action_cumsum > np.random.randint(
-                #    1, RAND_RANGE) / float(RAND_RANGE)).argmax()
-                # gumbel noise
-                # noise = np.random.gumbel(size=len(action_prob))
-                # bit_rate = np.argmax(np.log(action_prob) + noise)
 
                 obs, rew, done, info = env.step(bit_rate)
 
