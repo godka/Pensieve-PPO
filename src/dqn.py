@@ -9,64 +9,44 @@ import tflearn
 FEATURE_NUM = 128
 ACTION_EPS = 1e-4
 GAMMA = 0.99
-MAX_POOL_NUM = 10000
+MAX_POOL_NUM = 500000
 TAU = 1e-5
 
 class Network():
     def CreateTarget(self, inputs):
         with tf.variable_scope('target'):
-            split_0 = tflearn.fully_connected(
-                inputs[:, 0:1, -1], FEATURE_NUM, activation='relu')
-            split_1 = tflearn.fully_connected(
-                inputs[:, 1:2, -1], FEATURE_NUM, activation='relu')
-            split_2 = tflearn.conv_1d(
-                inputs[:, 2:3, :], FEATURE_NUM, 4, activation='relu')
-            split_3 = tflearn.conv_1d(
-                inputs[:, 3:4, :], FEATURE_NUM, 4, activation='relu')
-            split_4 = tflearn.conv_1d(
-                inputs[:, 4:5, :self.a_dim], FEATURE_NUM, 4, activation='relu')
-            split_5 = tflearn.fully_connected(
-                inputs[:, 5:6, -1], FEATURE_NUM, activation='relu')
+            split_0 = tflearn.fully_connected(inputs[:, 0:1, -1], FEATURE_NUM, activation='relu')
+            split_1 = tflearn.fully_connected(inputs[:, 1:2, -1], FEATURE_NUM, activation='relu')
+            split_2 = tflearn.conv_1d(inputs[:, 2:3, :], FEATURE_NUM, 1, activation='relu')
+            split_3 = tflearn.conv_1d(inputs[:, 3:4, :], FEATURE_NUM, 1, activation='relu')
+            split_4 = tflearn.conv_1d(inputs[:, 4:5, :self.a_dim], FEATURE_NUM, 1, activation='relu')
+            split_5 = tflearn.fully_connected(inputs[:, 5:6, -1], FEATURE_NUM, activation='relu')
 
             split_2_flat = tflearn.flatten(split_2)
             split_3_flat = tflearn.flatten(split_3)
             split_4_flat = tflearn.flatten(split_4)
 
-            merge_net = tflearn.merge(
-                [split_0, split_1, split_2_flat, split_3_flat, split_4_flat, split_5], 'concat')
-
-            net = tflearn.fully_connected(
-                merge_net, FEATURE_NUM, activation='relu')
-
+            merge_net = tflearn.merge([split_0, split_1, split_2_flat, split_3_flat, split_4_flat, split_5], 'concat')
+            net = tflearn.fully_connected(merge_net, FEATURE_NUM, activation='relu')
             value = tflearn.fully_connected(net, self.a_dim, activation='linear') 
             
             return value
 
-    def CreateNetwork(self, inputs):
-        with tf.variable_scope('eval'):
-            split_0 = tflearn.fully_connected(
-                inputs[:, 0:1, -1], FEATURE_NUM, activation='relu')
-            split_1 = tflearn.fully_connected(
-                inputs[:, 1:2, -1], FEATURE_NUM, activation='relu')
-            split_2 = tflearn.conv_1d(
-                inputs[:, 2:3, :], FEATURE_NUM, 4, activation='relu')
-            split_3 = tflearn.conv_1d(
-                inputs[:, 3:4, :], FEATURE_NUM, 4, activation='relu')
-            split_4 = tflearn.conv_1d(
-                inputs[:, 4:5, :self.a_dim], FEATURE_NUM, 4, activation='relu')
-            split_5 = tflearn.fully_connected(
-                inputs[:, 5:6, -1], FEATURE_NUM, activation='relu')
+    def CreateEval(self, inputs):
+        with tf.variable_scope('eval', reuse=tf.AUTO_REUSE):
+            split_0 = tflearn.fully_connected(inputs[:, 0:1, -1], FEATURE_NUM, activation='relu')
+            split_1 = tflearn.fully_connected(inputs[:, 1:2, -1], FEATURE_NUM, activation='relu')
+            split_2 = tflearn.conv_1d(inputs[:, 2:3, :], FEATURE_NUM, 1, activation='relu')
+            split_3 = tflearn.conv_1d(inputs[:, 3:4, :], FEATURE_NUM, 1, activation='relu')
+            split_4 = tflearn.conv_1d(inputs[:, 4:5, :self.a_dim], FEATURE_NUM, 1, activation='relu')
+            split_5 = tflearn.fully_connected(inputs[:, 5:6, -1], FEATURE_NUM, activation='relu')
 
             split_2_flat = tflearn.flatten(split_2)
             split_3_flat = tflearn.flatten(split_3)
             split_4_flat = tflearn.flatten(split_4)
 
-            merge_net = tflearn.merge(
-                [split_0, split_1, split_2_flat, split_3_flat, split_4_flat, split_5], 'concat')
-
-            net = tflearn.fully_connected(
-                merge_net, FEATURE_NUM, activation='relu')
-
+            merge_net = tflearn.merge([split_0, split_1, split_2_flat, split_3_flat, split_4_flat, split_5], 'concat')
+            net = tflearn.fully_connected(merge_net, FEATURE_NUM, activation='relu')
             value = tflearn.fully_connected(net, self.a_dim, activation='linear')
             
             return value
@@ -92,15 +72,21 @@ class Network():
         self.a_dim = action_dim
         self.lr_rate = learning_rate
         self.sess = sess
-        self.R = tf.placeholder(tf.float32, [None, 1])
+        self.r = tf.placeholder(tf.float32, [None, 1])
+        self.done = tf.placeholder(tf.float32, [None, 1])
+
         self.inputs = tf.placeholder(tf.float32, [None, self.s_dim[0], self.s_dim[1]])
+        self.ns_inputs = tf.placeholder(tf.float32, [None, self.s_dim[0], self.s_dim[1]])
+        
         self.acts = tf.placeholder(tf.float32, [None, self.a_dim])
-        self.val = self.CreateNetwork(inputs=self.inputs)
-        self.target = self.CreateTarget(inputs=self.inputs)
+        self.eval = self.CreateEval(inputs=self.inputs)
+        self.eval_ns = self.CreateEval(inputs=self.ns_inputs)
+        self.target = self.CreateTarget(inputs=self.ns_inputs)
         self.max_target = tf.reduce_max(self.target, axis=-1)
         self.double_target = tf.reduce_sum(tf.multiply(self.target, \
-                                tf.one_hot(tf.argmax(self.val, axis=-1), self.a_dim)), reduction_indices=1, keepdims=True)
+                                tf.one_hot(tf.argmax(self.eval_ns, axis=-1), self.a_dim)), reduction_indices=1, keepdims=True)
 
+        self.R = tf.stop_gradient(self.r + GAMMA * (1 - self.done) * self.double_target)
         self.pool = []
 
         self.eval_params = \
@@ -127,60 +113,44 @@ class Network():
                 self.network_params[idx].assign(param))
         
         self.loss = tflearn.mean_square(
-            tf.reduce_sum(tf.multiply(self.val, self.acts), reduction_indices=1, keepdims=True),
+            tf.reduce_sum(tf.multiply(self.eval, self.acts), reduction_indices=1, keepdims=True),
             self.R)
         
         self.val_opt = tf.train.AdamOptimizer(self.lr_rate).minimize(self.loss)
 
     def predict(self, input):
-        action = self.sess.run(self.val, feed_dict={
+        action = self.sess.run(self.eval, feed_dict={
             self.inputs: input
         })
         return action[0]
 
-    def train(self, s_batch, a_batch, p_batch, v_batch, epoch):
+    def train(self, s_batch, a_batch, p_batch, r_batch, d_batch, epoch):
         # ns: next state
-        for (s,a,v, ns) in zip(s_batch, a_batch, v_batch, p_batch):
-            self.pool.append([s, a, v, ns])
+        for (s, a, v, ns, d) in zip(s_batch, a_batch, r_batch, p_batch, d_batch):
             if len(self.pool) > MAX_POOL_NUM:
                 pop_item = np.random.randint(len(self.pool))
-                self.pool.pop(pop_item)
+                self.pool[pop_item] = [s, a, v, ns, d]
+            else:
+                self.pool.append([s, a, v, ns, d])
         
         if len(self.pool) > 4096:
-            s_batch, a_batch, v_batch = [], [], []
+            s_batch, a_batch, r_batch, ns_batch, d_batch = [], [], [], [], []
 
-            for p in range(512):
-                pop_item = np.random.randint(len(self.pool))
-                s_, a_, v_, n_ = self.pool[pop_item]
+            #for _ in range(512):
+            pop_items = np.random.randint(len(self.pool), size=1024)
+            for pop_item in pop_items:
+                s_, a_, r_, ns_, d_ = self.pool[pop_item]
                 s_batch.append(s_)
                 a_batch.append(a_)
-                v_batch.append(v_)
+                r_batch.append(r_)
+                ns_batch.append(ns_)
+                d_batch.append(d_)
 
             self.sess.run(self.val_opt, feed_dict={
                 self.inputs: s_batch,
                 self.acts: a_batch,
-                self.R: v_batch
+                self.r: r_batch,
+                self.ns_inputs: ns_batch,
+                self.done: d_batch
             })
             self.sess.run(self.soft_update)
-            # self.update()
-
-    def compute_v(self, s_batch, a_batch, r_batch, terminal):
-        ba_size = len(s_batch)
-        R_batch = np.zeros([len(r_batch), 1])
-
-        if terminal:
-            R_batch[-1, 0] = r_batch[-1]  # terminal state
-            v_batch = self.sess.run(self.double_target, feed_dict={
-                self.inputs: s_batch
-            })
-            for t in range(ba_size - 1):
-                R_batch[t, 0] = r_batch[t] + GAMMA * v_batch[t]
-        else:
-            v_batch = self.sess.run(self.max_target, feed_dict={
-                self.inputs: s_batch
-            })
-            for t in range(ba_size):
-                R_batch[t, 0] = r_batch[t] + GAMMA * v_batch[t]
-
-        return list(R_batch)
-        

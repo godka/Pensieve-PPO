@@ -17,12 +17,12 @@ CRITIC_LR_RATE = 1e-3
 NUM_AGENTS = 16
 TRAIN_SEQ_LEN = 300  # take as a train batch
 TRAIN_EPOCH = 1000000
-MODEL_SAVE_INTERVAL = 1000
+MODEL_SAVE_INTERVAL = 300
 RANDOM_SEED = 42
 RAND_RANGE = 10000
 SUMMARY_DIR = './dqn'
 MODEL_DIR = './models'
-TRAIN_TRACES = './cooked_traces/'
+TRAIN_TRACES = './train/'
 TEST_LOG_FOLDER = './test_results/'
 LOG_FILE = './dqn/log'
 
@@ -108,21 +108,23 @@ def central_agent(net_params_queues, exp_queues):
             for i in range(NUM_AGENTS):
                 net_params_queues[i].put(actor_net_params)
 
-            s, a, p, g = [], [], [], []
+            # s, a, p, r, d = [], [], [], [], []
             for i in range(NUM_AGENTS):
-                s_, a_, p_, g_ = exp_queues[i].get()
-                s += s_
-                a += a_
-                p += p_
-                g += g_
-            s_batch = np.stack(s, axis=0)
-            a_batch = np.vstack(a)
-            next_s_batch = np.vstack(p)
-            v_batch = np.vstack(g)
+                s_, a_, p_, r_, d_ = exp_queues[i].get()
+                actor.train(s_, a_, p_, r_, d_, epoch)
+            #     s += s_
+            #     a += a_
+            #     p += p_
+            #     r += r_
+            #     d += d_
+            # s_batch = np.stack(s, axis=0)
+            # a_batch = np.vstack(a)
+            # next_s_batch = np.stack(p, axis=0)
+            # r_batch = np.vstack(r)
+            # done_batch = np.vstack(d)
 
-            actor.train(s_batch, a_batch, next_s_batch, v_batch, epoch)
-            # actor.train(s_batch, a_batch, v_batch, epoch)
-            
+            # actor.train(s_batch, a_batch, next_s_batch, r_batch, done_batch, epoch)
+
             if epoch % MODEL_SAVE_INTERVAL == 0:
                 # Save the neural net parameters to disk.
                 save_path = saver.save(sess, SUMMARY_DIR + "/nn_model_ep_" +
@@ -142,7 +144,7 @@ def central_agent(net_params_queues, exp_queues):
 
 def agent(agent_id, net_params_queue, exp_queue):
     env = ABREnv(agent_id)
-    with tf.Session() as sess, open(SUMMARY_DIR + '/log_agent_' + str(agent_id), 'w') as log_file:
+    with tf.Session() as sess:
         actor = network.Network(sess,
                                 state_dim=S_DIM, action_dim=A_DIM,
                                 learning_rate=ACTOR_LR_RATE)
@@ -155,7 +157,7 @@ def agent(agent_id, net_params_queue, exp_queue):
         prob_ = 1.
         for epoch in range(TRAIN_EPOCH):
             obs = env.reset()
-            s_batch, a_batch, next_s_batch, r_batch = [], [], [], []
+            s_batch, a_batch, next_s_batch, r_batch, d_batch = [], [], [], [], []
             for step in range(TRAIN_SEQ_LEN):
                 s_batch.append(obs)
 
@@ -163,7 +165,7 @@ def agent(agent_id, net_params_queue, exp_queue):
                     np.reshape(obs, (1, S_DIM[0], S_DIM[1])))
                 
                 prob_ *= 0.99997
-                prob_ = np.clip(prob_, 1e-2, 1. - 1e-2)
+                prob_ = np.clip(prob_, 1e-3, 1. - 1e-3)
 
                 if np.random.uniform() < prob_:
                     bit_rate = np.random.randint(A_DIM)
@@ -175,13 +177,16 @@ def agent(agent_id, net_params_queue, exp_queue):
                 action_vec = np.zeros(A_DIM)
                 action_vec[bit_rate] = 1
                 a_batch.append(action_vec)
-                r_batch.append(rew)
+                r_batch.append([rew])
                 next_s_batch.append(obs)
+                d_batch.append([float(done)])
+
                 if done:
                     break
+
             # next state
-            v_batch = actor.compute_v(next_s_batch, a_batch, r_batch, done)
-            exp_queue.put([s_batch, a_batch, next_s_batch, v_batch])
+            # v_batch = actor.compute_v(next_s_batch, a_batch, r_batch, done)
+            exp_queue.put([s_batch, a_batch, next_s_batch, r_batch, d_batch])
 
             actor_net_params = net_params_queue.get()
             actor.set_network_params(actor_net_params)

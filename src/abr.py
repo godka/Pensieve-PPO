@@ -1,7 +1,7 @@
 # add queuing delay into halo
 import os
 import numpy as np
-import abrenv
+import core
 import load_trace
 
 # bit_rate, buffer_size, next_chunk_size, bandwidth_measurement(throughput and time), chunk_til_video_end
@@ -27,7 +27,7 @@ class ABREnv():
     def __init__(self, random_seed=RANDOM_SEED):
         np.random.seed(random_seed)
         all_cooked_time, all_cooked_bw, _ = load_trace.load_trace()
-        self.net_env = abrenv.Environment(all_cooked_time=all_cooked_time,
+        self.net_env = core.Environment(all_cooked_time=all_cooked_time,
                                           all_cooked_bw=all_cooked_bw,
                                           random_seed=random_seed)
 

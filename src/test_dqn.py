@@ -68,6 +68,7 @@ def main():
         a_batch = [action_vec]
         r_batch = []
         entropy_record = []
+        throughput_arr = []
         entropy_ = 0.5
         video_count = 0
         
@@ -119,7 +120,7 @@ def main():
             state[3, -1] = float(delay) / M_IN_K / BUFFER_NORM_FACTOR  # 10 sec
             state[4, :A_DIM] = np.array(next_video_chunk_sizes) / M_IN_K / M_IN_K  # mega byte
             state[5, -1] = np.minimum(video_chunk_remain, CHUNK_TIL_VIDEO_END_CAP) / float(CHUNK_TIL_VIDEO_END_CAP)
-
+            
             # dqn
             action_prob = actor.predict(np.reshape(state, (1, S_INFO, S_LEN)))
             # print(action_prob)
@@ -147,6 +148,7 @@ def main():
                 a_batch.append(action_vec)
                 # print(np.mean(entropy_record))
                 entropy_record = []
+                throughput_arr = []
 
                 video_count += 1
 
