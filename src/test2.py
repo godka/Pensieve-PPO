@@ -21,7 +21,7 @@ REBUF_PENALTY = 4.3  # 1 sec rebuffering -> 3 Mbps
 SMOOTH_PENALTY = 1
 DEFAULT_QUALITY = 1  # default video quality without agent
 RANDOM_SEED = 42
-TEST_TRACES =  './simulated_trace/'
+TEST_TRACES =  './test/'
 LOG_FILE = './test_results/log_sim_ppo'
 NN_MODEL = sys.argv[1]
 

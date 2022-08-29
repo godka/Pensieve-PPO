@@ -2,7 +2,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 
-LOG_PATH = './test_results/log_sim_ppo_rss_Beijing_2022-9-21-00-00-00'
+LOG_PATH = './test_results/log_sim_ppo_rss_Boston_2022-9-21-04-00-00'
 PLOT_SAMPLES = 300
 
 
@@ -22,7 +22,7 @@ with open(LOG_PATH, 'rb') as f:
             buffer_occupancies.append(float(parse[2]))
             rebuffer_times.append(float(parse[3]))
             rewards.append(float(parse[-1]))
-            satlites.append(float(parse[3]))
+            satlites.append(float(parse[-3]))
 
 f, (ax1, ax2, ax3, ax4) = plt.subplots(4, sharex=True)
 
@@ -30,8 +30,8 @@ ax1.plot(time_stamp[-PLOT_SAMPLES:], rewards[-PLOT_SAMPLES:])
 ax1.set_title('Average reward: ' + str(np.mean(rewards[-PLOT_SAMPLES:])))
 ax1.set_ylabel('Reward')
 
-ax2.plot(time_stamp[-PLOT_SAMPLES:], bit_rates[-PLOT_SAMPLES:])
-ax2.set_ylabel('bit rate (Kpbs)')
+ax2.plot(time_stamp[-PLOT_SAMPLES:], satlites[-PLOT_SAMPLES:])
+ax2.set_ylabel('satlites switch')
 
 ax3.plot(time_stamp[-PLOT_SAMPLES:], buffer_occupancies[-PLOT_SAMPLES:])
 ax3.set_ylabel('buffer occupancy (sec)')
