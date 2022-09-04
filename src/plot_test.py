@@ -2,7 +2,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from itertools import compress
 
-LOG_PATH = './test_results/log_sim_ppo_rss_Boston_2022-9-21-04-00-00'
+LOG_PATH = './test_results/log_sim_ppo_rss_London_2022-9-21-00-00-00'
 # LOG_PATH = 'results/log_sim_mpc_truth_naive_london'
 # PLOT_SAMPLES = 300
 

@@ -2,7 +2,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 
-LOG_PATH = './test_results/log_sim_ppo_rss_Boston_2022-9-21-04-00-00'
+LOG_PATH = './test_results/log_sim_ppo_rss_London_2022-9-21-00-00-00'
 PLOT_SAMPLES = 300
 
 
@@ -36,8 +36,8 @@ ax2.set_ylabel('satlites switch')
 ax3.plot(time_stamp[-PLOT_SAMPLES:], buffer_occupancies[-PLOT_SAMPLES:])
 ax3.set_ylabel('buffer occupancy (sec)')
 
-ax4.plot(time_stamp[-PLOT_SAMPLES:], rebuffer_times[-PLOT_SAMPLES:])
-ax4.set_ylabel('rebuffer time (sec)')
+ax4.plot(time_stamp[-PLOT_SAMPLES:], bit_rates[-PLOT_SAMPLES:])
+ax4.set_ylabel('bitrate selection(sec)')
 ax4.set_xlabel('Time (ms)')
 
 f.subplots_adjust(hspace=0)
