@@ -85,18 +85,20 @@ class Environment:
         self.video_chunk_counter[agent] += 1
         self.video_chunk_remain[agent] = TOTAL_VIDEO_CHUNCK - self.video_chunk_counter[agent]
 
-        if self.video_chunk_counter[agent] >= TOTAL_VIDEO_CHUNCK:
-            self.end_of_video[agent] = True
-            self.buffer_size[agent] = 0
-            self.video_chunk_counter[agent] = 0
             
         self.next_video_chunk_sizes[agent] = []
         for i in range(BITRATE_LEVELS):
             self.next_video_chunk_sizes[agent].append(self.video_size[i][self.video_chunk_counter[agent]])
 
-        # Mark the end of chunk
-        self.take_action[agent] = True
-        self.state[agent] = 2
+        if self.video_chunk_counter[agent] >= TOTAL_VIDEO_CHUNCK:
+            self.end_of_video[agent] = True
+            self.buffer_size[agent] = 0
+            self.video_chunk_counter[agent] = 0
+            self.take_action[agent] = True
+        else:
+            # Mark the end of chunk
+            self.take_action[agent] = True
+            self.state[agent] = 2
 
 
     def rebuffing(self, agent):

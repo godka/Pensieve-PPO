@@ -30,7 +30,7 @@ TEST_TRACES = './test/'
 
 CHUNK_COMBO_OPTIONS = []
 
-NUM_AGENTS = 2
+NUM_AGENTS = 4
 
 # past errors in bandwidth
 past_errors = [[]for _ in range(NUM_AGENTS)]
@@ -69,12 +69,12 @@ def main():
 
     time_stamp = [0 for _ in range(NUM_AGENTS)]
 
-    last_bit_rate = DEFAULT_QUALITY
-    bit_rate = DEFAULT_QUALITY
+    last_bit_rate = [DEFAULT_QUALITY for _ in range(NUM_AGENTS)]
+    bit_rate = [DEFAULT_QUALITY for _ in range(NUM_AGENTS)]
 
     action_vec = [np.zeros(A_DIM) for _ in range(NUM_AGENTS)]
     for i in range(NUM_AGENTS):
-        action_vec[i][bit_rate] = 1
+        action_vec[i][DEFAULT_QUALITY] = 1
 
     s_batch = [[np.zeros((S_INFO, S_LEN))]for _ in range(NUM_AGENTS)]
     a_batch = [[action_vec]for _ in range(NUM_AGENTS)]
@@ -90,7 +90,7 @@ def main():
         CHUNK_COMBO_OPTIONS.append(combo)
     
     for agent in range(NUM_AGENTS):
-        net_env.set_video_chunk(bit_rate, agent)
+        net_env.set_video_chunk(DEFAULT_QUALITY, agent)
 
     while True:  # serve video forever
         
@@ -113,26 +113,27 @@ def main():
             time_stamp[agent] += sleep_time  # in ms
             
             # reward is video quality - rebuffer penalty
-            reward = VIDEO_BIT_RATE[bit_rate] / M_IN_K \
+            reward = VIDEO_BIT_RATE[bit_rate[agent]] / M_IN_K \
                     - REBUF_PENALTY * rebuf \
-                    - SMOOTH_PENALTY * np.abs(VIDEO_BIT_RATE[bit_rate] -
-                                            VIDEO_BIT_RATE[last_bit_rate]) / M_IN_K
+                    - SMOOTH_PENALTY * np.abs(VIDEO_BIT_RATE[bit_rate[agent]] -
+                                            VIDEO_BIT_RATE[last_bit_rate[agent]]) / M_IN_K
 
             r_batch[agent].append(reward)
-            
             results.append(reward)
+            
             # print(net_env.video_chunk_counter)
             # print(len(net_env.cooked_bw[1161]))
-            print(net_env.mahimahi_ptr, agent, reward, bit_rate, delay, sleep_time, buffer_size, rebuf, \
-                video_chunk_size, next_video_chunk_sizes, \
-                end_of_video, video_chunk_remain)
+            # if agent == 1:
+            #     print(reward, bit_rate[agent], delay, sleep_time, buffer_size, rebuf, \
+            #         video_chunk_size, next_video_chunk_sizes, \
+            #         end_of_video, video_chunk_remain)
 
-            last_bit_rate = bit_rate
+            last_bit_rate[agent] = bit_rate[agent]
 
             if agent == 0:
                 # log time_stamp, bit_rate, buffer_size, reward
                 log_file.write(str(time_stamp[agent] / M_IN_K) + '\t' +
-                            str(VIDEO_BIT_RATE[bit_rate]) + '\t' +
+                            str(VIDEO_BIT_RATE[bit_rate[agent]]) + '\t' +
                             str(buffer_size) + '\t' +
                             str(rebuf) + '\t' +
                             str(video_chunk_size) + '\t' +
@@ -150,7 +151,7 @@ def main():
             state[agent] = np.roll(state[agent], -1, axis=1)
 
             # this should be S_INFO number of terms
-            state[agent][0, -1] = VIDEO_BIT_RATE[bit_rate] / float(np.max(VIDEO_BIT_RATE))  # last quality
+            state[agent][0, -1] = VIDEO_BIT_RATE[bit_rate[agent]] / float(np.max(VIDEO_BIT_RATE))  # last quality
             state[agent][1, -1] = buffer_size / BUFFER_NORM_FACTOR
             state[agent][2, -1] = rebuf
             state[agent][3, -1] = float(video_chunk_size) / float(delay) / M_IN_K  # kilo byte / ms
@@ -208,7 +209,7 @@ def main():
                 curr_buffer = start_buffer
                 bitrate_sum = 0
                 smoothness_diffs = 0
-                last_quality = int( bit_rate )
+                last_quality = int( bit_rate[agent] )
                 for position in range(0, len(combo)):
                     chunk_quality = combo[position]
                     index = last_index + position + 1 # e.g., if last chunk is 3, then first iter is 3+0+1=4
@@ -242,9 +243,9 @@ def main():
                     if ( best_combo != () ): # some combo was good
                         send_data = best_combo[0]
 
-            bit_rate = send_data
+            bit_rate[agent] = send_data
             
-            net_env.set_video_chunk(bit_rate, agent)
+            net_env.set_video_chunk(bit_rate[agent], agent)
             # hack
             # if bit_rate == 1 or bit_rate == 2:
             #    bit_rate = 0
@@ -260,11 +261,11 @@ def main():
             log_file.write('\n')
             log_file.close()
 
-            last_bit_rate = DEFAULT_QUALITY
-            bit_rate = DEFAULT_QUALITY  # use the default action here
+            last_bit_rate = [DEFAULT_QUALITY for _ in range(NUM_AGENTS)]
+            bit_rate = [DEFAULT_QUALITY for _ in range(NUM_AGENTS)]
             net_env.reset()
             for agent in range(NUM_AGENTS):
-                net_env.set_video_chunk(bit_rate, agent)
+                net_env.set_video_chunk(bit_rate[agent], agent)
 
             del s_batch[:]
             del a_batch[:]
@@ -272,7 +273,7 @@ def main():
 
             action_vec = [np.zeros(A_DIM) for _ in range(NUM_AGENTS)]
             for i in range(NUM_AGENTS):
-                action_vec[i][bit_rate] = 1
+                action_vec[i][bit_rate[agent]] = 1
 
             s_batch = [[np.zeros((S_INFO, S_LEN))]for _ in range(NUM_AGENTS)]
             a_batch = [[action_vec]for _ in range(NUM_AGENTS)]
@@ -281,7 +282,7 @@ def main():
 
             print("video count", video_count)
             video_count += 1
-            # break
+            break
 
             if video_count >= len(all_file_names):
                 break
@@ -289,7 +290,7 @@ def main():
             log_path = LOG_FILE + '_' + all_file_names[net_env.trace_idx]
             log_file = open(log_path, 'w')
 
-    print(results, sum(results))
+    # print(results, sum(results))
     print(sum(results) / len(results))
 
 if __name__ == '__main__':

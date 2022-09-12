@@ -64,6 +64,8 @@ class ABREnv():
 
     def take_action(self, agent):
         return self.net_env.take_action[agent]
+    def end_of_video(self, agent):
+        return self.net_env.end_of_video[agent]
 
     def step_agent(self, bit_rate, agent):
         # the action is from the last decision

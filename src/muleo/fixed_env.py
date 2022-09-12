@@ -40,7 +40,7 @@ class Environment:
 
         self.connection = {}
         for sat_id, sat_bw in self.cooked_bw.items():
-            self.connection[sat_id] = False
+            self.connection[sat_id] = -1
 
         self.mahimahi_start_ptr = 1
         # randomize the start point of the trace
@@ -142,7 +142,7 @@ class Environment:
         if throughput == 0.0:
             cur_sat_id = self.get_best_sat_id(agent)
             pre_sat_id = self.cur_sat_id[agent]
-            self.connection[pre_sat_id] = False
+            self.connection[pre_sat_id] = -1
             self.connection[cur_sat_id] = agent
             self.cur_sat_id[agent] = cur_sat_id
             self.delay[agent] += HANDOVER_DELAY
@@ -182,7 +182,7 @@ class Environment:
             self.step_agent(i)
         
         # print('--------------------------', self.mahimahi_ptr)
-        # print(self.cur_sat_id)
+        print([self.cooked_bw[id][self.mahimahi_ptr] for id in self.cur_sat_id])
         self.mahimahi_ptr += 1
         if self.mahimahi_ptr >= len(self.cooked_bw[self.cur_sat_id[0]]):
             # print('--------------------------')
@@ -214,7 +214,7 @@ class Environment:
         # Refresh satellite info
         self.connection = {}
         for sat_id, sat_bw in self.cooked_bw.items():
-            self.connection[sat_id] = False
+            self.connection[sat_id] = -1
 
         # multiuser setting
         
@@ -272,7 +272,7 @@ class Environment:
             mahimahi_ptr = self.mahimahi_ptr
 
         for sat_id, sat_bw in self.cooked_bw.items():
-            if self.connection[sat_id] == False:
+            if self.connection[sat_id] == -1:
                 if best_sat_bw < sat_bw[mahimahi_ptr]:
                     best_sat_id = sat_id
                     best_sat_bw = sat_bw[mahimahi_ptr]
