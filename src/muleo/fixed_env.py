@@ -182,7 +182,7 @@ class Environment:
             self.step_agent(i)
         
         # print('--------------------------', self.mahimahi_ptr)
-        print([self.cooked_bw[id][self.mahimahi_ptr] for id in self.cur_sat_id])
+        # print([self.cooked_bw[id][self.mahimahi_ptr] for id in self.cur_sat_id])
         self.mahimahi_ptr += 1
         if self.mahimahi_ptr >= len(self.cooked_bw[self.cur_sat_id[0]]):
             # print('--------------------------')

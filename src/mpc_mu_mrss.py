@@ -30,7 +30,7 @@ TEST_TRACES = './test/'
 
 CHUNK_COMBO_OPTIONS = []
 
-NUM_AGENTS = 4
+NUM_AGENTS = 2
 
 # past errors in bandwidth
 past_errors = [[]for _ in range(NUM_AGENTS)]
@@ -281,7 +281,6 @@ def main():
 
             print("video count", video_count)
             video_count += 1
-            break
 
             if video_count >= len(all_file_names):
                 break

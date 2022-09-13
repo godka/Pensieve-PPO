@@ -33,7 +33,7 @@ TEST_TRACES = './test/'
 
 CHUNK_COMBO_OPTIONS = []
 
-NUM_AGENTS = 1
+NUM_AGENTS = 2
 
 # past errors in bandwidth
 past_errors = [[]for _ in range(NUM_AGENTS)]
@@ -47,7 +47,7 @@ size_video4 = [668286, 611087, 571051, 617681, 652874, 520315, 561791, 709534, 5
 size_video5 = [450283, 398865, 350812, 382355, 411561, 318564, 352642, 437162, 374758, 362795, 353220, 405134, 386351, 434409, 337059, 366214, 360831, 372963, 405596, 350713, 386472, 399894, 401853, 343800, 359903, 379700, 425781, 277716, 400396, 400508, 358218, 400322, 369834, 412837, 401088, 365161, 321064, 361565, 378327, 390680, 345516, 384505, 372093, 438281, 398987, 393804, 331053, 314107, 255954]
 size_video6 = [181801, 155580, 139857, 155432, 163442, 126289, 153295, 173849, 150710, 139105, 141840, 156148, 160746, 179801, 140051, 138313, 143509, 150616, 165384, 140881, 157671, 157812, 163927, 137654, 146754, 153938, 181901, 111155, 153605, 149029, 157421, 157488, 143881, 163444, 179328, 159914, 131610, 124011, 144254, 149991, 147968, 161857, 145210, 172312, 167025, 160064, 137507, 118421, 112270]
 
-MPC_TYPE = "DualMPC"
+MPC_TYPE = "ManifoldMPC"
 
 def get_chunk_size(quality, index):
     if ( index < 0 or index > 48 ):
@@ -113,8 +113,6 @@ def main():
             video_chunk_size, next_video_chunk_sizes, \
             end_of_video, video_chunk_remain, bit_rate, is_handover, new_sat_id= \
                 net_env.get_result(agent, model_type=MPC_TYPE)
-
-            print(bit_rate, is_handover, new_sat_id)
 
             time_stamp[agent] += delay  # in ms
             time_stamp[agent] += sleep_time  # in ms
@@ -201,8 +199,6 @@ def main():
 
             print("video count", video_count)
             video_count += 1
-            break
-
             if video_count >= len(all_file_names):
                 break
 

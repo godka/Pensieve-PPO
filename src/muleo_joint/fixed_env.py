@@ -373,7 +373,7 @@ class Environment:
         return is_handover, best_sat_id, bit_rate
 
     def calculate_mpc_with_handover(self, agent, robustness=True, only_runner_up=True,
-                                    method="holt-winter"):
+                                    method="harmonic-mean"):
         # future chunks length (try 4 if that many remaining)
         video_chunk_remain = self.video_chunk_remain[agent]
         # last_index = self.get_total_video_chunk() - video_chunk_remain
@@ -510,8 +510,8 @@ class Environment:
         cur_sat_past_list = self.download_bw[agent]
         if len(cur_sat_past_list) <= 1:
             return self.download_bw[agent][-1]
-        # past_bws = cur_sat_past_list[-MPC_FUTURE_CHUNK_COUNT:]
-        past_bws = cur_sat_past_list
+        past_bws = cur_sat_past_list[-MPC_FUTURE_CHUNK_COUNT:]
+        # past_bws = cur_sat_past_list
         # print(past_bws)
         while past_bws[0] == 0.0:
             past_bws = past_bws[1:]
@@ -526,7 +526,7 @@ class Environment:
 
         # fitted_model = ExponentialSmoothing(cur_sat_past_bws
         # test_predictions = fitted_model.forecast(3)
-        test_predictions = fitted_model.forecast(5)
+        test_predictions = fitted_model.forecast(1)
 
         pred_bw = sum(test_predictions) / len(test_predictions)
 
@@ -574,9 +574,6 @@ class Environment:
         if len(cur_sat_past_list) <= 1:
             # Just past bw
             return self.cooked_bw[sat_id][self.mahimahi_ptr[agent]-1]
-        
-        while cur_sat_past_list[0] == 0.0:
-            cur_sat_past_list = cur_sat_past_list[1:]
 
         cur_sat_past_bws = pd.Series(cur_sat_past_list)
         cur_sat_past_bws.index.freq = 's'
@@ -587,7 +584,7 @@ class Environment:
         # fitted_model = ExponentialSmoothing(cur_sat_past_bws, trend='mul').fit()
 
         # fitted_model = ExponentialSmoothing(cur_sat_past_bws
-        test_predictions = fitted_model.forecast(5)
+        test_predictions = fitted_model.forecast(1)
         # test_predictions = fitted_model.forecast(num)
 
         pred_bw = sum(test_predictions) / len(test_predictions)
