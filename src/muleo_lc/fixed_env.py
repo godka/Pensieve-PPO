@@ -56,7 +56,8 @@ class Environment:
         self.cooked_time = self.all_cooked_time[self.trace_idx]
         self.cooked_bw = self.all_cooked_bw[self.trace_idx]
 
-        self.last_quality = DEFAULT_QUALITY
+        # self.last_quality = DEFAULT_QUALITY
+        self.last_quality = [DEFAULT_QUALITY for _ in range(self.num_agents)]
 
         self.connection = {}
         for sat_id, sat_bw in self.cooked_bw.items():
@@ -110,7 +111,7 @@ class Environment:
         
         is_handover = False
         
-        self.last_quality = quality
+        self.last_quality[agent] = quality
         
         while True:  # download video chunk over mahimahi
             throughput = self.cooked_bw[self.cur_sat_id[agent]][self.mahimahi_ptr[agent]] \
@@ -160,8 +161,7 @@ class Environment:
 
         # add in the new chunk
         self.buffer_size[agent] += VIDEO_CHUNCK_LEN
-        
-        
+
         # sleep if buffer gets too large
         sleep_time = 0
         if self.buffer_size[agent] > BUFFER_THRESH:
@@ -182,7 +182,6 @@ class Environment:
                 sleep_time -= duration * MILLISECONDS_IN_SECOND
                 self.last_mahimahi_time[agent] = self.cooked_time[self.mahimahi_ptr[agent]]
                 self.mahimahi_ptr[agent] += 1
-                
                 
                 if self.mahimahi_ptr[agent] >= len(self.cooked_bw[self.cur_sat_id[agent]]):
                     # loop back in the beginning
@@ -315,8 +314,6 @@ class Environment:
         self.connection[cur_sat_id] = agent
 
         self.cur_sat_id[agent] = cur_sat_id
-        
-        
 
     def run_mpc(self, agent, model_type):
         if model_type == "ManifoldMPC":
@@ -325,16 +322,20 @@ class Environment:
         elif model_type == "DualMPC":
             is_handover, new_sat_id, bit_rate = self.qoe_v2(
                 agent, only_runner_up=True)
+        elif model_type == "DualMPC-Centralization":
+            is_handover, new_sat_id, bit_rate = self.qoe_v2(
+                agent, centralized=True)
         else:
             print("Cannot happen!")
             exit(-1)
         return is_handover, new_sat_id, bit_rate
 
-    def qoe_v2(self, agent, only_runner_up=True):
+    def qoe_v2(self, agent, only_runner_up=True, centralized=False):
         is_handover = False
         best_sat_id = self.cur_sat_id[agent]
+
         ho_sat_id, ho_stamp, best_combo, max_reward = self.calculate_mpc_with_handover(
-            agent, only_runner_up=only_runner_up)
+            agent, only_runner_up=only_runner_up, centralized=False)
         if ho_stamp == 0:
             is_handover = True
             best_sat_id = ho_sat_id
@@ -344,7 +345,7 @@ class Environment:
         return is_handover, best_sat_id, bit_rate
 
     def calculate_mpc_with_handover(self, agent, robustness=True, only_runner_up=True,
-                                    method="harmonic-mean"):
+                                    method="harmonic-mean", centralized=True):
         # future chunks length (try 4 if that many remaining)
         video_chunk_remain = self.video_chunk_remain[agent]
         # last_index = self.get_total_video_chunk() - video_chunk_remain
@@ -358,18 +359,17 @@ class Environment:
         future_chunk_length = MPC_FUTURE_CHUNK_COUNT
         if video_chunk_remain < MPC_FUTURE_CHUNK_COUNT:
             future_chunk_length = video_chunk_remain
-
         
         max_reward = -10000000
-        best_combo = (self.last_quality, )
+        best_combo = (self.last_quality[agent], )
         ho_sat_id = self.cur_sat_id[agent]
         ho_stamp = MPC_FUTURE_CHUNK_COUNT
         if future_chunk_length == 0:
             return ho_sat_id, ho_stamp, best_combo, max_reward
 
-        cur_harmonic_bw, runner_up_sat_id = None, None
+        cur_download_bw, runner_up_sat_id = None, None
         if method == "harmonic-mean":
-            cur_download_bw = self.predict_download_bw(agent, True)
+            c = self.predict_download_bw(agent, True)
             runner_up_sat_id, _ = self.get_runner_up_sat_id(
                 agent, method="harmonic-mean")
         elif method == "holt-winter":
@@ -383,7 +383,7 @@ class Environment:
 
         start_buffer = self.buffer_size[agent] / MILLISECONDS_IN_SECOND
 
-        best_combo, max_reward = self.calculate_mpc(video_chunk_remain, start_buffer, last_index, cur_download_bw)
+        best_combo, max_reward = self.calculate_mpc(video_chunk_remain, start_buffer, last_index, cur_download_bw, centralized)
 
         for next_sat_id, next_sat_bw in self.cooked_bw.items():
 
@@ -425,7 +425,7 @@ class Environment:
                             curr_buffer = start_buffer
                             bitrate_sum = 0
                             smoothness_diffs = 0
-                            last_quality = self.last_quality
+                            last_quality = self.last_quality[agent]
 
                             for position in range(0, len(combo)):
                                 chunk_quality = combo[position]
@@ -563,7 +563,7 @@ class Environment:
         return pred_bw
         # return list(test_predictions)
 
-    def calculate_mpc(self, video_chunk_remain, start_buffer, last_index, cur_harmonic_bw):
+    def calculate_mpc(self, video_chunk_remain, start_buffer, last_index, cur_harmonic_bw, centralized=False):
         max_reward = -10000000
         best_combo = ()
         chunk_combo_option = []
@@ -585,11 +585,11 @@ class Environment:
             curr_buffer = start_buffer
             bitrate_sum = 0
             smoothness_diffs = 0
-            last_quality = self.last_quality
+            last_quality = self.last_quality[agent]
 
             for position in range(0, len(combo)):
                 chunk_quality = combo[position]
-                index = last_index + position# e.g., if last chunk is 3, then first iter is 3+0+1=4
+                index = last_index + position # e.g., if last chunk is 3, then first iter is 3+0+1=4
                 download_time = 0
                 download_time += (self.video_size[chunk_quality][index] / B_IN_MB) \
                     / cur_harmonic_bw * BITS_IN_BYTE  # this is MB/MB/s --> seconds
@@ -614,6 +614,7 @@ class Environment:
             # 10~140 - 0~100 - 0~130
             reward = bitrate_sum * QUALITY_FACTOR / M_IN_K - (REBUF_PENALTY * curr_rebuffer_time) \
                 - SMOOTH_PENALTY * smoothness_diffs / M_IN_K
+
 
             """
             if ( reward >= max_reward ):
