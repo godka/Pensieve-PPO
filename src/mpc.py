@@ -262,7 +262,7 @@ def main():
             a_batch.append(action_vec)
             entropy_record = []
 
-            print("video count", video_count)
+            print("network count", video_count)
             video_count += 1
 
             if video_count >= len(all_file_names):

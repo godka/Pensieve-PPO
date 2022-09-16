@@ -90,6 +90,8 @@ class Environment:
         self.past_bw_ests = [{} for _ in range(self.num_agents)]
         self.past_bw_errors = [{} for _ in range(self.num_agents)]
 
+        # Centralization
+        self.user_qoe_log = []
 
         self.video_size = {}  # in bytes
         for bitrate in range(BITRATE_LEVELS):
@@ -288,7 +290,9 @@ class Environment:
                 else:
                     if self.last_mahimahi_time[agent] < self.last_mahimahi_time[user]:
                         user = agent
-                        
+
+        if user == 0:
+            self.user_qoe_log = []
         return user
  
     def get_best_sat_id(self, agent, mahimahi_ptr=None):
@@ -335,7 +339,7 @@ class Environment:
         best_sat_id = self.cur_sat_id[agent]
 
         ho_sat_id, ho_stamp, best_combo, max_reward = self.calculate_mpc_with_handover(
-            agent, only_runner_up=only_runner_up, centralized=False)
+            agent, only_runner_up=only_runner_up, centralized=centralized)
         if ho_stamp == 0:
             is_handover = True
             best_sat_id = ho_sat_id
@@ -369,7 +373,7 @@ class Environment:
 
         cur_download_bw, runner_up_sat_id = None, None
         if method == "harmonic-mean":
-            c = self.predict_download_bw(agent, True)
+            cur_download_bw = self.predict_download_bw(agent, True)
             runner_up_sat_id, _ = self.get_runner_up_sat_id(
                 agent, method="harmonic-mean")
         elif method == "holt-winter":
@@ -383,7 +387,7 @@ class Environment:
 
         start_buffer = self.buffer_size[agent] / MILLISECONDS_IN_SECOND
 
-        best_combo, max_reward = self.calculate_mpc(video_chunk_remain, start_buffer, last_index, cur_download_bw, centralized)
+        best_combo, max_reward, best_case = self.calculate_mpc(video_chunk_remain, start_buffer, last_index, cur_download_bw, agent, centralized)
 
         for next_sat_id, next_sat_bw in self.cooked_bw.items():
 
@@ -400,7 +404,7 @@ class Environment:
                         # Only consider the next-best satellite
                         continue
                     # Based on the bw, not download bw
-                    next_harmonic_bw = None
+                    next_download_bw = None
                     if method == "harmonic-mean":
                         next_download_bw = cur_download_bw * self.predict_bw(next_sat_id, agent, robustness) / self.cooked_bw[self.cur_sat_id[agent]][self.mahimahi_ptr[agent]-1]
                     elif method == "holt-winter":
@@ -464,17 +468,31 @@ class Environment:
                             reward = bitrate_sum * QUALITY_FACTOR / M_IN_K - (REBUF_PENALTY * curr_rebuffer_time) \
                                 - SMOOTH_PENALTY * smoothness_diffs / M_IN_K
 
+                            if centralized:
+                                for qoe_log in self.user_qoe_log:
+                                    reward += self.get_mpc_qoe(qoe_log)
+
                             if reward > max_reward:
                                 best_combo = combo
                                 max_reward = reward
                                 ho_sat_id = next_sat_id
                                 ho_stamp = ho_index
+                                best_case = {"last_quality": last_quality, "cur_download_bw": cur_download_bw,
+                                             "start_buffer": start_buffer, "future_chunk_length": future_chunk_length,
+                                             "last_index": last_index, "combo": combo, "next_download_bw": next_download_bw,
+                                             "ho_index": ho_index, "next_sat_id": next_sat_id}
                             elif reward == max_reward and (combo[0] >= best_combo[0] or ho_index >= 0):
                                 best_combo = combo
                                 max_reward = reward
                                 ho_sat_id = next_sat_id
                                 ho_stamp = ho_index
-                            
+                                best_case = {"last_quality": last_quality, "cur_download_bw": cur_download_bw,
+                                             "start_buffer": start_buffer, "future_chunk_length": future_chunk_length,
+                                             "last_index": last_index, "combo": combo,
+                                             "next_download_bw": next_download_bw,
+                                             "ho_index": ho_index, "next_sat_id": next_sat_id}
+
+        self.user_qoe_log.append(best_case)
         return ho_sat_id, ho_stamp, best_combo, max_reward
 
     def predict_download_bw_holt_winter(self, agent, m=172):
@@ -563,10 +581,11 @@ class Environment:
         return pred_bw
         # return list(test_predictions)
 
-    def calculate_mpc(self, video_chunk_remain, start_buffer, last_index, cur_harmonic_bw, centralized=False):
+    def calculate_mpc(self, video_chunk_remain, start_buffer, last_index, cur_download_bw, agent, centralized=False):
         max_reward = -10000000
         best_combo = ()
         chunk_combo_option = []
+        best_case = {}
         
         # make chunk combination options
         for combo in itertools.product(list(range(BITRATE_LEVELS)), repeat=MPC_FUTURE_CHUNK_COUNT):
@@ -589,10 +608,10 @@ class Environment:
 
             for position in range(0, len(combo)):
                 chunk_quality = combo[position]
-                index = last_index + position # e.g., if last chunk is 3, then first iter is 3+0+1=4
+                index = last_index + position  # e.g., if last chunk is 3, then first iter is 3+0+1=4
                 download_time = 0
                 download_time += (self.video_size[chunk_quality][index] / B_IN_MB) \
-                    / cur_harmonic_bw * BITS_IN_BYTE  # this is MB/MB/s --> seconds
+                                 / cur_download_bw * BITS_IN_BYTE  # this is MB/MB/s --> seconds
 
                 if curr_buffer < download_time:
                     curr_rebuffer_time += (download_time - curr_buffer)
@@ -615,7 +634,6 @@ class Environment:
             reward = bitrate_sum * QUALITY_FACTOR / M_IN_K - (REBUF_PENALTY * curr_rebuffer_time) \
                 - SMOOTH_PENALTY * smoothness_diffs / M_IN_K
 
-
             """
             if ( reward >= max_reward ):
                 if (best_combo != ()) and best_combo[0] < combo[0]:
@@ -631,11 +649,19 @@ class Environment:
             if reward > max_reward:
                 best_combo = combo
                 max_reward = reward
+                best_case = {"last_quality": last_quality, "cur_download_bw": cur_download_bw,
+                             "start_buffer": start_buffer, "future_chunk_length": future_chunk_length,
+                             "last_index": last_index, "combo": combo, "next_download_bw": None,
+                             "ho_index": MPC_FUTURE_CHUNK_COUNT, "next_sat_id": None}
             elif reward == max_reward and (combo[0] >= best_combo[0]):
                 best_combo = combo
                 max_reward = reward
-            
-        return best_combo, max_reward
+                best_case = {"last_quality": last_quality, "cur_download_bw": cur_download_bw,
+                             "start_buffer": start_buffer, "future_chunk_length": future_chunk_length,
+                             "last_index": last_index, "combo": combo, "next_download_bw": None,
+                             "ho_index": MPC_FUTURE_CHUNK_COUNT, "next_sat_id": None}
+
+        return best_combo, max_reward, best_case
 
     def predict_download_bw(self, agent, robustness=False):
 
@@ -726,3 +752,52 @@ class Environment:
             harmonic_bw = harmonic_bw / (1 + max_error)  # robustMPC here
 
         return harmonic_bw
+
+    def get_mpc_qoe(self, qoe_log):
+        combo = qoe_log["combo"]
+        # calculate total rebuffer time for this combination (start with start_buffer and subtract
+        # each download time and add 2 seconds in that order)
+        curr_rebuffer_time = 0
+        curr_buffer = qoe_log["start_buffer"]
+        bitrate_sum = 0
+        smoothness_diffs = 0
+        last_quality = qoe_log["last_quality"]
+        ho_index = qoe_log["ho_index"]
+        for position in range(0, len(combo)):
+            chunk_quality = combo[position]
+            index = qoe_log["last_index"] + position  # e.g., if last chunk is 3, then first iter is 3+0+1=4
+            download_time = 0
+            if ho_index > position:
+                harmonic_bw = qoe_log["cur_download_bw"]
+            elif ho_index == position:
+                harmonic_bw = qoe_log["next_download_bw"]
+                # Give them a penalty
+                download_time += HANDOVER_DELAY
+            else:
+                harmonic_bw = qoe_log["next_download_bw"]
+            download_time += (self.video_size[chunk_quality][index] / B_IN_MB) \
+                             / harmonic_bw * BITS_IN_BYTE  # this is MB/MB/s --> seconds
+
+            if curr_buffer < download_time:
+                curr_rebuffer_time += (download_time -
+                                       curr_buffer)
+                curr_buffer = 0.0
+            else:
+                curr_buffer -= download_time
+            curr_buffer += VIDEO_CHUNCK_LEN / MILLISECONDS_IN_SECOND
+
+            # bitrate_sum += VIDEO_BIT_RATE[chunk_quality]
+            # smoothness_diffs += abs(VIDEO_BIT_RATE[chunk_quality] - VIDEO_BIT_RATE[last_quality])
+            bitrate_sum += VIDEO_BIT_RATE[chunk_quality]
+            smoothness_diffs += abs(
+                VIDEO_BIT_RATE[chunk_quality] - VIDEO_BIT_RATE[last_quality])
+            last_quality = chunk_quality
+        # compute reward for this combination (one reward per 5-chunk combo)
+
+        # bitrates are in Mbits/s, rebuffer in seconds, and smoothness_diffs in Mbits/s
+
+        # 10~140 - 0~100 - 0~130
+        reward = bitrate_sum * QUALITY_FACTOR / M_IN_K - (REBUF_PENALTY * curr_rebuffer_time) \
+                 - SMOOTH_PENALTY * smoothness_diffs / M_IN_K
+
+        return reward

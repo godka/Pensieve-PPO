@@ -280,7 +280,7 @@ def main():
             r_batch = [[]for _ in range(NUM_AGENTS)]
             entropy_record = [[]for _ in range(NUM_AGENTS)]
 
-            print("video count", video_count)
+            print("network count", video_count)
             video_count += 1
             
 
