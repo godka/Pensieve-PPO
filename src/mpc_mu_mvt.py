@@ -30,7 +30,7 @@ TEST_TRACES = './test/'
 
 CHUNK_COMBO_OPTIONS = []
 
-NUM_AGENTS = 2
+NUM_AGENTS = 1
 
 # past errors in bandwidth
 past_errors = [[]for _ in range(NUM_AGENTS)]
