@@ -445,7 +445,7 @@ class Environment:
 
                             for position in range(0, len(combo)):
                                 chunk_quality = combo[position]
-                                index = last_index + position# e.g., if last chunk is 3, then first iter is 3+0+1=4
+                                index = last_index + position # e.g., if last chunk is 3, then first iter is 3+0+1=4
                                 download_time = 0
                                 if ho_index > position:
                                     harmonic_bw = cur_download_bw
@@ -827,6 +827,7 @@ class Environment:
 
     def get_num_of_user_sat(self, sat_id, mahimahi_ptr):
         # update sat info
+        print(self.num_of_user_sat)
         if sat_id in self.num_of_user_sat.keys() and self.num_of_user_sat[sat_id] != 0:
             return self.num_of_user_sat[sat_id]
         
