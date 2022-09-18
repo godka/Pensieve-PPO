@@ -35,7 +35,7 @@ import argparse
 
 parser = argparse.ArgumentParser(description='PyTorch Synthetic Benchmark',
                                  formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-parser.add_argument('--user', type=int, default=2)
+parser.add_argument('--user', type=int, default=40)
 args = parser.parse_args()
 NUM_AGENTS = args.user
 
@@ -125,7 +125,7 @@ def main():
 
             print("network count", video_count)
             video_count += 1
-            break
+            # break
 
             if video_count >= len(all_file_names):
                 break
@@ -141,6 +141,7 @@ def main():
             net_env.get_video_chunk(bit_rate[agent], agent, MPC_TYPE)
             
         bit_rate[agent] = b
+        print(b)
 
         time_stamp[agent] += delay  # in ms
         time_stamp[agent] += sleep_time  # in ms
