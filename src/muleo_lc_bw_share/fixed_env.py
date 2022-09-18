@@ -52,7 +52,7 @@ class Environment:
         self.all_cooked_bw = all_cooked_bw
 
         # pick a random trace file
-        self.trace_idx = 0
+        self.trace_idx = 20
         self.cooked_time = self.all_cooked_time[self.trace_idx]
         self.cooked_bw = self.all_cooked_bw[self.trace_idx]
 
@@ -408,8 +408,6 @@ class Environment:
             return ho_sat_id, ho_stamp, best_combo, max_reward
 
         cur_user_num = self.get_num_of_user_sat(self.cur_sat_id[agent])
-        if cur_user_num == 0:
-            cur_user_num = 1
         cur_download_bw, runner_up_sat_id = None, None
         if method == "harmonic-mean":
             cur_download_bw = self.predict_download_bw(agent, True)
@@ -445,8 +443,12 @@ class Environment:
                     # Based on the bw, not download bw
                     next_download_bw = None
                     if method == "harmonic-mean":
-                        next_download_bw = cur_download_bw * self.predict_bw(next_sat_id, agent, robustness) /\
-                            (self.cooked_bw[self.cur_sat_id[agent]][self.mahimahi_ptr[agent]-1] / cur_user_num)
+                        if cur_user_num <= 1:
+                            next_download_bw = cur_download_bw * self.predict_bw(next_sat_id, agent, robustness) /\
+                                (self.cooked_bw[self.cur_sat_id[agent]][self.mahimahi_ptr[agent]-1])
+                        else:
+                            next_download_bw = cur_download_bw * self.predict_bw(next_sat_id, agent, robustness) /\
+                                (self.cooked_bw[self.cur_sat_id[agent]][self.mahimahi_ptr[agent]-1] / cur_user_num)
 
                     elif method == "holt-winter":
                         # next_harmonic_bw = self.predict_bw_holt_winter(next_sat_id, mahimahi_ptr, num=1)
