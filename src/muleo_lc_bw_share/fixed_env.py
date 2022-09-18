@@ -408,6 +408,8 @@ class Environment:
             return ho_sat_id, ho_stamp, best_combo, max_reward
 
         cur_user_num = self.get_num_of_user_sat(self.cur_sat_id[agent])
+        if cur_user_num == 0:
+            cur_user_num = 1
         cur_download_bw, runner_up_sat_id = None, None
         if method == "harmonic-mean":
             cur_download_bw = self.predict_download_bw(agent, True)
