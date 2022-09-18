@@ -41,6 +41,7 @@ QUALITY_FACTOR = 1
 REBUF_PENALTY = 4.3  # pensieve: 4.3  # 1 sec rebuffering -> 3 Mbps
 SMOOTH_PENALTY = 1
 
+
 class Environment:
     def __init__(self, all_cooked_time, all_cooked_bw, random_seed=RANDOM_SEED, num_agents=NUM_AGENTS):
         assert len(all_cooked_time) == len(all_cooked_bw)
@@ -72,7 +73,11 @@ class Environment:
         # Centralization
         self.user_qoe_log = []
         self.num_of_user_sat = {}
-
+        self.num_sat_info = {}
+        for sat_id, sat_bw in self.cooked_bw.items():
+            self.num_sat_info[sat_id] = [0 for _ in range(len(sat_bw))]
+        # print(self.num_sat_info)
+        # exit(1)
         # multiuser setting
         self.cur_sat_id = []
         self.prev_sat_id = [None for _ in range(self.num_agents)]
@@ -841,7 +846,7 @@ class Environment:
                         harmonic_bw = qoe_log["cur_download_bw"] * (cur_user_num / (cur_user_num - 1))
                     # harmonic_bw = qoe_log["cur_download_bw"] * (cur_user_num / (self.get_num_of_user_sat(target_cur_sat_id) - 1))
                 elif target_next_sat_id == qoe_log["cur_sat_id"] and index >= target_last_index + target_ho_index:
-                    if cur_user_num <= 1:
+                    if cur_user_num < 1:
                         harmonic_bw = qoe_log["cur_download_bw"]
                     else:
                         harmonic_bw = qoe_log["cur_download_bw"] * (cur_user_num / (cur_user_num + 1))
@@ -856,7 +861,7 @@ class Environment:
                     else:
                         harmonic_bw = qoe_log["next_download_bw"] * (next_user_num / (next_user_num - 1))
                 elif target_next_sat_id == qoe_log["next_sat_id"] and index >= target_last_index + target_ho_index:
-                    if next_user_num <= 1:
+                    if next_user_num < 1:
                         harmonic_bw = qoe_log["next_download_bw"]
                     else:
                         harmonic_bw = qoe_log["next_download_bw"] * (next_user_num / (next_user_num + 1))
@@ -874,7 +879,7 @@ class Environment:
                     else:
                         harmonic_bw = qoe_log["next_download_bw"] * (next_user_num / (next_user_num - 1))
                 elif target_next_sat_id == qoe_log["next_sat_id"] and index >= target_last_index + target_ho_index:
-                    if next_user_num <= 1:
+                    if next_user_num < 1:
                         harmonic_bw = qoe_log["next_download_bw"]
                     else:
                         harmonic_bw = qoe_log["next_download_bw"] * (next_user_num / (next_user_num + 1))
