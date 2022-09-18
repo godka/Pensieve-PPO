@@ -119,8 +119,13 @@ class Environment:
         self.last_quality[agent] = quality
         
         while True:  # download video chunk over mahimahi
-            throughput = self.cooked_bw[self.cur_sat_id[agent]][self.mahimahi_ptr[agent]] \
-                         * B_IN_MB / BITS_IN_BYTE / self.get_num_of_user_sat(self.cur_sat_id[agent], self.mahimahi_ptr[agent])
+            if self.get_num_of_user_sat(self.cur_sat_id[agent]) == 0:
+                throughput = self.cooked_bw[self.cur_sat_id[agent]][self.mahimahi_ptr[agent]] \
+                             * B_IN_MB / BITS_IN_BYTE
+            else:
+                throughput = self.cooked_bw[self.cur_sat_id[agent]][self.mahimahi_ptr[agent]] \
+                             * B_IN_MB / BITS_IN_BYTE / self.get_num_of_user_sat(self.cur_sat_id[agent])
+
             if throughput == 0.0:
                 # Do the forced handover
                 # Connect the satellite that has the best serving time
@@ -242,7 +247,6 @@ class Environment:
         self.video_chunk_remain[agent] = video_chunk_remain
         self.download_bw[agent].append(float(
             video_chunk_size) / delay / M_IN_K * BITS_IN_BYTE)
-        
 
         if not self.end_of_video[agent]:
             is_handover, new_sat_id, bit_rate = self.run_mpc(agent, model_type)
@@ -332,7 +336,10 @@ class Environment:
             mahimahi_ptr = self.mahimahi_ptr[agent]
 
         for sat_id, sat_bw in self.cooked_bw.items():
-            real_sat_bw = sat_bw[mahimahi_ptr] / self.get_num_of_user_sat(sat_id, mahimahi_ptr)
+            if self.get_num_of_user_sat(sat_id) == 0:
+                real_sat_bw = sat_bw[mahimahi_ptr]
+            else:
+                real_sat_bw = sat_bw[mahimahi_ptr] / (self.get_num_of_user_sat(sat_id) + 1)
             if best_sat_bw < real_sat_bw:
                 best_sat_id = sat_id
                 best_sat_bw = real_sat_bw
@@ -400,6 +407,7 @@ class Environment:
         if future_chunk_length == 0:
             return ho_sat_id, ho_stamp, best_combo, max_reward
 
+        cur_user_num = self.get_num_of_user_sat(self.cur_sat_id[agent])
         cur_download_bw, runner_up_sat_id = None, None
         if method == "harmonic-mean":
             cur_download_bw = self.predict_download_bw(agent, True)
@@ -436,13 +444,13 @@ class Environment:
                     next_download_bw = None
                     if method == "harmonic-mean":
                         next_download_bw = cur_download_bw * self.predict_bw(next_sat_id, agent, robustness) /\
-                            (self.cooked_bw[self.cur_sat_id[agent]][self.mahimahi_ptr[agent]-1] / self.get_num_of_user_sat(self.cur_sat_id[agent], self.mahimahi_ptr[agent]-1))
+                            (self.cooked_bw[self.cur_sat_id[agent]][self.mahimahi_ptr[agent]-1] / cur_user_num)
 
                     elif method == "holt-winter":
                         # next_harmonic_bw = self.predict_bw_holt_winter(next_sat_id, mahimahi_ptr, num=1)
                         # Change to proper download bw
                         next_download_bw = cur_download_bw * self.cooked_bw[next_sat_id][self.mahimahi_ptr[agent]-1] /\
-                            (self.cooked_bw[self.cur_sat_id[agent]][self.mahimahi_ptr[agent]-1] / self.get_num_of_user_sat(self.cur_sat_id[agent], self.mahimahi_ptr[agent]-1))
+                            (self.cooked_bw[self.cur_sat_id[agent]][self.mahimahi_ptr[agent]-1] / cur_user_num)
                     else:
                         print("Cannot happen")
                         exit(1)
@@ -464,7 +472,7 @@ class Environment:
 
                             for position in range(0, len(combo)):
                                 chunk_quality = combo[position]
-                                index = last_index + position# e.g., if last chunk is 3, then first iter is 3+0+1=4
+                                index = last_index + position  # e.g., if last chunk is 3, then first iter is 3+0+1=4
                                 download_time = 0
                                 if ho_index > position:
                                     harmonic_bw = cur_download_bw
@@ -501,9 +509,10 @@ class Environment:
 
                             if centralized:
                                 for qoe_log in self.user_qoe_log:
-                                    # reward += self.get_mpc_qoe(qoe_log)
-                                    reward += qoe_log["reward"]
- 
+                                    reward += self.get_mpc_qoe(qoe_log, last_index, ho_index, self.cur_sat_id[agent], next_sat_id)
+                                    # reward += qoe_log["reward"]
+
+                            next_user_num = self.get_num_of_user_sat(next_sat_id)
 
                             if reward > max_reward:
                                 best_combo = combo
@@ -513,7 +522,9 @@ class Environment:
                                 best_case = {"last_quality": last_quality, "cur_download_bw": cur_download_bw,
                                              "start_buffer": start_buffer, "future_chunk_length": future_chunk_length,
                                              "last_index": last_index, "combo": combo, "next_download_bw": next_download_bw,
-                                             "ho_index": ho_index, "next_sat_id": next_sat_id, "reward": reward}
+                                             "ho_index": ho_index, "next_sat_id": next_sat_id, "reward": reward,
+                                             "cur_user_num": cur_user_num, "next_user_num": next_user_num,
+                                             "cur_sat_id": self.cur_sat_id[agent]}
                             elif reward == max_reward and (combo[0] >= best_combo[0] or ho_index >= 0):
                                 best_combo = combo
                                 max_reward = reward
@@ -523,7 +534,9 @@ class Environment:
                                              "start_buffer": start_buffer, "future_chunk_length": future_chunk_length,
                                              "last_index": last_index, "combo": combo,
                                              "next_download_bw": next_download_bw,
-                                             "ho_index": ho_index, "next_sat_id": next_sat_id, "reward": reward}
+                                             "ho_index": ho_index, "next_sat_id": next_sat_id, "reward": reward,
+                                             "cur_user_num": cur_user_num, "next_user_num": next_user_num,
+                                             "cur_sat_id": self.cur_sat_id[agent]}
 
         self.user_qoe_log.append(best_case)
         return ho_sat_id, ho_stamp, best_combo, max_reward
@@ -587,10 +600,10 @@ class Environment:
         cur_sat_past_list = []
         if start_index < 0:
             for i in range(0, start_index+MPC_FUTURE_CHUNK_COUNT):
-                cur_sat_past_list.append(self.cooked_bw[sat_id][0:start_index+MPC_FUTURE_CHUNK_COUNT] / self.get_num_of_user_sat(sat_id, i))
+                cur_sat_past_list.append(self.cooked_bw[sat_id][0:start_index+MPC_FUTURE_CHUNK_COUNT] / self.get_num_of_user_sat(sat_id))
         else:
             for i in range(start_index, start_index+MPC_FUTURE_CHUNK_COUNT):
-                cur_sat_past_list.append(self.cooked_bw[sat_id][0:start_index+MPC_FUTURE_CHUNK_COUNT] / self.get_num_of_user_sat(sat_id, i))
+                cur_sat_past_list.append(self.cooked_bw[sat_id][0:start_index+MPC_FUTURE_CHUNK_COUNT] / self.get_num_of_user_sat(sat_id))
         
         while len(cur_sat_past_list) != 0 and cur_sat_past_list[0] == 0.0:
             cur_sat_past_list = cur_sat_past_list[1:]
@@ -598,7 +611,7 @@ class Environment:
 
         if len(cur_sat_past_list) <= 1:
             # Just past bw
-            return self.cooked_bw[sat_id][self.mahimahi_ptr[agent]-1] / self.get_num_of_user_sat(sat_id, self.mahimahi_ptr[agent]-1)
+            return self.cooked_bw[sat_id][self.mahimahi_ptr[agent]-1] / self.get_num_of_user_sat(sat_id)
         cur_sat_past_bws = pd.Series(cur_sat_past_list)
         cur_sat_past_bws.index.freq = 's'
 
@@ -625,7 +638,7 @@ class Environment:
         # make chunk combination options
         for combo in itertools.product(list(range(BITRATE_LEVELS)), repeat=MPC_FUTURE_CHUNK_COUNT):
             chunk_combo_option.append(combo)
-
+        cur_user_num = self.get_num_of_user_sat(self.cur_sat_id[agent])
         future_chunk_length = MPC_FUTURE_CHUNK_COUNT
         if video_chunk_remain < MPC_FUTURE_CHUNK_COUNT:
             future_chunk_length = video_chunk_remain
@@ -687,14 +700,16 @@ class Environment:
                 best_case = {"last_quality": last_quality, "cur_download_bw": cur_download_bw,
                              "start_buffer": start_buffer, "future_chunk_length": future_chunk_length,
                              "last_index": last_index, "combo": combo, "next_download_bw": None,
-                             "ho_index": MPC_FUTURE_CHUNK_COUNT, "next_sat_id": None, "reward": reward}
+                             "ho_index": MPC_FUTURE_CHUNK_COUNT, "next_sat_id": None, "reward": reward,
+                             "cur_user_num": cur_user_num, "cur_sat_id": self.cur_sat_id[agent]}
             elif reward == max_reward and (combo[0] >= best_combo[0]):
                 best_combo = combo
                 max_reward = reward
                 best_case = {"last_quality": last_quality, "cur_download_bw": cur_download_bw,
                              "start_buffer": start_buffer, "future_chunk_length": future_chunk_length,
                              "last_index": last_index, "combo": combo, "next_download_bw": None,
-                             "ho_index": MPC_FUTURE_CHUNK_COUNT, "next_sat_id": None, "reward": reward}
+                             "ho_index": MPC_FUTURE_CHUNK_COUNT, "next_sat_id": None, "reward": reward,
+                             "cur_user_num": cur_user_num, "cur_sat_id": self.cur_sat_id[agent]}
 
         return best_combo, max_reward, best_case
 
@@ -737,7 +752,10 @@ class Environment:
         curr_error = 0
 
         # past_bw = self.cooked_bw[self.cur_sat_id][self.mahimahi_ptr - 1]
-        past_bw = self.cooked_bw[sat_id][self.mahimahi_ptr[agent] - 1] / self.get_num_of_user_sat(sat_id, self.mahimahi_ptr[agent]-1)
+        if self.get_num_of_user_sat(sat_id) == 0:
+            past_bw = self.cooked_bw[sat_id][self.mahimahi_ptr[agent] - 1]
+        else:
+            past_bw = self.cooked_bw[sat_id][self.mahimahi_ptr[agent] - 1] / self.get_num_of_user_sat(sat_id)
         if past_bw == 0:
             return 0
 
@@ -756,11 +774,17 @@ class Environment:
 
         past_bws = []
         for index in range(start_index, self.mahimahi_ptr[agent]):
-            past_bws.append(self.cooked_bw[sat_id][index] / self.get_num_of_user_sat(sat_id, index))
+            if self.get_num_of_user_sat(sat_id) == 0:
+                past_bws.append(self.cooked_bw[sat_id][index])
+            else:
+                past_bws.append(self.cooked_bw[sat_id][index] / self.get_num_of_user_sat(sat_id))
 
         # Newly possible satellite case
         if all(v == 0.0 for v in past_bws):
-            return self.cooked_bw[sat_id][self.mahimahi_ptr[agent]] / self.get_num_of_user_sat(sat_id, self.mahimahi_ptr[agent])
+            if self.get_num_of_user_sat(sat_id) == 0:
+                return self.cooked_bw[sat_id][self.mahimahi_ptr[agent]]
+            else:
+                return self.cooked_bw[sat_id][self.mahimahi_ptr[agent]] / self.get_num_of_user_sat(sat_id)
 
         while past_bws[0] == 0.0:
             past_bws = past_bws[1:]
@@ -788,7 +812,7 @@ class Environment:
 
         return harmonic_bw
 
-    def get_mpc_qoe(self, qoe_log):
+    def get_mpc_qoe(self, qoe_log, target_last_index, target_ho_index, target_cur_sat_id, target_next_sat_id):
         combo = qoe_log["combo"]
         # calculate total rebuffer time for this combination (start with start_buffer and subtract
         # each download time and add 2 seconds in that order)
@@ -797,19 +821,62 @@ class Environment:
         bitrate_sum = 0
         smoothness_diffs = 0
         last_quality = qoe_log["last_quality"]
+        cur_user_num = qoe_log["cur_user_num"]
         ho_index = qoe_log["ho_index"]
+        harmonic_bw = None
         for position in range(0, len(combo)):
             chunk_quality = combo[position]
             index = qoe_log["last_index"] + position  # e.g., if last chunk is 3, then first iter is 3+0+1=4
             download_time = 0
             if ho_index > position:
-                harmonic_bw = qoe_log["cur_download_bw"]
+                if target_cur_sat_id == qoe_log["cur_sat_id"] and index >= target_last_index + target_ho_index:
+                    # if self.get_num_of_user_sat(target_cur_sat_id) - 1 == 0:
+                    if cur_user_num <= 1:
+                        harmonic_bw = qoe_log["cur_download_bw"]
+                    else:
+                        harmonic_bw = qoe_log["cur_download_bw"] * (cur_user_num / (cur_user_num - 1))
+                    # harmonic_bw = qoe_log["cur_download_bw"] * (cur_user_num / (self.get_num_of_user_sat(target_cur_sat_id) - 1))
+                elif target_next_sat_id == qoe_log["cur_sat_id"] and index >= target_last_index + target_ho_index:
+                    if cur_user_num <= 1:
+                        harmonic_bw = qoe_log["cur_download_bw"]
+                    else:
+                        harmonic_bw = qoe_log["cur_download_bw"] * (cur_user_num / (cur_user_num + 1))
+
+                else:
+                    harmonic_bw = qoe_log["cur_download_bw"]
             elif ho_index == position:
-                harmonic_bw = qoe_log["next_download_bw"]
+                next_user_num = qoe_log["next_user_num"]
+                if target_cur_sat_id == qoe_log["next_sat_id"] and index >= target_last_index + target_ho_index:
+                    if next_user_num <= 1:
+                        harmonic_bw = qoe_log["next_download_bw"]
+                    else:
+                        harmonic_bw = qoe_log["next_download_bw"] * (next_user_num / (next_user_num - 1))
+                elif target_next_sat_id == qoe_log["next_sat_id"] and index >= target_last_index + target_ho_index:
+                    if next_user_num <= 1:
+                        harmonic_bw = qoe_log["next_download_bw"]
+                    else:
+                        harmonic_bw = qoe_log["next_download_bw"] * (next_user_num / (next_user_num + 1))
+                else:
+                    harmonic_bw = qoe_log["next_download_bw"]
+
+                # harmonic_bw = qoe_log["next_download_bw"]
                 # Give them a penalty
                 download_time += HANDOVER_DELAY
             else:
-                harmonic_bw = qoe_log["next_download_bw"]
+                next_user_num = qoe_log["next_user_num"]
+                if target_cur_sat_id == qoe_log["next_sat_id"] and index >= target_last_index + target_ho_index:
+                    if next_user_num <= 1:
+                        harmonic_bw = qoe_log["next_download_bw"]
+                    else:
+                        harmonic_bw = qoe_log["next_download_bw"] * (next_user_num / (next_user_num - 1))
+                elif target_next_sat_id == qoe_log["next_sat_id"] and index >= target_last_index + target_ho_index:
+                    if next_user_num <= 1:
+                        harmonic_bw = qoe_log["next_download_bw"]
+                    else:
+                        harmonic_bw = qoe_log["next_download_bw"] * (next_user_num / (next_user_num + 1))
+                else:
+                    harmonic_bw = qoe_log["next_download_bw"]
+                # harmonic_bw = qoe_log["next_download_bw"]
             download_time += (self.video_size[chunk_quality][index] / B_IN_MB) \
                              / harmonic_bw * BITS_IN_BYTE  # this is MB/MB/s --> seconds
 
@@ -844,12 +911,10 @@ class Environment:
         else:
             self.num_of_user_sat[sat_id] = variation
 
-        
-
-    def get_num_of_user_sat(self, sat_id, mahimahi_ptr):
+    def get_num_of_user_sat(self, sat_id):
         # update sat info
-        if sat_id in self.num_of_user_sat.keys() and self.num_of_user_sat[sat_id] != 0:
+        if sat_id in self.num_of_user_sat.keys():
             return self.num_of_user_sat[sat_id]
         
         # print("Cannot Happen")
-        return 1
+        return 0

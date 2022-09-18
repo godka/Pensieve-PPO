@@ -35,7 +35,7 @@ import argparse
 
 parser = argparse.ArgumentParser(description='PyTorch Synthetic Benchmark',
                                  formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-parser.add_argument('--user', type=int, default=1)
+parser.add_argument('--user', type=int, default=2)
 args = parser.parse_args()
 NUM_AGENTS = args.user
 
@@ -139,7 +139,7 @@ def main():
         video_chunk_size, next_video_chunk_sizes, \
         end_of_video, video_chunk_remain, b, is_handover, new_sat_id = \
             net_env.get_video_chunk(bit_rate[agent], agent, MPC_TYPE)
-            
+
         bit_rate[agent] = b
 
         time_stamp[agent] += delay  # in ms
