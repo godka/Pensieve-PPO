@@ -113,7 +113,7 @@ class Environment:
         # use the delivery opportunity in mahimahi
         delay = 0.0  # in ms
         video_chunk_counter_sent = 0  # in bytes
-        
+        end_of_network = False
         is_handover = False
         
         self.last_quality[agent] = quality
@@ -130,6 +130,7 @@ class Environment:
                 self.switch_sat(agent, sat_id)
                 delay += HANDOVER_DELAY
                 is_handover = True
+                print("Forced Handover")
             
             duration = self.cooked_time[self.mahimahi_ptr[agent]] \
                        - self.last_mahimahi_time[agent]
@@ -156,6 +157,8 @@ class Environment:
                 self.mahimahi_ptr[agent] = 1
                 self.last_mahimahi_time[agent] = 0
                 self.end_of_video[agent] = True
+                end_of_network = True
+                break
 
         delay *= MILLISECONDS_IN_SECOND
         delay += LINK_RTT
@@ -181,6 +184,15 @@ class Environment:
             self.buffer_size[agent] -= sleep_time
 
             while True:
+                if self.mahimahi_ptr[agent] >= len(self.cooked_bw[self.cur_sat_id[agent]]):
+                    # loop back in the beginning
+                    # note: trace file starts with time 0
+                    self.mahimahi_ptr[agent] = 1
+                    self.last_mahimahi_time[agent] = 0
+                    self.end_of_video[agent] = True
+                    end_of_network = True
+                    break
+
                 duration = self.cooked_time[self.mahimahi_ptr[agent]] \
                            - self.last_mahimahi_time[agent]
                 if duration > sleep_time / MILLISECONDS_IN_SECOND:
@@ -189,12 +201,18 @@ class Environment:
                 sleep_time -= duration * MILLISECONDS_IN_SECOND
                 self.last_mahimahi_time[agent] = self.cooked_time[self.mahimahi_ptr[agent]]
                 self.mahimahi_ptr[agent] += 1
+
+                throughput = self.cooked_bw[self.cur_sat_id[agent]][self.mahimahi_ptr[agent]]
+                if throughput == 0.0:
+                    # Do the forced handover
+                    # Connect the satellite that has the best serving time
+                    sat_id = self.get_best_sat_id(agent, self.mahimahi_ptr[agent])
+                    self.update_sat_info(sat_id, self.mahimahi_ptr[agent], 1)
+                    self.update_sat_info(self.cur_sat_id[agent], self.mahimahi_ptr[agent], -1)
+                    self.switch_sat(agent, sat_id)
+                    is_handover = True
+                    print("Forced Handover")
                 
-                if self.mahimahi_ptr[agent] >= len(self.cooked_bw[self.cur_sat_id[agent]]):
-                    # loop back in the beginning
-                    # note: trace file starts with time 0
-                    self.mahimahi_ptr[agent] = 1
-                    self.last_mahimahi_time[agent] = 0
  
         # the "last buffer size" return to the controller
         # Note: in old version of dash the lowest buffer is 0.
@@ -204,8 +222,8 @@ class Environment:
 
         self.video_chunk_counter[agent] += 1
         video_chunk_remain = TOTAL_VIDEO_CHUNCK - self.video_chunk_counter[agent]
-        
-        if self.video_chunk_counter[agent] >= TOTAL_VIDEO_CHUNCK:
+
+        if self.video_chunk_counter[agent] >= TOTAL_VIDEO_CHUNCK or end_of_network:
 
             self.end_of_video[agent] = True
             self.buffer_size[agent] = 0
@@ -224,6 +242,7 @@ class Environment:
         self.video_chunk_remain[agent] = video_chunk_remain
         self.download_bw[agent].append(float(
             video_chunk_size) / delay / M_IN_K * BITS_IN_BYTE)
+        
 
         if not self.end_of_video[agent]:
             is_handover, new_sat_id, bit_rate = self.run_mpc(agent, model_type)
@@ -445,7 +464,7 @@ class Environment:
 
                             for position in range(0, len(combo)):
                                 chunk_quality = combo[position]
-                                index = last_index + position # e.g., if last chunk is 3, then first iter is 3+0+1=4
+                                index = last_index + position# e.g., if last chunk is 3, then first iter is 3+0+1=4
                                 download_time = 0
                                 if ho_index > position:
                                     harmonic_bw = cur_download_bw
@@ -482,7 +501,9 @@ class Environment:
 
                             if centralized:
                                 for qoe_log in self.user_qoe_log:
-                                    reward += self.get_mpc_qoe(qoe_log)
+                                    # reward += self.get_mpc_qoe(qoe_log)
+                                    reward += qoe_log["reward"]
+ 
 
                             if reward > max_reward:
                                 best_combo = combo
@@ -492,7 +513,7 @@ class Environment:
                                 best_case = {"last_quality": last_quality, "cur_download_bw": cur_download_bw,
                                              "start_buffer": start_buffer, "future_chunk_length": future_chunk_length,
                                              "last_index": last_index, "combo": combo, "next_download_bw": next_download_bw,
-                                             "ho_index": ho_index, "next_sat_id": next_sat_id}
+                                             "ho_index": ho_index, "next_sat_id": next_sat_id, "reward": reward}
                             elif reward == max_reward and (combo[0] >= best_combo[0] or ho_index >= 0):
                                 best_combo = combo
                                 max_reward = reward
@@ -502,7 +523,7 @@ class Environment:
                                              "start_buffer": start_buffer, "future_chunk_length": future_chunk_length,
                                              "last_index": last_index, "combo": combo,
                                              "next_download_bw": next_download_bw,
-                                             "ho_index": ho_index, "next_sat_id": next_sat_id}
+                                             "ho_index": ho_index, "next_sat_id": next_sat_id, "reward": reward}
 
         self.user_qoe_log.append(best_case)
         return ho_sat_id, ho_stamp, best_combo, max_reward
@@ -666,14 +687,14 @@ class Environment:
                 best_case = {"last_quality": last_quality, "cur_download_bw": cur_download_bw,
                              "start_buffer": start_buffer, "future_chunk_length": future_chunk_length,
                              "last_index": last_index, "combo": combo, "next_download_bw": None,
-                             "ho_index": MPC_FUTURE_CHUNK_COUNT, "next_sat_id": None}
+                             "ho_index": MPC_FUTURE_CHUNK_COUNT, "next_sat_id": None, "reward": reward}
             elif reward == max_reward and (combo[0] >= best_combo[0]):
                 best_combo = combo
                 max_reward = reward
                 best_case = {"last_quality": last_quality, "cur_download_bw": cur_download_bw,
                              "start_buffer": start_buffer, "future_chunk_length": future_chunk_length,
                              "last_index": last_index, "combo": combo, "next_download_bw": None,
-                             "ho_index": MPC_FUTURE_CHUNK_COUNT, "next_sat_id": None}
+                             "ho_index": MPC_FUTURE_CHUNK_COUNT, "next_sat_id": None, "reward": reward}
 
         return best_combo, max_reward, best_case
 
@@ -827,7 +848,6 @@ class Environment:
 
     def get_num_of_user_sat(self, sat_id, mahimahi_ptr):
         # update sat info
-        print(self.num_of_user_sat)
         if sat_id in self.num_of_user_sat.keys() and self.num_of_user_sat[sat_id] != 0:
             return self.num_of_user_sat[sat_id]
         
