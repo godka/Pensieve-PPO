@@ -52,7 +52,7 @@ class Environment:
         self.all_cooked_bw = all_cooked_bw
 
         # pick a random trace file
-        self.trace_idx = 20
+        self.trace_idx = 0
         self.cooked_time = self.all_cooked_time[self.trace_idx]
         self.cooked_bw = self.all_cooked_bw[self.trace_idx]
 
@@ -135,7 +135,7 @@ class Environment:
                 self.switch_sat(agent, sat_id)
                 delay += HANDOVER_DELAY
                 is_handover = True
-                print("Forced Handover")
+                # print("Forced Handover")
             
             duration = self.cooked_time[self.mahimahi_ptr[agent]] \
                        - self.last_mahimahi_time[agent]
@@ -216,7 +216,7 @@ class Environment:
                     self.update_sat_info(self.cur_sat_id[agent], self.mahimahi_ptr[agent], -1)
                     self.switch_sat(agent, sat_id)
                     is_handover = True
-                    print("Forced Handover")
+                    # print("Forced Handover")
                 
  
         # the "last buffer size" return to the controller
