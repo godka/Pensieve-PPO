@@ -250,5 +250,11 @@ def main():
     print('{:.4f}'.format(sum(time_list) / len(time_list)))
     print('{:.4f}'.format(np.std(time_list)))
 
+    print(results)
+    print(result_Qua)
+    print(result_Rebuf)
+    print(result_Smooth)
+    print(time_list)
+
 if __name__ == '__main__':
     main()
