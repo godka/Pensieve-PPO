@@ -35,7 +35,7 @@ import argparse
 
 parser = argparse.ArgumentParser(description='PyTorch Synthetic Benchmark',
                                  formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-parser.add_argument('--user', type=int, default=8)
+parser.add_argument('--user', type=int, default=4)
 args = parser.parse_args()
 NUM_AGENTS = args.user
 
@@ -52,6 +52,7 @@ size_video5 = [450283, 398865, 350812, 382355, 411561, 318564, 352642, 437162, 3
 size_video6 = [181801, 155580, 139857, 155432, 163442, 126289, 153295, 173849, 150710, 139105, 141840, 156148, 160746, 179801, 140051, 138313, 143509, 150616, 165384, 140881, 157671, 157812, 163927, 137654, 146754, 153938, 181901, 111155, 153605, 149029, 157421, 157488, 143881, 163444, 179328, 159914, 131610, 124011, 144254, 149991, 147968, 161857, 145210, 172312, 167025, 160064, 137507, 118421, 112270]
 
 MPC_TYPE = "DualMPC"
+# MPC_TYPE = "DualMPC-Centralization"
 # DualMPC-Centralization
 
 def get_chunk_size(quality, index):
@@ -125,7 +126,7 @@ def main():
 
             print("network count", video_count)
             video_count += 1
-            # break
+            break
 
             if video_count >= len(all_file_names):
                 break

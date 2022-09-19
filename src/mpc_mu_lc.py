@@ -3,6 +3,8 @@ from muleo_lc import load_trace
 from muleo_lc import fixed_env as env
 import matplotlib.pyplot as plt
 import itertools
+import time
+import argparse
 
 VIDEO_CHOICES = 6
 
@@ -31,11 +33,10 @@ TEST_TRACES = './test/'
 
 CHUNK_COMBO_OPTIONS = []
 
-import argparse
 
 parser = argparse.ArgumentParser(description='PyTorch Synthetic Benchmark',
                                  formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-parser.add_argument('--user', type=int, default=2)
+parser.add_argument('--user', type=int, default=1)
 args = parser.parse_args()
 NUM_AGENTS = args.user
 
@@ -94,6 +95,15 @@ def main():
     video_count = 0
     
     results = []
+    result_traces = []
+    result_Qua = []
+    result_Rebuf = []
+    result_Smooth = []
+    time_list = []
+    Qua_batch = []
+    Rebuf_batch = []
+    Smooth_batch = []
+    t = time.time()
 
     # make chunk combination options
     for combo in itertools.product([0,1,2,3,4,5], repeat=5):
@@ -103,13 +113,29 @@ def main():
         agent = net_env.get_first_agent()
 
         if agent == -1:
+            time_list.append(time.time() - t)
+            t = time.time()
+
             log_file.write('\n')
             log_file.close()
 
             last_bit_rate = [DEFAULT_QUALITY for _ in range(NUM_AGENTS)]
             bit_rate = [DEFAULT_QUALITY for _ in range(NUM_AGENTS)]
             net_env.reset()
-            
+
+            data = sum(r_batch[agent][1:]) / len(r_batch[agent][1:])
+            result_traces.append(data)
+
+            data = sum(Qua_batch[1:]) / len(Qua_batch[1:])
+            result_Qua.append(data)
+            data = sum(Rebuf_batch[1:]) / len(Rebuf_batch[1:])
+            result_Rebuf.append(data)
+            data = sum(Smooth_batch[1:]) / len(Smooth_batch[1:])
+            result_Smooth.append(data)
+
+            del Qua_batch[:]
+            del Rebuf_batch[:]
+            del Smooth_batch[:]
             del s_batch[:]
             del a_batch[:]
             del r_batch[:]
@@ -153,8 +179,12 @@ def main():
 
         r_batch[agent].append(reward)
         results.append(reward)
-            
-            # print(net_env.video_chunk_counter)
+        Qua_batch.append(VIDEO_BIT_RATE[bit_rate[agent]] / M_IN_K)
+        Rebuf_batch.append(REBUF_PENALTY * rebuf)
+        Smooth_batch.append(SMOOTH_PENALTY * np.abs(VIDEO_BIT_RATE[bit_rate[agent]] -
+                                                    VIDEO_BIT_RATE[last_bit_rate[agent]]) / M_IN_K)
+
+        # print(net_env.video_chunk_counter)
             # print(len(net_env.cooked_bw[1161]))
             # if agent == 0:
             #     print(reward, bit_rate[agent], delay, sleep_time, buffer_size, rebuf, \
@@ -203,7 +233,22 @@ def main():
         s_batch[agent].append(state[agent])
 
     # print(results, sum(results))
+    # print(sum(results) / len(results))
     print(sum(results) / len(results))
+    print(len(results))
+    print('{:.4f}'.format(sum(result_traces) / len(result_traces)))
+    print('{:.4f}'.format(np.std(result_traces)))
+
+    print('{:.4f}'.format(sum(result_Qua) / len(result_Qua)))
+    print('{:.4f}'.format(np.std(result_Qua)))
+    print('{:.4f}'.format(sum(result_Rebuf) / len(result_Rebuf)))
+    print('{:.4f}'.format(np.std(result_Rebuf)))
+
+    print('{:.4f}'.format(sum(result_Smooth) / len(result_Smooth)))
+    print('{:.4f}'.format(np.std(result_Smooth)))
+
+    print('{:.4f}'.format(sum(time_list) / len(time_list)))
+    print('{:.4f}'.format(np.std(time_list)))
 
 if __name__ == '__main__':
     main()
