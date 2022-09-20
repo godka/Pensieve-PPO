@@ -161,8 +161,10 @@ class Environment:
                 # Do the forced handover
                 # Connect the satellite that has the best serving time
                 sat_id = self.get_best_sat_id(agent, self.mahimahi_ptr[agent])
-                self.switch_sat(agent, sat_id)
-                delay += HANDOVER_DELAY
+                if sat_id != None:
+                    self.connection[sat_id][self.mahimahi_ptr[agent]] = agent
+                    self.cur_sat_id[agent] = sat_id
+               #  delay += HANDOVER_DELAY
                 is_handover = True
 
                 throughput = self.cooked_bw[self.cur_sat_id[agent]][self.mahimahi_ptr[agent]] * B_IN_MB / BITS_IN_BYTE
@@ -184,7 +186,8 @@ class Environment:
             delay += duration
             self.last_mahimahi_time[agent] = self.cooked_time[self.mahimahi_ptr[agent]]
             
-            self.mahimahi_ptr[agent] += 1
+            # self.mahimahi_ptr[agent] += 1
+            self.step_ahead(agent)
 
             if self.mahimahi_ptr[agent] >= len(self.cooked_time):
                 # loop back in the beginning
@@ -265,10 +268,11 @@ class Environment:
             is_handover, new_sat_id, bit_rate = self.run_mpc(agent, model_type)
             if is_handover:
                 delay += HANDOVER_DELAY * MILLISECONDS_IN_SECOND
-                self.connection[self.cur_sat_id[agent]] = -1
-                self.connection[new_sat_id] = agent
+                # self.connection[self.cur_sat_id[agent]] = -1
+                # self.connection[new_sat_id] = agent
+                self.connection[self.cur_sat_id[agent]][self.mahimahi_ptr[agent]] = agent
                 self.prev_sat_id[agent] = self.cur_sat_id[agent]
-                self.cur_sat_id[agent] = new_sat_id
+                self.cur_sat_id[agent] = self.cur_sat_id[agent]
                 # self.download_bw[agent] = []
                 # self.past_download_bw_errors[agent] = []
                 # self.past_download_ests[agent] = []

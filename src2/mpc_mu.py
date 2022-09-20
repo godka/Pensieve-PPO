@@ -40,7 +40,7 @@ parser = argparse.ArgumentParser(description='PyTorch Synthetic Benchmark',
                                  formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 parser.add_argument('--user', type=int, default=1)
 parser.add_argument('--handover', type=str, default='MEA')
-parser.add_argument('--trace', type=str, default="starlink")
+parser.add_argument('--trace', type=str, default="noaa")
 args = parser.parse_args()
 NUM_AGENTS = args.user
 
