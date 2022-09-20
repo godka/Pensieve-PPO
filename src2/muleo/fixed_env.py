@@ -126,11 +126,12 @@ class Environment:
                 # Do the forced handover
                 # Connect the satellite that has the best serving time
                 cur_sat_id = self.get_best_sat_id(agent, self.mahimahi_ptr[agent])
-                
-                if cur_sat_id != None:
-                    self.connection[cur_sat_id][self.mahimahi_ptr[agent]] = agent
-                    self.cur_sat_id[agent] = cur_sat_id
+                self.switch_sat(agent, cur_sat_id)
+
                 delay += HANDOVER_DELAY
+                is_handover = True
+
+                throughput = self.cooked_bw[self.cur_sat_id[agent]][self.mahimahi_ptr[agent]] * B_IN_MB / BITS_IN_BYTE
             
             duration = self.cooked_time[self.mahimahi_ptr[agent]] \
                        - self.last_mahimahi_time[agent]
@@ -149,8 +150,8 @@ class Environment:
             delay += duration
 
             self.last_mahimahi_time[agent] = self.cooked_time[self.mahimahi_ptr[agent]]
-            # self.mahimahi_ptr[agent] += 1
-            self.step_ahead(agent)
+            self.mahimahi_ptr[agent] += 1
+            # self.step_ahead(agent)
             
             if self.mahimahi_ptr[agent] >= len(self.cooked_time):
                 # loop back in the beginning
@@ -162,7 +163,7 @@ class Environment:
         delay *= MILLISECONDS_IN_SECOND
         delay += LINK_RTT
 
-        delay *= np.random.uniform(1, 1.05)
+        # delay *= np.random.uniform(1, 1.05)
         # rebuffer time
         rebuf = np.maximum(delay - self.buffer_size[agent], 0.0)
 
@@ -192,10 +193,10 @@ class Environment:
                     break
                 sleep_time -= duration * MILLISECONDS_IN_SECOND
                 self.last_mahimahi_time[agent] = self.cooked_time[self.mahimahi_ptr[agent]]
-                # self.mahimahi_ptr[agent] += 1
-                self.step_ahead(agent)
+                self.mahimahi_ptr[agent] += 1
+                # self.step_ahead(agent)
                 
-                if self.mahimahi_ptr[agent] >= len(self.cooked_time):
+                if self.mahimahi_ptr[agent] >= len(self.cooked_bw[self.cur_sat_id[agent]]):
                     # loop back in the beginning
                     # note: trace file starts with time 0
                     self.mahimahi_ptr[agent] = 1
@@ -210,7 +211,7 @@ class Environment:
         self.video_chunk_counter[agent] += 1
         video_chunk_remain = TOTAL_VIDEO_CHUNCK - self.video_chunk_counter[agent]
         
-        self.next_sat_bandwidth[agent], self.next_sat_id[agent] = self.get_all_sat_id(agent, self.mahimahi_ptr[agent] - 1)
+        # self.next_sat_bandwidth[agent], self.next_sat_id[agent] = self.get_all_sat_id(agent, self.mahimahi_ptr[agent] - 1)
                        
         if self.video_chunk_counter[agent] >= TOTAL_VIDEO_CHUNCK:
 
@@ -219,7 +220,8 @@ class Environment:
             self.video_chunk_counter[agent] = 0
             
             # Refresh satellite info
-            self.cur_sat_id[agent] = None
+            self.connection[self.cur_sat_id[agent]] = -1
+            self.cur_sat_id[agent] = -1
             
             # wait for overall clean
 
