@@ -24,7 +24,7 @@ DEFAULT_QUALITY = 1  # default video quality without agent
 RANDOM_SEED = 42
 RAND_RANGE = 1000000
 SUMMARY_DIR = './results'
-LOG_FILE = './test_results/log_sim_bb'
+LOG_FILE = './test_results/log_sim_cent'
 TEST_TRACES = './test/'
 # log in format of time_stamp bit_rate buffer_size rebuffer_time chunk_size download_time reward
 # NN_MODEL = './models/nn_model_ep_5900.ckpt'
@@ -35,7 +35,7 @@ import argparse
 
 parser = argparse.ArgumentParser(description='PyTorch Synthetic Benchmark',
                                  formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-parser.add_argument('--user', type=int, default=4)
+parser.add_argument('--user', type=int, default=8)
 args = parser.parse_args()
 NUM_AGENTS = args.user
 
@@ -43,7 +43,6 @@ NUM_AGENTS = args.user
 past_errors = [[]for _ in range(NUM_AGENTS)]
 past_bandwidth_ests = [[]for _ in range(NUM_AGENTS)]
 
-#size_video1 = [3155849, 2641256, 2410258, 2956927, 2593984, 2387850, 2554662, 2964172, 2541127, 2553367, 2641109, 2876576, 2493400, 2872793, 2304791, 2855882, 2887892, 2474922, 2828949, 2510656, 2544304, 2640123, 2737436, 2559198, 2628069, 2626736, 2809466, 2334075, 2775360, 2910246, 2486226, 2721821, 2481034, 3049381, 2589002, 2551718, 2396078, 2869088, 2589488, 2596763, 2462482, 2755802, 2673179, 2846248, 2644274, 2760316, 2310848, 2647013, 1653424]
 size_video1 = [2354772, 2123065, 2177073, 2160877, 2233056, 1941625, 2157535, 2290172, 2055469, 2169201, 2173522, 2102452, 2209463, 2275376, 2005399, 2152483, 2289689, 2059512, 2220726, 2156729, 2039773, 2176469, 2221506, 2044075, 2186790, 2105231, 2395588, 1972048, 2134614, 2164140, 2113193, 2147852, 2191074, 2286761, 2307787, 2143948, 1919781, 2147467, 2133870, 2146120, 2108491, 2184571, 2121928, 2219102, 2124950, 2246506, 1961140, 2155012, 1433658]
 size_video2 = [1728879, 1431809, 1300868, 1520281, 1472558, 1224260, 1388403, 1638769, 1348011, 1429765, 1354548, 1519951, 1422919, 1578343, 1231445, 1471065, 1491626, 1358801, 1537156, 1336050, 1415116, 1468126, 1505760, 1323990, 1383735, 1480464, 1547572, 1141971, 1498470, 1561263, 1341201, 1497683, 1358081, 1587293, 1492672, 1439896, 1139291, 1499009, 1427478, 1402287, 1339500, 1527299, 1343002, 1587250, 1464921, 1483527, 1231456, 1364537, 889412]
 size_video3 = [1034108, 957685, 877771, 933276, 996749, 801058, 905515, 1060487, 852833, 913888, 939819, 917428, 946851, 1036454, 821631, 923170, 966699, 885714, 987708, 923755, 891604, 955231, 968026, 874175, 897976, 905935, 1076599, 758197, 972798, 975811, 873429, 954453, 885062, 1035329, 1026056, 943942, 728962, 938587, 908665, 930577, 858450, 1025005, 886255, 973972, 958994, 982064, 830730, 846370, 598850]
@@ -52,8 +51,9 @@ size_video5 = [450283, 398865, 350812, 382355, 411561, 318564, 352642, 437162, 3
 size_video6 = [181801, 155580, 139857, 155432, 163442, 126289, 153295, 173849, 150710, 139105, 141840, 156148, 160746, 179801, 140051, 138313, 143509, 150616, 165384, 140881, 157671, 157812, 163927, 137654, 146754, 153938, 181901, 111155, 153605, 149029, 157421, 157488, 143881, 163444, 179328, 159914, 131610, 124011, 144254, 149991, 147968, 161857, 145210, 172312, 167025, 160064, 137507, 118421, 112270]
 
 MPC_TYPE = "DualMPC"
-# MPC_TYPE = "DualMPC-Centralization"
+MPC_TYPE = "DualMPC-Centralization"
 # DualMPC-Centralization
+
 
 def get_chunk_size(quality, index):
     if ( index < 0 or index > 48 ):
@@ -125,6 +125,7 @@ def main():
             entropy_record = [[]for _ in range(NUM_AGENTS)]
 
             print("network count", video_count)
+            print(sum(results) / len(results))
             video_count += 1
             break
 
@@ -138,7 +139,7 @@ def main():
         # this is to make the framework similar to the real
         delay, sleep_time, buffer_size, rebuf, \
         video_chunk_size, next_video_chunk_sizes, \
-        end_of_video, video_chunk_remain, b, is_handover, new_sat_id = \
+        end_of_video, video_chunk_remain, b, is_handover, cur_sat_id, sat_status = \
             net_env.get_video_chunk(bit_rate[agent], agent, MPC_TYPE)
             
         bit_rate[agent] = b
@@ -164,17 +165,15 @@ def main():
 
         last_bit_rate[agent] = bit_rate[agent]
 
-        if agent == 0:
+        if agent is not None:
             # log time_stamp, bit_rate, buffer_size, reward
-            log_file.write(str(time_stamp[agent] / M_IN_K) + '\t' +
-                        str(VIDEO_BIT_RATE[bit_rate[agent]]) + '\t' +
-                        str(buffer_size) + '\t' +
-                        str(rebuf) + '\t' +
-                        str(video_chunk_size) + '\t' +
-                        str(delay) + '\t' +
-                        str(reward) + '\n')
+            # log time_stamp, bit_rate, buffer_size, reward
+            log_file.write("{: <15} {: <10} {: <10} {: <15} {: <15} {: <15}"
+                           " {: <15} {: <15} {: <15}\n"
+                           .format(str(round(time_stamp[agent] / M_IN_K, 3)), str(agent),
+                                   str(VIDEO_BIT_RATE[bit_rate[agent]]), str(round(buffer_size, 3)), str(round(rebuf, 3)),
+                                   str(round(video_chunk_size, 3)), str(round(delay, 3)), str(round(reward, 3)), str(cur_sat_id)))
             log_file.flush()
-
         # retrieve previous state
         if len(s_batch[agent]) == 0:
             state = [[np.zeros((S_INFO, S_LEN))]for _ in range(NUM_AGENTS)]
