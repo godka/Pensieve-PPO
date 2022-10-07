@@ -140,7 +140,7 @@ class Environment:
                 self.switch_sat(agent, sat_id)
                 delay += HANDOVER_DELAY
                 is_handover = True
-                # print("Forced Handover")
+                print("Forced Handover")
             
             duration = self.cooked_time[self.mahimahi_ptr[agent]] \
                        - self.last_mahimahi_time[agent]
@@ -221,7 +221,7 @@ class Environment:
                     self.update_sat_info(self.cur_sat_id[agent], self.mahimahi_ptr[agent], -1)
                     self.switch_sat(agent, sat_id)
                     is_handover = True
-                    # print("Forced Handover")
+                    print("Forced Handover")
                 
  
         # the "last buffer size" return to the controller
@@ -250,8 +250,7 @@ class Environment:
             next_video_chunk_sizes.append(self.video_size[i][self.video_chunk_counter[agent]])
             
         self.video_chunk_remain[agent] = video_chunk_remain
-        self.download_bw[agent].append(float(
-            video_chunk_size) / delay / M_IN_K * BITS_IN_BYTE)
+        self.download_bw[agent].append(float(video_chunk_size) / delay / M_IN_K * BITS_IN_BYTE)
 
         if not self.end_of_video[agent]:
             is_handover, new_sat_id, bit_rate = self.run_mpc(agent, model_type)
@@ -278,7 +277,7 @@ class Environment:
             next_video_chunk_sizes, \
             self.end_of_video[agent], \
             video_chunk_remain, \
-            bit_rate, is_handover, new_sat_id
+            bit_rate, is_handover, new_sat_id, self.get_num_of_user_sat(sat_id="all")
             
     def reset(self):
         
@@ -439,8 +438,8 @@ class Environment:
                 # Check if it is visible now
                 if self.cooked_bw[next_sat_id][self.mahimahi_ptr[agent] - 1] != 0.0 and self.cooked_bw[next_sat_id][self.mahimahi_ptr[agent]] != 0.0:
                     # Pass the previously connected satellite
-                    if next_sat_id == self.prev_sat_id[agent]:
-                        continue
+                    # if next_sat_id == self.prev_sat_id[agent]:
+                    #     continue
 
                     if only_runner_up and runner_up_sat_id != next_sat_id:
                         # Only consider the next-best satellite
@@ -448,13 +447,23 @@ class Environment:
                     # Based on the bw, not download bw
                     next_download_bw = None
                     if method == "harmonic-mean":
-                        if cur_user_num <= 1:
-                            next_download_bw = cur_download_bw * self.predict_bw(next_sat_id, agent, robustness) /\
-                                (self.cooked_bw[self.cur_sat_id[agent]][self.mahimahi_ptr[agent]-1])
-                        else:
-                            next_download_bw = cur_download_bw * self.predict_bw(next_sat_id, agent, robustness) /\
-                                (self.cooked_bw[self.cur_sat_id[agent]][self.mahimahi_ptr[agent]-1] / cur_user_num)
+                        for i in range(-5, 0, 1):
+                            self.predict_bw(next_sat_id, agent, robustness, mahimahi_ptr=self.mahimahi_ptr[agent]-i, plus=True)
+                            self.predict_bw(self.cur_sat_id[agent], agent, robustness, mahimahi_ptr=self.mahimahi_ptr[agent] - i, plus=False)
 
+                        tmp_next_bw = self.predict_bw(next_sat_id, agent, robustness)
+                        tmp_cur_bw = self.predict_bw(self.cur_sat_id[agent], agent, robustness)
+                        next_download_bw = cur_download_bw * tmp_next_bw / tmp_cur_bw
+                        """
+                        print(cur_download_bw)
+                        print(tmp_next_bw)
+                        print(next_download_bw)
+                        print(self.cooked_bw[self.cur_sat_id[agent]][self.mahimahi_ptr[agent]-1])
+                        print(self.cooked_bw[next_sat_id][self.mahimahi_ptr[agent]-1])
+                        print(cur_user_num)
+                        print(self.get_num_of_user_sat(next_sat_id))
+                        print("--")
+                        """
                     elif method == "holt-winter":
                         # next_harmonic_bw = self.predict_bw_holt_winter(next_sat_id, mahimahi_ptr, num=1)
                         # Change to proper download bw
@@ -575,7 +584,6 @@ class Environment:
         pred_bw = sum(test_predictions) / len(test_predictions)
 
         return pred_bw
-        
 
     def get_runner_up_sat_id(self, agent, method="holt-winter"):
         best_sat_id = None
@@ -585,7 +593,7 @@ class Environment:
             target_sat_bw = None
 
             # Pass the previously connected satellite
-            if sat_id == self.cur_sat_id[agent] or sat_id == self.prev_sat_id[agent]:
+            if sat_id == self.cur_sat_id[agent]:
                 continue
 
             if method == "harmonic-mean":
@@ -757,43 +765,50 @@ class Environment:
 
         return harmonic_bw
     
-    def predict_bw(self, sat_id, agent, robustness=True):
+    def predict_bw(self, sat_id, agent, robustness=True, plus=False, mahimahi_ptr=None):
         curr_error = 0
+        if mahimahi_ptr is None:
+            mahimahi_ptr = self.mahimahi_ptr[agent]
+
+        if plus:
+            num_of_user_sat = self.get_num_of_user_sat(sat_id) + 1
+        else:
+            num_of_user_sat = self.get_num_of_user_sat(sat_id)
 
         # past_bw = self.cooked_bw[self.cur_sat_id][self.mahimahi_ptr - 1]
-        if self.get_num_of_user_sat(sat_id) == 0:
-            past_bw = self.cooked_bw[sat_id][self.mahimahi_ptr[agent] - 1]
+        if num_of_user_sat == 0:
+            past_bw = self.cooked_bw[sat_id][mahimahi_ptr - 1]
         else:
-            past_bw = self.cooked_bw[sat_id][self.mahimahi_ptr[agent] - 1] / self.get_num_of_user_sat(sat_id)
+            past_bw = self.cooked_bw[sat_id][mahimahi_ptr - 1] / num_of_user_sat
         if past_bw == 0:
             return 0
 
         if sat_id in self.past_bw_ests[agent].keys() and len(self.past_bw_ests[agent][sat_id]) > 0 \
-                and self.mahimahi_ptr[agent] - 1 in self.past_bw_ests[agent][sat_id].keys():
-            curr_error = abs(self.past_bw_ests[agent][sat_id][self.mahimahi_ptr[agent] - 1] - past_bw) / float(past_bw)
+                and mahimahi_ptr - 1 in self.past_bw_ests[agent][sat_id].keys():
+            curr_error = abs(self.past_bw_ests[agent][sat_id][mahimahi_ptr - 1] - past_bw) / float(past_bw)
         if sat_id not in self.past_bw_errors[agent].keys():
             self.past_bw_errors[agent][sat_id] = []
         self.past_bw_errors[agent][sat_id].append(curr_error)
 
         # pick bitrate according to MPC
         # first get harmonic mean of last 5 bandwidths
-        start_index = self.mahimahi_ptr[agent] - MPC_FUTURE_CHUNK_COUNT
+        start_index = mahimahi_ptr - MPC_FUTURE_CHUNK_COUNT
         if start_index < 0:
             start_index = 0
 
         past_bws = []
-        for index in range(start_index, self.mahimahi_ptr[agent]):
-            if self.get_num_of_user_sat(sat_id) == 0:
+        for index in range(start_index, mahimahi_ptr):
+            if num_of_user_sat == 0:
                 past_bws.append(self.cooked_bw[sat_id][index])
             else:
-                past_bws.append(self.cooked_bw[sat_id][index] / self.get_num_of_user_sat(sat_id))
+                past_bws.append(self.cooked_bw[sat_id][index] / num_of_user_sat)
 
         # Newly possible satellite case
         if all(v == 0.0 for v in past_bws):
-            if self.get_num_of_user_sat(sat_id) == 0:
-                return self.cooked_bw[sat_id][self.mahimahi_ptr[agent]]
+            if num_of_user_sat == 0:
+                return self.cooked_bw[sat_id][mahimahi_ptr]
             else:
-                return self.cooked_bw[sat_id][self.mahimahi_ptr[agent]] / self.get_num_of_user_sat(sat_id)
+                return self.cooked_bw[sat_id][mahimahi_ptr] / num_of_user_sat
 
         while past_bws[0] == 0.0:
             past_bws = past_bws[1:]
@@ -803,11 +818,12 @@ class Environment:
             bandwidth_sum += (1 / float(past_val))
 
         harmonic_bw = 1.0 / (bandwidth_sum / len(past_bws))
+
         if sat_id not in self.past_bw_ests[agent].keys():
             self.past_bw_ests[agent][sat_id] = {}
         if self.mahimahi_ptr[agent] not in self.past_bw_ests[agent][sat_id].keys():
-            self.past_bw_ests[agent][sat_id][self.mahimahi_ptr[agent]] = None
-        self.past_bw_ests[agent][sat_id][self.mahimahi_ptr[agent]] = harmonic_bw
+            self.past_bw_ests[agent][sat_id][mahimahi_ptr] = None
+        self.past_bw_ests[agent][sat_id][mahimahi_ptr] = harmonic_bw
 
         if robustness:
             # future bandwidth prediction
@@ -922,6 +938,8 @@ class Environment:
 
     def get_num_of_user_sat(self, sat_id):
         # update sat info
+        if sat_id == "all":
+            return self.num_of_user_sat
         if sat_id in self.num_of_user_sat.keys():
             return self.num_of_user_sat[sat_id]
         
