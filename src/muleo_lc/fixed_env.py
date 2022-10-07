@@ -125,7 +125,9 @@ class Environment:
                 self.switch_sat(agent, sat_id)
                 delay += HANDOVER_DELAY
                 is_handover = True
-            
+
+                throughput = self.cooked_bw[self.cur_sat_id[agent]][self.mahimahi_ptr[agent]] * B_IN_MB / BITS_IN_BYTE
+
             duration = self.cooked_time[self.mahimahi_ptr[agent]] \
                        - self.last_mahimahi_time[agent]
                        
@@ -144,7 +146,7 @@ class Environment:
             self.last_mahimahi_time[agent] = self.cooked_time[self.mahimahi_ptr[agent]]
             
             self.mahimahi_ptr[agent] += 1
-            
+
             if self.mahimahi_ptr[agent] >= len(self.cooked_bw[self.cur_sat_id[agent]]):
                 # loop back in the beginning
                 # note: trace file starts with time 0
@@ -252,6 +254,12 @@ class Environment:
         self.video_chunk_remain = [0 for _ in range(self.num_agents)]
         self.end_of_video = [False for _ in range(self.num_agents)]
         self.next_video_chunk_sizes = [[] for _ in range(self.num_agents)]
+        self.bit_rate = None
+        self.download_bw = [[] for _ in range(self.num_agents)]
+        self.past_download_ests = [[] for _ in range(self.num_agents)]
+        self.past_download_bw_errors = [[] for _ in range(self.num_agents)]
+        self.past_bw_ests = [{} for _ in range(self.num_agents)]
+        self.past_bw_errors = [{} for _ in range(self.num_agents)]
 
         self.trace_idx += 1
         if self.trace_idx >= len(self.all_cooked_time):
@@ -269,6 +277,7 @@ class Environment:
             self.connection[sat_id] = -1
 
         self.cur_sat_id = []
+        self.prev_sat_id = [None for _ in range(self.num_agents)]
         for agent in range(self.num_agents):
             cur_sat_id = self.get_best_sat_id(agent)
             self.connection[cur_sat_id] = agent
@@ -307,6 +316,9 @@ class Environment:
                 if best_sat_bw < sat_bw[mahimahi_ptr]:
                     best_sat_id = sat_id
                     best_sat_bw = sat_bw[mahimahi_ptr]
+        
+        if best_sat_id == None:
+            best_sat_id = self.cur_sat_id[agent]
         
         return best_sat_id
 

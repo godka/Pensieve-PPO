@@ -27,7 +27,7 @@ RANDOM_SEED = 42
 RAND_RANGE = 1000000
 SUMMARY_DIR = './results'
 LOG_FILE = './test_results/log_sim_bb'
-TEST_TRACES = './test/'
+TEST_TRACES = './noaa_test/'
 # log in format of time_stamp bit_rate buffer_size rebuffer_time chunk_size download_time reward
 # NN_MODEL = './models/nn_model_ep_5900.ckpt'
 
@@ -36,7 +36,7 @@ CHUNK_COMBO_OPTIONS = []
 
 parser = argparse.ArgumentParser(description='PyTorch Synthetic Benchmark',
                                  formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-parser.add_argument('--user', type=int, default=1)
+parser.add_argument('--user', type=int, default=2)
 args = parser.parse_args()
 NUM_AGENTS = args.user
 
@@ -122,7 +122,6 @@ def main():
             last_bit_rate = [DEFAULT_QUALITY for _ in range(NUM_AGENTS)]
             bit_rate = [DEFAULT_QUALITY for _ in range(NUM_AGENTS)]
             net_env.reset()
-
             data = sum(r_batch[agent][1:]) / len(r_batch[agent][1:])
             result_traces.append(data)
 
@@ -231,6 +230,7 @@ def main():
         # because there is an intrinsic discrepancy in passing single state and batch states
 
         s_batch[agent].append(state[agent])
+
 
     # print(results, sum(results))
     # print(sum(results) / len(results))

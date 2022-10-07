@@ -1,8 +1,8 @@
 import numpy as np
 import matplotlib.pyplot as plt
+import seaborn as sns
 
-
-LOG_PATH = './test_results/log_sim_ppo_rss_London_2022-9-21-00-00-00'
+LOG_PATH = './test_results/dist_w'
 PLOT_SAMPLES = 300
 
 
@@ -26,9 +26,10 @@ with open(LOG_PATH, 'rb') as f:
 
 f, (ax1, ax2, ax3, ax4) = plt.subplots(4, sharex=True)
 
-ax1.plot(time_stamp[-PLOT_SAMPLES:], rewards[-PLOT_SAMPLES:])
-ax1.set_title('Average reward: ' + str(np.mean(rewards[-PLOT_SAMPLES:])))
-ax1.set_ylabel('Reward')
+# ax1.plot(time_stamp[-PLOT_SAMPLES:], rewards[-PLOT_SAMPLES:])
+sns.displot(rewards[-PLOT_SAMPLES:], ax=ax1)
+# ax1.set_title('Average reward: ' + str(np.mean(rewards[-PLOT_SAMPLES:])))
+# ax1.set_ylabel('Reward')
 
 ax2.plot(time_stamp[-PLOT_SAMPLES:], satlites[-PLOT_SAMPLES:])
 ax2.set_ylabel('satlites switch')
