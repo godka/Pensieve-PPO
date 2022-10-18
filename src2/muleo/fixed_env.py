@@ -147,8 +147,8 @@ class Environment:
 
             video_chunk_counter_sent += packet_payload
             delay += duration
-
             self.last_mahimahi_time[agent] = self.cooked_time[self.mahimahi_ptr[agent]]
+            
             # self.mahimahi_ptr[agent] += 1
             self.step_ahead(agent)
             

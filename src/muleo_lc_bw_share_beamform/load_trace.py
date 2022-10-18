@@ -45,11 +45,12 @@ def load_trace(cooked_trace_folder=COOKED_TRACE_FOLDER, split_condition=None):
 
                 line_count += 1
 
+        """
         # Reformat the bw data
         b_max = 100
         remove_list = []
         for sat_id in satellite_bw:
-            rss_min = min(satellite_bw[sat_id])
+            rss_min = max([bw for bw in satellite_bw[sat_id] if bw != 0])
             new_bw = []
             for bw in satellite_bw[sat_id]:
                 new_bw.append(abs(b_max * bw / rss_min) * SCALE_FOR_TEST)
@@ -60,21 +61,20 @@ def load_trace(cooked_trace_folder=COOKED_TRACE_FOLDER, split_condition=None):
 
         for sat_id in remove_list:
             satellite_bw.pop(sat_id, None)
-
+        """
         all_satellite_bw.append(satellite_bw)
         all_cooked_time.append(cooked_time)
         all_file_names.append(os.path.splitext(cooked_file)[0])
 
     if split_condition == "train":
-        for i in range(len(all_cooked_time)):
-            for sat_id, sat_bw in all_satellite_bw[i].items():
-                all_satellite_bw[i][sat_id] = all_satellite_bw[i][sat_id][:round(len(all_satellite_bw[i][sat_id])*0.8)]
-            all_cooked_time[i] = all_cooked_time[i][:round(len(all_cooked_time[i])*0.8)]
+        all_cooked_time = all_cooked_time[:round(len(all_cooked_time) * 0.8)]
+        all_satellite_bw = all_satellite_bw[:round(len(all_satellite_bw) * 0.8)]
+        all_file_names = all_file_names[:round(len(all_file_names) * 0.8)]
+
 
     elif split_condition == "test":
-        for i in range(len(all_cooked_time)):
-            for sat_id, sat_bw in all_satellite_bw[i].items():
-                all_satellite_bw[i][sat_id] = all_satellite_bw[i][sat_id][round(len(all_satellite_bw[i][sat_id])*0.8):]
-            all_cooked_time[i] = all_cooked_time[i][round(len(all_cooked_time[i])*0.8):]
+        all_cooked_time = all_cooked_time[round(len(all_cooked_time) * 0.8):]
+        all_satellite_bw = all_satellite_bw[round(len(all_satellite_bw) * 0.8):]
+        all_file_names = all_file_names[round(len(all_file_names) * 0.8):]
 
     return all_cooked_time, all_satellite_bw, all_file_names

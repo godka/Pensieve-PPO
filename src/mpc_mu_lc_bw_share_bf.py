@@ -80,8 +80,9 @@ def main():
     # ax.set_ylim(0, 0.4)
     # plt.show()
     sat_ids = list(all_cooked_bw[0].keys())
+    print(all_file_names[0])
     for idx, ax in enumerate(axs):
-        tmp_rewards = [res for i, res in enumerate(all_cooked_bw[0][sat_ids[-idx-1]])]
+        tmp_rewards = [res for i, res in enumerate(all_cooked_bw[0][sat_ids[-idx-35]])]
 
         tmp_time_stamp = [res for i, res in enumerate(all_cooked_time[0])]
 
