@@ -8,7 +8,6 @@ from . import load_trace
 S_INFO = 6
 S_LEN = 8  # take how many frames in the past
 A_DIM = 6
-A_SAT = 2
 TRAIN_SEQ_LEN = 100  # take as a train batch
 MODEL_SAVE_INTERVAL = 100
 VIDEO_BIT_RATE = np.array([300., 750., 1200., 1850., 2850., 4300.])  # Kbps
@@ -47,11 +46,10 @@ class ABREnv():
         self.state = np.zeros((S_INFO, S_LEN))
         self.buffer_size = 0.
         bit_rate = self.last_bit_rate
-        sat = 0
         delay, sleep_time, self.buffer_size, rebuf, \
             video_chunk_size, next_video_chunk_sizes, \
             end_of_video, video_chunk_remain = \
-            self.net_env.get_video_chunk(bit_rate, sat)
+            self.net_env.get_video_chunk(bit_rate)
         state = np.roll(self.state, -1, axis=1)
 
         # this should be S_INFO number of terms
@@ -72,14 +70,13 @@ class ABREnv():
         return
 
     def step(self, action):
-        bit_rate = int(action) % A_DIM
-        sat = int(action) // A_DIM
+        bit_rate = int(action)
         # the action is from the last decision
         # this is to make the framework similar to the real
         delay, sleep_time, self.buffer_size, rebuf, \
             video_chunk_size, next_video_chunk_sizes, \
             end_of_video, video_chunk_remain = \
-            self.net_env.get_video_chunk(bit_rate, sat)
+            self.net_env.get_video_chunk(bit_rate)
 
         self.time_stamp += delay  # in ms
         self.time_stamp += sleep_time  # in ms

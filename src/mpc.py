@@ -101,6 +101,11 @@ def main():
                  - REBUF_PENALTY * rebuf \
                  - SMOOTH_PENALTY * np.abs(VIDEO_BIT_RATE[bit_rate] -
                                            VIDEO_BIT_RATE[last_bit_rate]) / M_IN_K
+                 
+        
+        # print(reward, bit_rate, delay, sleep_time, buffer_size, rebuf, \
+        #     video_chunk_size, next_video_chunk_sizes, \
+        #     end_of_video, video_chunk_remain)
 
         # log scale reward
         # log_bit_rate = np.log(VIDEO_BIT_RATE[bit_rate] / float(VIDEO_BIT_RATE[0]))
@@ -115,6 +120,7 @@ def main():
 
 
         r_batch.append(reward)
+        results.append(reward)
 
         last_bit_rate = bit_rate
 
@@ -248,8 +254,6 @@ def main():
 
             last_bit_rate = DEFAULT_QUALITY
             bit_rate = DEFAULT_QUALITY  # use the default action here
-            
-            results.append(sum(r_batch) / len(r_batch))
 
             del s_batch[:]
             del a_batch[:]
@@ -262,9 +266,10 @@ def main():
             a_batch.append(action_vec)
             entropy_record = []
 
-            print("network count", video_count)
+            print("video count", video_count)
             video_count += 1
-
+            break
+    
             if video_count >= len(all_file_names):
                 break
 
@@ -272,6 +277,7 @@ def main():
             log_file = open(log_path, 'w')
 
     print(sum(results) / len(results))
+    print(len(results))
 
 if __name__ == '__main__':
     main()

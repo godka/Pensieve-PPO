@@ -3,20 +3,29 @@ import numpy as np
 import logging
 import os
 import sys
-from leo.env import ABREnv
+from muleo.env import ABREnv
 import ppo2 as network
 import tensorflow.compat.v1 as tf
 
 os.environ['CUDA_VISIBLE_DEVICES'] = '-1'
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 
-S_DIM = [6, 8]
+import argparse
+
+parser = argparse.ArgumentParser(description='PyTorch Synthetic Benchmark',
+                                 formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+parser.add_argument('--user', type=int, default=1)
+args = parser.parse_args()
+USERS = args.user
+# A_SAT = USERS + 1
+
+S_DIM = [USERS, 6 + 1, 8]
 A_DIM = 6
 A_SAT = 2
 ACTOR_LR_RATE = 1e-4
 NUM_AGENTS = 16
 TRAIN_SEQ_LEN = 1000  # take as a train batch
-TRAIN_EPOCH = 50000
+TRAIN_EPOCH = 90000
 MODEL_SAVE_INTERVAL = 300
 RANDOM_SEED = 42
 SUMMARY_DIR = './ppo'
@@ -25,6 +34,7 @@ TRAIN_TRACES = './train/'
 TEST_LOG_FOLDER = './test_results/'
 LOG_FILE = SUMMARY_DIR + '/log'
 PPO_TRAINING_EPO = 5
+
 
 # create result directory
 if not os.path.exists(SUMMARY_DIR):
@@ -40,7 +50,8 @@ def testing(epoch, nn_model, log_file):
     if not os.path.exists(TEST_LOG_FOLDER):
         os.makedirs(TEST_LOG_FOLDER)
     # run test script
-    os.system('python test2.py ' + nn_model)
+    print('python test2.py ' + nn_model + ' ' + str(USERS))
+    os.system('python test2.py ' + nn_model + ' ' + str(USERS))
 
     # append test performance to the log
     rewards, entropies = [], []
@@ -120,6 +131,7 @@ def central_agent(net_params_queues, exp_queues):
             p_batch = np.vstack(p)
             v_batch = np.vstack(g)
 
+            # print(s_batch[0], a_batch[0], p_batch[0], v_batch[0], epoch)
             for _ in range(PPO_TRAINING_EPO):
                 actor.train(s_batch, a_batch, p_batch, v_batch, epoch)
             
@@ -140,7 +152,7 @@ def central_agent(net_params_queues, exp_queues):
                 writer.flush()
 
 def agent(agent_id, net_params_queue, exp_queue):
-    env = ABREnv(agent_id)
+    env = ABREnv(agent_id, num_agents=USERS)
     with tf.Session() as sess:
         actor = network.Network(sess,
                                 state_dim=S_DIM, action_dim=A_DIM * A_SAT,
@@ -153,28 +165,80 @@ def agent(agent_id, net_params_queue, exp_queue):
         time_stamp = 0
 
         for epoch in range(TRAIN_EPOCH):
+            bit_rate = [0 for _ in range(USERS)]
+            sat = [0 for _ in range(USERS)]
+            action_prob = [[] for _ in range(USERS)]
+            
             obs = env.reset()
-            s_batch, a_batch, p_batch, r_batch = [], [], [], []
-            for step in range(TRAIN_SEQ_LEN):
-                s_batch.append(obs)
+            
+            for agent in range(USERS):
+                obs = env.reset_agent(agent)
 
-                action_prob = actor.predict(
-                    np.reshape(obs, (1, S_DIM[0], S_DIM[1])))
-
+                action_prob[agent] = actor.predict(
+                    np.reshape(env.get_results(agent), (S_DIM[0], S_DIM[1], S_DIM[2])))
+            
                 # gumbel noise
-                noise = np.random.gumbel(size=len(action_prob))
-                bit_rate = np.argmax(np.log(action_prob) + noise)
+                noise = np.random.gumbel(size=len(action_prob[agent]))
+                bit_rate[agent] = np.argmax(np.log(action_prob[agent]) + noise)
 
-                obs, rew, done, info = env.step(bit_rate)
-
-                action_vec = np.zeros(A_DIM * A_SAT)
-                action_vec[bit_rate] = 1
-                a_batch.append(action_vec)
-                r_batch.append(rew)
-                p_batch.append(action_prob)
-                if done:
+                sat[agent] = bit_rate[agent] // A_DIM
+                
+                env.set_sat(agent, sat[agent])
+    
+            s_batch, a_batch, p_batch, r_batch = [], [], [], []
+            s_batch_user, a_batch_user, p_batch_user, r_batch_user = \
+                [[]for _ in range(USERS)], [[]for _ in range(USERS)], \
+                [[]for _ in range(USERS)], [[]for _ in range(USERS)]
+            
+            for step in range(TRAIN_SEQ_LEN):
+                agent = env.get_first_agent()
+                
+                if agent == -1:
                     break
-            v_batch = actor.compute_v(s_batch, a_batch, r_batch, done)
+                    
+                s_batch_user[agent].append(env.get_results(agent))
+                    
+                obs, rew, done, info = env.step(bit_rate[agent], agent)
+                
+                action_vec = np.zeros(A_DIM * A_SAT)
+                action_vec[bit_rate[agent]] = 1
+                a_batch_user[agent].append(action_vec)
+                r_batch_user[agent].append(rew)
+                p_batch_user[agent].append(action_prob[agent])
+
+                if not done:
+                    
+                    action_prob[agent] = actor.predict(
+                        np.reshape(self.get_results[agent], (S_DIM[0], S_DIM[1], S_DIM[2])))
+                
+                    # gumbel noise
+                    noise = np.random.gumbel(size=len(action_prob[agent]))
+                    bit_rate[agent] = np.argmax(np.log(action_prob[agent]) + noise)
+
+                    sat[agent] = bit_rate[agent] // A_DIM
+                    
+                    env.set_sat(agent, sat[agent])
+                    
+                if env.check_end():
+                    break
+                
+                # if agent_id == 0:
+                #     print(env.net_env.video_chunk_counter)
+                #     print([len(batch_user) for batch_user in s_batch_user])
+                #     print([len(batch_user) for batch_user in r_batch_user])
+                    
+            for batch_user in s_batch_user:
+                s_batch += batch_user
+            for batch_user in a_batch_user:
+                a_batch += batch_user
+            for batch_user in p_batch_user:
+                p_batch += batch_user
+            for batch_user in r_batch_user:
+                r_batch += batch_user
+                
+            # if agent_id == 0:
+            #     print(len(s_batch), len(a_batch), len(r_batch))
+            v_batch = actor.compute_v(s_batch, a_batch, r_batch, env.check_end())
             exp_queue.put([s_batch, a_batch, p_batch, v_batch])
 
             actor_net_params = net_params_queue.get()

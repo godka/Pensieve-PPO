@@ -55,7 +55,7 @@ class Environment:
                 for line in f:
                     self.video_size[bitrate].append(int(line.split()[0]))
 
-    def get_video_chunk(self, quality, sat):
+    def get_video_chunk(self, quality):
 
         assert quality >= 0
         assert quality < BITRATE_LEVELS
@@ -65,11 +65,6 @@ class Environment:
         # use the delivery opportunity in mahimahi
         delay = 0.0  # in ms
         video_chunk_counter_sent = 0  # in bytes
-        
-        if sat == 1:
-            self.cur_sat_id = self.get_best_sat_id()
-            self.available_sat_list = self.get_available_sats_id()
-            delay += HANDOVER_DELAY
         
         while True:  # download video chunk over mahimahi
             throughput = self.cooked_bw[self.cur_sat_id][self.mahimahi_ptr] \

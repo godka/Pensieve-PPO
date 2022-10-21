@@ -17,7 +17,7 @@ def load_trace(cooked_trace_folder=COOKED_TRACE_FOLDER, split_condition=None):
     all_cooked_time = []
     all_file_names = []
 
-    for cooked_file in cooked_files:
+    for cooked_file in sorted(cooked_files):
         file_path = cooked_trace_folder + cooked_file
         satellite_id = []
         satellite_bw = {}

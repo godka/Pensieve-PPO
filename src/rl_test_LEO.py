@@ -16,6 +16,9 @@ CRITIC_LR_RATE = 0.001
 VIDEO_BIT_RATE = [10000, 20000, 30000, 60000, 90000, 140000]  # Kbps
 HD_REWARD = [1, 2, 3, 6, 9, 14]
 VIDEO_BIT_RATE = HD_REWARD
+
+VIDEO_BIT_RATE = [300,750,1200,1850,2850,4300]  # Kbps
+
 BUFFER_NORM_FACTOR = 1.0
 # CHUNK_TIL_VIDEO_END_CAP = 151.0
 MILLI_IN_SECOND = 1000.0
@@ -32,10 +35,10 @@ TEST_TRACES = 'simulated_trace/'
 # log in format of time_stamp bit_rate buffer_size rebuffer_time chunk_size download_time reward
 NN_MODEL = sys.argv[1]
 
-# BITRATE_REWARD = [1, 2, 4, 6, 9, 15]
-QUALITY_FACTOR = 1.5
-REBUF_PENALTY = 10  # pensieve: 4.3  # 1 sec rebuffering -> 3 Mbps
+REBUF_PENALTY = 4.3  # 1 sec rebuffering -> 3 Mbps
 SMOOTH_PENALTY = 1
+DEFAULT_QUALITY = 1  # default video quality without agent
+RANDOM_SEED = 42
 VIDEO_CHUNK_LEN = 2
 
 CHUNK_COMBO_OPTION = []
