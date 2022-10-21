@@ -10,22 +10,13 @@ import tensorflow.compat.v1 as tf
 os.environ['CUDA_VISIBLE_DEVICES'] = '-1'
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 
-import argparse
-
-parser = argparse.ArgumentParser(description='PyTorch Synthetic Benchmark',
-                                 formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-parser.add_argument('--user', type=int, default=1)
-args = parser.parse_args()
-USERS = args.user
-# A_SAT = USERS + 1
-
-S_DIM = [USERS, 6 + 1, 8]
+S_DIM = [6 + 1, 8]
 A_DIM = 6
 A_SAT = 2
 ACTOR_LR_RATE = 1e-4
 NUM_AGENTS = 16
 TRAIN_SEQ_LEN = 1000  # take as a train batch
-TRAIN_EPOCH = 90000
+TRAIN_EPOCH = 50000
 MODEL_SAVE_INTERVAL = 300
 RANDOM_SEED = 42
 SUMMARY_DIR = './ppo'
@@ -35,6 +26,15 @@ TEST_LOG_FOLDER = './test_results/'
 LOG_FILE = SUMMARY_DIR + '/log'
 PPO_TRAINING_EPO = 5
 
+
+import argparse
+
+parser = argparse.ArgumentParser(description='PyTorch Synthetic Benchmark',
+                                 formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+parser.add_argument('--user', type=int, default=1)
+args = parser.parse_args()
+USERS = args.user
+# A_SAT = USERS + 1
 
 # create result directory
 if not os.path.exists(SUMMARY_DIR):
@@ -172,10 +172,10 @@ def agent(agent_id, net_params_queue, exp_queue):
             obs = env.reset()
             
             for agent in range(USERS):
-                obs = env.reset_agent(agent)
+                obs[agent] = env.reset_agent(agent)
 
                 action_prob[agent] = actor.predict(
-                    np.reshape(env.get_results(agent), (S_DIM[0], S_DIM[1], S_DIM[2])))
+                    np.reshape(obs[agent], (1, S_DIM[0], S_DIM[1])))
             
                 # gumbel noise
                 noise = np.random.gumbel(size=len(action_prob[agent]))
@@ -196,9 +196,9 @@ def agent(agent_id, net_params_queue, exp_queue):
                 if agent == -1:
                     break
                     
-                s_batch_user[agent].append(env.get_results(agent))
+                s_batch_user[agent].append(obs[agent])
                     
-                obs, rew, done, info = env.step(bit_rate[agent], agent)
+                obs[agent], rew, done, info = env.step(bit_rate[agent], agent)
                 
                 action_vec = np.zeros(A_DIM * A_SAT)
                 action_vec[bit_rate[agent]] = 1
@@ -209,7 +209,7 @@ def agent(agent_id, net_params_queue, exp_queue):
                 if not done:
                     
                     action_prob[agent] = actor.predict(
-                        np.reshape(self.get_results[agent], (S_DIM[0], S_DIM[1], S_DIM[2])))
+                        np.reshape(obs[agent], (1, S_DIM[0], S_DIM[1])))
                 
                     # gumbel noise
                     noise = np.random.gumbel(size=len(action_prob[agent]))

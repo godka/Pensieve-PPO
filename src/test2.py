@@ -69,10 +69,10 @@ def main():
         for i in range(NUM_AGENTS):
             action_vec[i][bit_rate] = 1
 
-        s_batch = [[np.zeros((NUM_AGENTS+1, S_INFO, S_LEN))]for _ in range(NUM_AGENTS)]
+        s_batch = [[np.zeros((S_INFO, S_LEN))]for _ in range(NUM_AGENTS)]
         a_batch = [[action_vec]for _ in range(NUM_AGENTS)]
         r_batch = [[]for _ in range(NUM_AGENTS)]
-        state = [np.zeros((NUM_AGENTS + 1, S_INFO, S_LEN))]
+        state = [[np.zeros((S_INFO, S_LEN))]for _ in range(NUM_AGENTS)]
         entropy_record = [[]for _ in range(NUM_AGENTS)]
         entropy_ = 0.5
         video_count = 0
@@ -97,7 +97,7 @@ def main():
                 for i in range(NUM_AGENTS):
                     action_vec[i][bit_rate[agent]] = 1
 
-                s_batch = [[np.zeros((NUM_AGENTS+1, S_INFO, S_LEN))]for _ in range(NUM_AGENTS)]
+                s_batch = [[np.zeros((S_INFO, S_LEN))]for _ in range(NUM_AGENTS)]
                 a_batch = [[action_vec]for _ in range(NUM_AGENTS)]
                 r_batch = [[]for _ in range(NUM_AGENTS)]
                 entropy_record = [[]for _ in range(NUM_AGENTS)]
@@ -147,7 +147,7 @@ def main():
 
             # retrieve previous state
             if len(s_batch[agent]) == 0:
-                state[agent] = [np.zeros((NUM_AGENTS+1, S_INFO, S_LEN))]
+                state[agent] = [np.zeros((S_INFO, S_LEN))]
             else:
                 state[agent] = np.array(s_batch[agent][-1], copy=True)
 
@@ -155,18 +155,16 @@ def main():
             state[agent] = np.roll(state[agent], -1, axis=1)
 
             # this should be S_INFO number of terms
-            state[agent][0][0, -1] = VIDEO_BIT_RATE[bit_rate[agent]] / float(np.max(VIDEO_BIT_RATE))  # last quality
-            state[agent][0][1, -1] = buffer_size / BUFFER_NORM_FACTOR  # 10 sec
-            state[agent][0][2, -1] = float(video_chunk_size) / float(delay) / M_IN_K  # kilo byte / ms
-            state[agent][0][3, -1] = float(delay) / M_IN_K / BUFFER_NORM_FACTOR  # 10 sec
-            state[agent][0][4, :A_DIM] = np.array(next_video_chunk_sizes) / M_IN_K / M_IN_K  # mega byte
-            state[agent][0][5, -1] = np.minimum(video_chunk_remain, CHUNK_TIL_VIDEO_END_CAP) / float(CHUNK_TIL_VIDEO_END_CAP)
-            state[agent][0][6, :A_SAT] = np.array(next_sat_bw) 
-            
-            for a in range(NUM_AGENTS):
-                state[agent][a+1] = state[a][0]
+            state[agent][0, -1] = VIDEO_BIT_RATE[bit_rate[agent]] / float(np.max(VIDEO_BIT_RATE))  # last quality
+            state[agent][1, -1] = buffer_size / BUFFER_NORM_FACTOR  # 10 sec
+            state[agent][2, -1] = float(video_chunk_size) / float(delay) / M_IN_K  # kilo byte / ms
+            state[agent][3, -1] = float(delay) / M_IN_K / BUFFER_NORM_FACTOR  # 10 sec
+            state[agent][4, :A_DIM] = np.array(next_video_chunk_sizes) / M_IN_K / M_IN_K  # mega byte
+            state[agent][5, -1] = np.minimum(video_chunk_remain, CHUNK_TIL_VIDEO_END_CAP) / float(CHUNK_TIL_VIDEO_END_CAP)
+            state[agent][6, :A_SAT] = np.array(next_sat_bw) 
+
                 
-            action_prob = actor.predict(np.reshape(state[agent], (NUM_AGENTS+1, S_INFO, S_LEN)))
+            action_prob = actor.predict(np.reshape(state[agent], (1, S_INFO, S_LEN)))
             noise = np.random.gumbel(size=len(action_prob))
             action = np.argmax(np.log(action_prob) + noise)
             

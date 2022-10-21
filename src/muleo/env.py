@@ -43,8 +43,7 @@ class ABREnv():
 
         self.last_bit_rate = DEFAULT_QUALITY
         self.buffer_size = [0 for _ in range(self.num_agents)]
-        self.state = np.zeros((self.num_agents, S_INFO, S_LEN))
-        self.results = np.zeros((self.num_agents+1, S_INFO, S_LEN))
+        self.state = [np.zeros((S_INFO, S_LEN))for _ in range(self.num_agents)]
         
     def seed(self, num):
         np.random.seed(num)
@@ -72,27 +71,16 @@ class ABREnv():
         state[6, :SAT_DIM] = np.array(next_sat_bw)
 
         self.state[agent] = state
-
-        self.results[0] = state
-        self.results[agent+1] = state
         
-        return self.results
-
-    def get_results(self, agent):
-        self.results[0] = self.state[agent]
-        return self.results
-
-    def get_state(self, agent):
         return self.state[agent]
-    
+
     def reset(self):
         # self.net_env.reset_ptr()
         self.net_env.reset()
         self.time_stamp = 0
         self.last_bit_rate = DEFAULT_QUALITY
+        self.state = [np.zeros((S_INFO, S_LEN)) for _ in range(self.num_agents)]
         self.buffer_size = [0 for _ in range(self.num_agents)]
-        self.state = np.zeros((self.num_agents, S_INFO, S_LEN))
-        self.results = np.zeros((self.num_agents+1, S_INFO, S_LEN))
 
         # for agent in range(self.num_agents):
         #     delay, sleep_time, self.buffer_size[agent], rebuf, \
@@ -117,7 +105,7 @@ class ABREnv():
         #         next_sat_bw) * B_IN_MB / BITS_IN_BYTE  # mega byte
 
         #     self.state[agent] = state
-        return self.results
+        return self.state
 
     def get_first_agent(self):
         return self.net_env.get_first_agent()
@@ -168,8 +156,6 @@ class ABREnv():
         state[6, :SAT_DIM] = np.array(next_sat_bw)
 
         self.state[agent] = state
-        self.results[0] = state
-        self.results[agent+1] = state
 
         #observation, reward, done, info = env.step(action)
-        return self.results, reward, end_of_video, {'bitrate': VIDEO_BIT_RATE[bit_rate], 'rebuffer': rebuf}
+        return state, reward, end_of_video, {'bitrate': VIDEO_BIT_RATE[bit_rate], 'rebuffer': rebuf}
