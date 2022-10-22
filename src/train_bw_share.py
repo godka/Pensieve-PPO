@@ -3,7 +3,7 @@ import numpy as np
 import logging
 import os
 import sys
-from muleo.env import ABREnv
+from muleo_lc_bw_share.env import ABREnv
 import ppo2 as network
 import tensorflow.compat.v1 as tf
 
@@ -31,7 +31,7 @@ import argparse
 
 parser = argparse.ArgumentParser(description='PyTorch Synthetic Benchmark',
                                  formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-parser.add_argument('--user', type=int, default=2)
+parser.add_argument('--user', type=int, default=1)
 args = parser.parse_args()
 USERS = args.user
 # A_SAT = USERS + 1
@@ -42,7 +42,6 @@ if not os.path.exists(SUMMARY_DIR):
 
 NN_MODEL = None    
 
-
 def testing(epoch, nn_model, log_file):
     # clean up the test results folder
     os.system('rm -r ' + TEST_LOG_FOLDER)
@@ -51,8 +50,8 @@ def testing(epoch, nn_model, log_file):
     if not os.path.exists(TEST_LOG_FOLDER):
         os.makedirs(TEST_LOG_FOLDER)
     # run test script
-    print('python test2.py ' + nn_model + ' ' + str(USERS))
-    os.system('python test2.py ' + nn_model + ' ' + str(USERS))
+    print('python test_bw_share.py ' + nn_model + ' ' + str(USERS))
+    os.system('python test_bw_share.py ' + nn_model + ' ' + str(USERS))
 
     # append test performance to the log
     rewards, entropies = [], []
@@ -89,8 +88,7 @@ def testing(epoch, nn_model, log_file):
     log_file.flush()
 
     return rewards_mean, np.mean(entropies)
-
-
+        
 def central_agent(net_params_queues, exp_queues):
 
     assert len(net_params_queues) == NUM_AGENTS
@@ -152,6 +150,7 @@ def central_agent(net_params_queues, exp_queues):
                 })
                 writer.add_summary(summary_str, epoch)
                 writer.flush()
+
 
 def agent(agent_id, net_params_queue, exp_queue):
     env = ABREnv(agent_id, num_agents=USERS)

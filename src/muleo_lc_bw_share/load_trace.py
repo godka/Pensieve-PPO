@@ -1,17 +1,15 @@
 import os
 import csv
 
-COOKED_TRACE_FOLDER = 'test/'
-COOKED_DIS_FOLDER = 'dis/'
+COOKED_TRACE_FOLDER = 'train/'
 
 
 # LEO SETTINGS
 HANDOVER_DELAY = 0.2  # sec
 HANDOVER_WEIGHT = 1
-SCALE_VIDEO_SIZE_FOR_TEST = 1
+SCALE_VIDEO_SIZE_FOR_TEST = 30
 SCALE_VIDEO_LEN_FOR_TEST = 2
 SCALE_FOR_TEST = 1 / SCALE_VIDEO_SIZE_FOR_TEST
-
 
 def load_trace(cooked_trace_folder=COOKED_TRACE_FOLDER, split_condition=None):
     cooked_files = os.listdir(cooked_trace_folder)
@@ -57,3 +55,4 @@ def load_trace(cooked_trace_folder=COOKED_TRACE_FOLDER, split_condition=None):
             all_cooked_time[i] = all_cooked_time[i][round(len(all_cooked_time[i])*0.8):]
 
     return all_cooked_time, all_satellite_bw, all_file_names
+
