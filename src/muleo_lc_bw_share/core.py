@@ -278,7 +278,7 @@ class Environment:
 
         self.cur_sat_id = []
         for agent in range(self.num_agents):
-            cur_sat_id = self.get_best_sat_id(agent, self.mahimahi_ptr[agent] - 1)
+            cur_sat_id = self.get_best_sat_id(agent)
             self.cur_sat_id.append(cur_sat_id)
             self.connection[cur_sat_id][self.mahimahi_ptr[agent] - 1] = agent
             self.update_sat_info(cur_sat_id, self.mahimahi_ptr[agent], 1)
