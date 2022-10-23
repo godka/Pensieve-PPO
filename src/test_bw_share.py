@@ -178,7 +178,7 @@ def main():
             entropy_ = -np.dot(action_prob, np.log(action_prob))
             entropy_record.append(entropy_)
 
-    print(results)
+    # print(results)
     print(sum(results) / len(results))
 
 
