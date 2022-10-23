@@ -25,6 +25,7 @@ SCALE_VIDEO_LEN_FOR_TEST = 2
 # Multi-user setting
 NUM_AGENTS = 2
 
+
 class Environment:
     def __init__(self, all_cooked_time, all_cooked_bw, random_seed=RANDOM_SEED, num_agents=NUM_AGENTS):
         assert len(all_cooked_time) == len(all_cooked_bw)
@@ -67,7 +68,7 @@ class Environment:
         # multiuser setting
         self.cur_sat_id = []
         for agent in range(self.num_agents):
-            cur_sat_id = self.get_best_sat_id(agent, self.mahimahi_ptr[agent] - 1)
+            cur_sat_id = self.get_best_sat_id(agent)
             self.cur_sat_id.append(cur_sat_id)
             self.connection[cur_sat_id][self.mahimahi_ptr[agent] - 1] = agent
             self.update_sat_info(cur_sat_id, self.mahimahi_ptr[agent], 1)
@@ -375,6 +376,7 @@ class Environment:
         
         if best_sat_id is None:
             best_sat_id = self.cur_sat_id[agent]
+
         return best_sat_id
 
     def update_sat_info(self, sat_id, mahimahi_ptr, variation):
