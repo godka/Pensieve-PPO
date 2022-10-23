@@ -26,7 +26,6 @@ TEST_LOG_FOLDER = './test_results/'
 LOG_FILE = SUMMARY_DIR + '/log'
 PPO_TRAINING_EPO = 5
 
-
 import argparse
 
 parser = argparse.ArgumentParser(description='PyTorch Synthetic Benchmark',
@@ -36,16 +35,19 @@ args = parser.parse_args()
 USERS = args.user
 # A_SAT = USERS + 1
 
+TEST_LOG_FOLDER += str(USERS)
+
 # create result directory
 if not os.path.exists(SUMMARY_DIR):
     os.makedirs(SUMMARY_DIR)
 
 NN_MODEL = None    
 
+
 def testing(epoch, nn_model, log_file):
     # clean up the test results folder
     os.system('rm -r ' + TEST_LOG_FOLDER)
-    #os.system('mkdir ' + TEST_LOG_FOLDER)
+    # os.system('mkdir ' + TEST_LOG_FOLDER)
 
     if not os.path.exists(TEST_LOG_FOLDER):
         os.makedirs(TEST_LOG_FOLDER)

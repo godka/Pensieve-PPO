@@ -24,7 +24,7 @@ DEFAULT_QUALITY = 1  # default video quality without agent
 RANDOM_SEED = 42
 RAND_RANGE = 1000000
 SUMMARY_DIR = './results'
-LOG_FILE = './test_results/log_sim_cent'
+LOG_FILE = './test_results_mpc/log_sim_cent'
 TEST_TRACES = './test/'
 # log in format of time_stamp bit_rate buffer_size rebuffer_time chunk_size download_time reward
 # NN_MODEL = './models/nn_model_ep_5900.ckpt'
