@@ -26,6 +26,7 @@ EPS = 1e-6
 NUM_AGENTS = 2
 SAT_DIM = A_SAT
 
+
 class ABREnv():
 
     def __init__(self, random_seed=RANDOM_SEED, num_agents=NUM_AGENTS):

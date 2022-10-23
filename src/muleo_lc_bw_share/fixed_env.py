@@ -255,7 +255,7 @@ class Environment:
             
             # Refresh satellite info
             # self.connection[self.cur_sat_id[agent]] = -1
-            self.cur_sat_id[agent] = -1
+            # self.cur_sat_id[agent] = None
             
             # wait for overall clean
 
@@ -281,7 +281,7 @@ class Environment:
                 # self.past_download_bw_errors[agent] = []
                 # self.past_download_ests[agent] = []
         else:
-            is_handover, new_sat_id, bit_rate = False, -1, 1
+            is_handover, new_sat_id, bit_rate = False, None, 1
         
         return delay, \
             sleep_time, \
@@ -1002,6 +1002,7 @@ class Environment:
             self.num_of_user_sat[sat_id] += variation
         else:
             self.num_of_user_sat[sat_id] = variation
+        # print(self.num_of_user_sat)
         assert self.num_of_user_sat[sat_id] >= 0
 
     def get_num_of_user_sat(self, sat_id):
