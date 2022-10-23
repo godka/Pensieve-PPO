@@ -96,7 +96,6 @@ class Environment:
         self.next_sat_bandwidth = [[] for _ in range(self.num_agents)]
         self.next_sat_id = [[] for _ in range(self.num_agents)]
         self.delay = [0 for _ in range(self.num_agents)]
-        self.num_of_user_sat = {}
 
         self.bit_rate = None
         self.download_bw = [[] for _ in range(self.num_agents)]
@@ -1003,6 +1002,7 @@ class Environment:
             self.num_of_user_sat[sat_id] += variation
         else:
             self.num_of_user_sat[sat_id] = variation
+        assert self.num_of_user_sat[sat_id] >= 0
 
     def get_num_of_user_sat(self, sat_id):
         # update sat info

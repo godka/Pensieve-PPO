@@ -25,7 +25,7 @@ RANDOM_SEED = 42
 RAND_RANGE = 1000000
 SUMMARY_DIR = './results'
 LOG_FILE = './test_results/log_sim_cent'
-TEST_TRACES = './noaa_test/'
+TEST_TRACES = './test/'
 # log in format of time_stamp bit_rate buffer_size rebuffer_time chunk_size download_time reward
 # NN_MODEL = './models/nn_model_ep_5900.ckpt'
 
@@ -56,7 +56,7 @@ MPC_TYPE = "DualMPC"
 
 
 def get_chunk_size(quality, index):
-    if ( index < 0 or index > 48 ):
+    if index < 0 or index > 48:
         return 0
     # note that the quality and video labels are inverted (i.e., quality 4 is highest and this pertains to video1)
     sizes = {5: size_video1[index], 4: size_video2[index], 3: size_video3[index], 2: size_video4[index], 1: size_video5[index], 0:size_video6[index]}
@@ -127,7 +127,7 @@ def main():
             print("network count", video_count)
             print(sum(results) / len(results))
             video_count += 1
-            break
+            # break
 
             if video_count >= len(all_file_names):
                 break
@@ -139,7 +139,7 @@ def main():
         # this is to make the framework similar to the real
         delay, sleep_time, buffer_size, rebuf, \
         video_chunk_size, next_video_chunk_sizes, \
-        end_of_video, video_chunk_remain, b, is_handover, cur_sat_id, sat_status = \
+        end_of_video, video_chunk_remain, b, is_handover, cur_sat_id, sat_status, _ = \
             net_env.get_video_chunk(bit_rate[agent], agent, MPC_TYPE)
             
         bit_rate[agent] = b
