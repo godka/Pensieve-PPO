@@ -248,6 +248,7 @@ def agent(agent_id, net_params_queue, exp_queue):
             actor_net_params = net_params_queue.get()
             actor.set_network_params(actor_net_params)
 
+
 def build_summaries():
     entropy_weight = tf.Variable(0.)
     tf.summary.scalar("Entropy Weight", entropy_weight)

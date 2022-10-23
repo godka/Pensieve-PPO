@@ -21,13 +21,14 @@ REBUF_PENALTY = 4.3  # 1 sec rebuffering -> 3 Mbps
 SMOOTH_PENALTY = 1
 DEFAULT_QUALITY = 1  # default video quality without agent
 RANDOM_SEED = 42
-TEST_TRACES =  './test/'
+TEST_TRACES = './test/'
 NN_MODEL = sys.argv[1]
 NUM_AGENTS = int(sys.argv[2])
 
 LOG_FILE = './test_results' + str(NUM_AGENTS) + '/log_sim_ppo'
 
 # A_SAT = NUM_AGENTS
+
 
 def main():
 
@@ -105,7 +106,8 @@ def main():
                 
                 state = [[np.zeros((S_INFO, S_LEN))]for _ in range(NUM_AGENTS)]
 
-                # print("video count", video_count)
+                print("network count", video_count)
+                print(sum(results) / len(results))
                 video_count += 1
 
                 if video_count >= len(all_file_names):
