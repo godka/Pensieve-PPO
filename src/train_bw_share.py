@@ -35,7 +35,7 @@ args = parser.parse_args()
 USERS = args.user
 # A_SAT = USERS + 1
 
-TEST_LOG_FOLDER += str(USERS)
+TEST_LOG_FOLDER += str(USERS) + '/'
 
 # create result directory
 if not os.path.exists(SUMMARY_DIR):

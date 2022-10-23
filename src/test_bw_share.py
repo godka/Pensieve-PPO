@@ -22,9 +22,10 @@ SMOOTH_PENALTY = 1
 DEFAULT_QUALITY = 1  # default video quality without agent
 RANDOM_SEED = 42
 TEST_TRACES =  './test/'
-LOG_FILE = './test_results/log_sim_ppo'
 NN_MODEL = sys.argv[1]
 NUM_AGENTS = int(sys.argv[2])
+
+LOG_FILE = './test_results' + str(NUM_AGENTS) + '/log_sim_ppo'
 
 # A_SAT = NUM_AGENTS
 
@@ -169,7 +170,7 @@ def main():
             
             sat[agent] = action // A_DIM
             bit_rate[agent] = action % A_DIM
-            
+
             net_env.set_satellite(agent, sat[agent])
             
             s_batch[agent].append(state[agent])
