@@ -104,7 +104,7 @@ def main():
                 
                 state = [[np.zeros((S_INFO, S_LEN))]for _ in range(NUM_AGENTS)]
 
-                print("video count", video_count)
+                # print("video count", video_count)
                 video_count += 1
 
                 if video_count >= len(all_file_names):
