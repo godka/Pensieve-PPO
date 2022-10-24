@@ -79,7 +79,7 @@ class Environment:
         self.video_chunk_remain = [0 for _ in range(self.num_agents)]
         self.end_of_video = [False for _ in range(self.num_agents)]
         self.next_video_chunk_sizes = [[] for _ in range(self.num_agents)]
-        self.next_sat_bandwidth = [[] for _ in range(self.num_agents)]
+        # self.next_sat_bandwidth = [[] for _ in range(self.num_agents)]
         self.next_sat_id = [[] for _ in range(self.num_agents)]
         self.delay = [0 for _ in range(self.num_agents)]
 
@@ -222,7 +222,7 @@ class Environment:
         self.video_chunk_counter[agent] += 1
         video_chunk_remain = TOTAL_VIDEO_CHUNCK - self.video_chunk_counter[agent]
         
-        self.next_sat_bandwidth[agent], self.next_sat_id[agent] = self.get_all_sat_id(agent, self.mahimahi_ptr[agent] - 1)
+        next_sat_bandwidth, self.next_sat_id[agent], next_sat_bw_logs = self.get_all_sat_id(agent, self.mahimahi_ptr[agent] - 1)
         
         if self.video_chunk_counter[agent] >= TOTAL_VIDEO_CHUNCK:
 
@@ -247,7 +247,7 @@ class Environment:
             next_video_chunk_sizes, \
             self.end_of_video[agent], \
             video_chunk_remain, \
-            self.next_sat_bandwidth[agent]
+            next_sat_bandwidth, next_sat_bw_logs
             
     def reset(self):
         
@@ -257,7 +257,7 @@ class Environment:
         self.video_chunk_remain = [0 for _ in range(self.num_agents)]
         self.end_of_video = [False for _ in range(self.num_agents)]
         self.next_video_chunk_sizes = [[] for _ in range(self.num_agents)]
-        self.next_sat_bandwidth = [[] for _ in range(self.num_agents)]
+        # self.next_sat_bandwidth = [[] for _ in range(self.num_agents)]
         self.next_sat_id = [[] for _ in range(self.num_agents)]
         self.delay = [0 for _ in range(self.num_agents)]
         self.num_of_user_sat = {}
@@ -307,11 +307,12 @@ class Environment:
     def get_all_sat_id(self, agent, mahimahi_ptr=None):
         best_sat_id = None
         best_sat_bw = 0
+        best_bw_list = []
         
         if mahimahi_ptr is None:
             mahimahi_ptr = self.mahimahi_ptr[agent]
         
-        list1, list2 = [], []
+        list1, list2, list3 = [], [], []
         bw_list = []
         sat_bw = self.cooked_bw[self.cur_sat_id[agent]]
         for i in range(5):
@@ -339,10 +340,12 @@ class Environment:
                 if self.connection[sat_id][mahimahi_ptr + 1] == -1 or self.connection[sat_id][mahimahi_ptr + 1] == agent:
                     best_sat_id = sat_id
                     best_sat_bw = bw
+                    best_bw_list = bw_list
 
         if best_sat_id is None:
             best_sat_id = self.cur_sat_id[agent]
         list1.append(best_sat_bw), list2.append(best_sat_id)
+        list3 = best_bw_list
         # zipped_lists = zip(list1, list2)
         # sorted_pairs = sorted(zipped_lists)
 
@@ -351,7 +354,7 @@ class Environment:
         # list1 = [ list1[i] for i in range(1)]
         # list2 = [ list2[i] for i in range(1)]
         
-        return list1, list2
+        return list1, list2, list3
 
     def get_best_sat_id(self, agent, mahimahi_ptr=None):
         best_sat_id = None

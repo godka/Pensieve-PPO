@@ -3,6 +3,7 @@ from muleo_lc_bw_share import load_trace
 from muleo_lc_bw_share import fixed_env as env
 import matplotlib.pyplot as plt
 import itertools
+import os
 
 VIDEO_CHOICES = 6
 
@@ -23,8 +24,8 @@ SMOOTH_PENALTY = 1
 DEFAULT_QUALITY = 1  # default video quality without agent
 RANDOM_SEED = 42
 RAND_RANGE = 1000000
-SUMMARY_DIR = './results'
-LOG_FILE = './test_results_mpc/log_sim_cent'
+SUMMARY_DIR = './test_results_mpc/'
+LOG_FILE = SUMMARY_DIR + 'log_sim_cent'
 TEST_TRACES = './test/'
 # log in format of time_stamp bit_rate buffer_size rebuffer_time chunk_size download_time reward
 # NN_MODEL = './models/nn_model_ep_5900.ckpt'
@@ -35,7 +36,7 @@ import argparse
 
 parser = argparse.ArgumentParser(description='PyTorch Synthetic Benchmark',
                                  formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-parser.add_argument('--user', type=int, default=3)
+parser.add_argument('--user', type=int, default=9)
 args = parser.parse_args()
 NUM_AGENTS = args.user
 
@@ -76,6 +77,13 @@ def main():
                               num_agents=NUM_AGENTS)
 
     log_path = LOG_FILE + '_' + all_file_names[net_env.trace_idx]
+
+    os.system('rm -r ' + SUMMARY_DIR)
+    # os.system('mkdir ' + TEST_LOG_FOLDER)
+
+    if not os.path.exists(SUMMARY_DIR):
+        os.makedirs(SUMMARY_DIR)
+
     log_file = open(log_path, 'w')
 
     time_stamp = [0 for _ in range(NUM_AGENTS)]

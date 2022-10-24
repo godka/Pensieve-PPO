@@ -121,7 +121,7 @@ def main():
             delay, sleep_time, buffer_size, rebuf, \
             video_chunk_size, next_video_chunk_sizes, \
             end_of_video, video_chunk_remain, _, _, _, _, \
-            next_sat_bw = \
+            next_sat_bw, next_sat_bw_logs = \
                 net_env.get_video_chunk(bit_rate[agent], agent, model_type=None)
 
             time_stamp[agent] += delay  # in ms
@@ -164,7 +164,9 @@ def main():
             state[agent][3, -1] = float(delay) / M_IN_K / BUFFER_NORM_FACTOR  # 10 sec
             state[agent][4, :A_DIM] = np.array(next_video_chunk_sizes) / M_IN_K / M_IN_K  # mega byte
             state[agent][5, -1] = np.minimum(video_chunk_remain, CHUNK_TIL_VIDEO_END_CAP) / float(CHUNK_TIL_VIDEO_END_CAP)
-            state[agent][6, :A_SAT] = np.array(next_sat_bw) 
+            state[agent][6, :] = np.zeros(S_LEN)
+            for i in range(len(next_sat_bw_logs)):
+                state[agent][6, -i - 1] = next_sat_bw_logs[i]
 
             action_prob = actor.predict(np.reshape(state[agent], (1, S_INFO, S_LEN)))
             noise = np.random.gumbel(size=len(action_prob))

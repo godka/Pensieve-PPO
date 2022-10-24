@@ -3,7 +3,7 @@ import numpy as np
 import logging
 import os
 import sys
-from muleo_lc_bw_share.env import ABREnv
+from muleo_lc_bw_share.env_explicit import ABREnv
 import ppo2 as network
 import tensorflow.compat.v1 as tf
 
@@ -30,7 +30,7 @@ import argparse
 
 parser = argparse.ArgumentParser(description='PyTorch Synthetic Benchmark',
                                  formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-parser.add_argument('--user', type=int, default=3)
+parser.add_argument('--user', type=int, default=6)
 args = parser.parse_args()
 USERS = args.user
 # A_SAT = USERS + 1
