@@ -5,9 +5,9 @@ import numpy as np
 import tensorflow.compat.v1 as tf
 from muleo_lc_bw_share import load_trace
 from muleo_lc_bw_share import fixed_env as env
-import ppo2 as network
+import ppo_explicit as network
 
-S_INFO = 6 + 1  # bit_rate, buffer_size, next_chunk_size, bandwidth_measurement(throughput and time), chunk_til_video_end
+S_INFO = 6 + 1 + 2  # bit_rate, buffer_size, next_chunk_size, bandwidth_measurement(throughput and time), chunk_til_video_end
 S_LEN = 8  # take how many frames in the past
 A_DIM = 6
 A_SAT = 2
@@ -121,7 +121,7 @@ def main():
             delay, sleep_time, buffer_size, rebuf, \
             video_chunk_size, next_video_chunk_sizes, \
             end_of_video, video_chunk_remain, _, _, _, _, \
-            next_sat_bw, next_sat_bw_logs = \
+            next_sat_bw, next_sat_bw_logs, cur_sat_user_num, prev_sat_user_nums = \
                 net_env.get_video_chunk(bit_rate[agent], agent, model_type=None)
 
             time_stamp[agent] += delay  # in ms
@@ -167,6 +167,13 @@ def main():
             state[agent][6, :] = np.zeros(S_LEN)
             for i in range(len(next_sat_bw_logs)):
                 state[agent][6, -i - 1] = next_sat_bw_logs[i]
+
+            state[agent][7, -1] = cur_sat_user_num
+
+            state[agent][8, :] = np.zeros(S_LEN)
+
+            for i in range(len(prev_sat_user_nums)):
+                state[agent][8, -i - 1] = prev_sat_user_nums[i]
 
             action_prob = actor.predict(np.reshape(state[agent], (1, S_INFO, S_LEN)))
             noise = np.random.gumbel(size=len(action_prob))

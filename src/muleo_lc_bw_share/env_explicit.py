@@ -5,7 +5,7 @@ from . import core as abrenv
 from . import load_trace
 
 # bit_rate, buffer_size, next_chunk_size, bandwidth_measurement(throughput and time), chunk_til_video_end
-S_INFO = 6 + 1
+S_INFO = 6 + 1 + 2
 S_LEN = 8  # take how many frames in the past
 A_DIM = 6
 A_SAT = 2
@@ -54,7 +54,7 @@ class ABREnv():
         delay, sleep_time, self.buffer_size[agent], rebuf, \
             video_chunk_size, next_video_chunk_sizes, \
             end_of_video, video_chunk_remain, \
-            next_sat_bw, next_sat_bw_logs = \
+            next_sat_bw, next_sat_bw_logs, cur_sat_user_num, prev_sat_user_nums = \
             self.net_env.get_video_chunk(bit_rate, agent)
         state = np.roll(self.state[agent], -1, axis=1)
 
@@ -73,6 +73,13 @@ class ABREnv():
 
         for i in range(len(next_sat_bw_logs)):
             state[6, -i-1] = next_sat_bw_logs[i]
+
+        state[7, -1] = cur_sat_user_num
+
+        state[8, :] = np.zeros(S_LEN)
+
+        for i in range(len(prev_sat_user_nums)):
+            state[8, -i - 1] = prev_sat_user_nums[i]
 
         self.state[agent] = state
         
@@ -131,7 +138,7 @@ class ABREnv():
         delay, sleep_time, self.buffer_size[agent], rebuf, \
             video_chunk_size, next_video_chunk_sizes, \
             end_of_video, video_chunk_remain, \
-            next_sat_bw, next_sat_bw_logs = \
+            next_sat_bw, next_sat_bw_logs, cur_sat_user_num, prev_sat_user_nums = \
             self.net_env.get_video_chunk(bit_rate, agent)
 
         self.time_stamp += delay  # in ms
@@ -160,6 +167,12 @@ class ABREnv():
         state[6, :] = np.zeros(S_LEN)
         for i in range(len(next_sat_bw_logs)):
             state[6, -i-1] = next_sat_bw_logs[i]
+
+        state[7, -1] = cur_sat_user_num
+
+        state[8, :] = np.zeros(S_LEN)
+        for i in range(len(prev_sat_user_nums)):
+            state[8, -i - 1] = prev_sat_user_nums[i]
 
         self.state[agent] = state
 

@@ -96,6 +96,7 @@ class Environment:
         # self.next_sat_bandwidth = [[] for _ in range(self.num_agents)]
         self.next_sat_id = [[] for _ in range(self.num_agents)]
         self.delay = [0 for _ in range(self.num_agents)]
+        self.prev_sat_user_nums = [[] for _ in range(self.num_agents)]
 
         self.bit_rate = None
         self.download_bw = [[] for _ in range(self.num_agents)]
@@ -245,7 +246,7 @@ class Environment:
         self.video_chunk_counter[agent] += 1
         video_chunk_remain = TOTAL_VIDEO_CHUNCK - self.video_chunk_counter[agent]
 
-        next_sat_bandwidth, self.next_sat_id[agent], next_sat_bw_logs = self.get_all_sat_id(agent, self.mahimahi_ptr[agent] - 1)
+        next_sat_bandwidth, next_sat_id, next_sat_bw_logs = self.get_all_sat_id(agent, self.mahimahi_ptr[agent] - 1)
 
         if self.video_chunk_counter[agent] >= TOTAL_VIDEO_CHUNCK or end_of_network:
 
@@ -265,6 +266,14 @@ class Environment:
             
         self.video_chunk_remain[agent] = video_chunk_remain
         self.download_bw[agent].append(float(video_chunk_size) / delay / M_IN_K * BITS_IN_BYTE)
+
+        # num of users
+        cur_sat_user_num = self.get_num_of_user_sat(self.cur_sat_id[agent])
+        if next_sat_id == self.next_sat_id[agent]:
+            self.prev_sat_user_nums[agent].append(self.get_num_of_user_sat(self.next_sat_id[agent]))
+        else:
+            self.prev_sat_user_nums[agent] = [self.get_num_of_user_sat(next_sat_id)]
+            self.next_sat_id[agent] = next_sat_id
 
         if not self.end_of_video[agent] and model_type is not None:
             is_handover, new_sat_id, bit_rate = self.run_mpc(agent, model_type)
@@ -292,7 +301,7 @@ class Environment:
             self.end_of_video[agent], \
             video_chunk_remain, \
             bit_rate, is_handover, new_sat_id, self.get_num_of_user_sat(sat_id="all"), \
-            next_sat_bandwidth, next_sat_bw_logs
+            next_sat_bandwidth, next_sat_bw_logs, cur_sat_user_num, self.prev_sat_user_nums[agent][-8:]
             
     def reset(self):
         
@@ -305,6 +314,7 @@ class Environment:
         # self.next_sat_bandwidth = [[] for _ in range(self.num_agents)]
         self.next_sat_id = [[] for _ in range(self.num_agents)]
         self.delay = [0 for _ in range(self.num_agents)]
+        self.prev_sat_user_nums = [[] for _ in range(self.num_agents)]
         self.num_of_user_sat = {}
 
         self.trace_idx += 1
@@ -354,7 +364,6 @@ class Environment:
         best_sat_id = None
         best_sat_bw = 0
         best_bw_list = []
-
         if mahimahi_ptr is None:
             mahimahi_ptr = self.mahimahi_ptr[agent]
 
@@ -369,7 +378,7 @@ class Environment:
                     bw_list.append(sat_bw[mahimahi_ptr - i] / self.get_num_of_user_sat(self.cur_sat_id[agent]))
         bw = sum(bw_list) / len(bw_list)
 
-        list1.append(bw), list2.append(self.cur_sat_id[agent])
+        list1.append(bw)
 
         for sat_id, sat_bw in self.cooked_bw.items():
             bw_list = []
@@ -391,7 +400,9 @@ class Environment:
 
         if best_sat_id is None:
             best_sat_id = self.cur_sat_id[agent]
-        list1.append(best_sat_bw), list2.append(best_sat_id)
+
+        list1.append(best_sat_bw)
+        list2 = best_sat_id
         list3 = best_bw_list
         # zipped_lists = zip(list1, list2)
         # sorted_pairs = sorted(zipped_lists)
@@ -931,7 +942,7 @@ class Environment:
                         harmonic_bw = qoe_log["cur_download_bw"]
                     else:
                         harmonic_bw = qoe_log["cur_download_bw"] * (cur_user_num / (cur_user_num - 1))
-                    # harmonic_bw = qoe_log["cur_download_bw"] * (cur_user_num / (self.get_num_of_user_sat(target_cur_sat_id) - 1))
+                        # harmonic_bw = qoe_log["cur_download_bw"] * (cur_user_num / (self.get_num_of_user_sat(target_cur_sat_id) - 1))
                 elif target_next_sat_id == qoe_log["cur_sat_id"] and index >= target_last_index + target_ho_index:
                     if cur_user_num < 1:
                         harmonic_bw = qoe_log["cur_download_bw"]
@@ -1019,11 +1030,16 @@ class Environment:
         return 0
 
     def set_satellite(self, agent, sat, id_list=None):
+        """
         if id_list is None:
             id_list = self.next_sat_id[agent]
 
         # Do not do any satellite switch
         sat_id = id_list[sat]
+        """
+        if id_list is None:
+            sat_id = self.next_sat_id[agent]
+
         self.connection[sat_id][self.mahimahi_ptr[agent]] = agent
 
         if sat_id == self.cur_sat_id[agent]:
@@ -1031,7 +1047,5 @@ class Environment:
         else:
             self.update_sat_info(sat_id, self.mahimahi_ptr[agent], 1)
             self.update_sat_info(self.cur_sat_id[agent], self.mahimahi_ptr[agent], -1)
-
             self.cur_sat_id[agent] = sat_id
             self.delay[agent] = HANDOVER_DELAY
-

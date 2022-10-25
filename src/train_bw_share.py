@@ -4,17 +4,17 @@ import logging
 import os
 import sys
 from muleo_lc_bw_share.env_explicit import ABREnv
-import ppo2 as network
+import ppo_explicit as network
 import tensorflow.compat.v1 as tf
 
 os.environ['CUDA_VISIBLE_DEVICES'] = '-1'
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 
-S_DIM = [6 + 1, 8]
+S_DIM = [6 + 1 + 2, 8]
 A_DIM = 6
 A_SAT = 2
 ACTOR_LR_RATE = 1e-4
-NUM_AGENTS = 8
+NUM_AGENTS = 16
 TRAIN_SEQ_LEN = 1000  # take as a train batch
 TRAIN_EPOCH = 50000
 MODEL_SAVE_INTERVAL = 300
@@ -30,7 +30,7 @@ import argparse
 
 parser = argparse.ArgumentParser(description='PyTorch Synthetic Benchmark',
                                  formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-parser.add_argument('--user', type=int, default=6)
+parser.add_argument('--user', type=int, default=3)
 args = parser.parse_args()
 USERS = args.user
 # A_SAT = USERS + 1
