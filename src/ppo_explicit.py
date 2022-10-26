@@ -8,6 +8,7 @@ import tflearn
 
 FEATURE_NUM = 128
 ACTION_EPS = 1e-4
+PAST_LEN = 5
 GAMMA = 0.99
 # PPO2
 EPS = 0.2
@@ -21,7 +22,7 @@ class Network():
             split_3 = tflearn.conv_1d(inputs[:, 3:4, :], FEATURE_NUM, 4, activation='relu')
             split_4 = tflearn.conv_1d(inputs[:, 4:5, :self.a_dim], FEATURE_NUM, 4, activation='relu')
             split_5 = tflearn.fully_connected(inputs[:, 5:6, -1], FEATURE_NUM, activation='relu')
-            split_6 = tflearn.conv_1d(inputs[:, 6:7, :], FEATURE_NUM, 4, activation='relu')
+            split_6 = tflearn.conv_1d(inputs[:, 6:7, :PAST_LEN], FEATURE_NUM, 4, activation='relu')
             split_7 = tflearn.fully_connected(inputs[:, 7:8, -1], FEATURE_NUM, activation='relu')
             split_8 = tflearn.fully_connected(inputs[:, 8:9, -1], FEATURE_NUM, activation='relu')
 
@@ -45,7 +46,7 @@ class Network():
             split_3 = tflearn.conv_1d(inputs[:, 3:4, :], FEATURE_NUM, 4, activation='relu')
             split_4 = tflearn.conv_1d(inputs[:, 4:5, :self.a_dim], FEATURE_NUM, 4, activation='relu')
             split_5 = tflearn.fully_connected(inputs[:, 5:6, -1], FEATURE_NUM, activation='relu')
-            split_6 = tflearn.conv_1d(inputs[:, 6:7, :], FEATURE_NUM, 4, activation='relu')
+            split_6 = tflearn.conv_1d(inputs[:, 6:7, :PAST_LEN], FEATURE_NUM, 4, activation='relu')
             split_7 = tflearn.fully_connected(inputs[:, 7:8, -1], FEATURE_NUM, activation='relu')
             split_8 = tflearn.fully_connected(inputs[:, 8:9, -1], FEATURE_NUM, activation='relu')
             
