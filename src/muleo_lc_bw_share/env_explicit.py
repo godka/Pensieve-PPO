@@ -8,6 +8,7 @@ from . import load_trace
 S_INFO = 6 + 1 + 2
 S_LEN = 8  # take how many frames in the past
 A_DIM = 6
+PAST_LEN = 5
 A_SAT = 2
 TRAIN_SEQ_LEN = 100  # take as a train batch
 MODEL_SAVE_INTERVAL = 100
@@ -70,16 +71,17 @@ class ABREnv():
         state[5, -1] = np.minimum(video_chunk_remain,
                                 CHUNK_TIL_VIDEO_END_CAP) / float(CHUNK_TIL_VIDEO_END_CAP)
         state[6, :] = np.zeros(S_LEN)
-
-        for i in range(len(next_sat_bw_logs)):
-            state[6, -i-1] = next_sat_bw_logs[i]
+        if len(next_sat_bw_logs) < PAST_LEN:
+            next_sat_bw_logs = [0] * (PAST_LEN - len(next_sat_bw_logs)) + next_sat_bw_logs
+        state[6, :PAST_LEN] = next_sat_bw_logs
 
         state[7, -1] = cur_sat_user_num
 
         state[8, :] = np.zeros(S_LEN)
+        if len(prev_sat_user_nums) < PAST_LEN:
+            prev_sat_user_nums = [0] * (PAST_LEN - len(prev_sat_user_nums)) + prev_sat_user_nums
 
-        for i in range(len(prev_sat_user_nums)):
-            state[8, -i - 1] = prev_sat_user_nums[i]
+        state[8, :PAST_LEN] = prev_sat_user_nums
 
         self.state[agent] = state
         
@@ -165,14 +167,17 @@ class ABREnv():
         state[5, -1] = np.minimum(video_chunk_remain,
                                   CHUNK_TIL_VIDEO_END_CAP) / float(CHUNK_TIL_VIDEO_END_CAP)
         state[6, :] = np.zeros(S_LEN)
-        for i in range(len(next_sat_bw_logs)):
-            state[6, -i-1] = next_sat_bw_logs[i]
+        if len(next_sat_bw_logs) < PAST_LEN:
+            next_sat_bw_logs = [0] * (PAST_LEN - len(next_sat_bw_logs)) + next_sat_bw_logs
+        state[6, :PAST_LEN] = next_sat_bw_logs
 
         state[7, -1] = cur_sat_user_num
 
         state[8, :] = np.zeros(S_LEN)
-        for i in range(len(prev_sat_user_nums)):
-            state[8, -i - 1] = prev_sat_user_nums[i]
+        if len(prev_sat_user_nums) < PAST_LEN:
+            prev_sat_user_nums = [0] * (PAST_LEN - len(prev_sat_user_nums)) + prev_sat_user_nums
+
+        state[8, :PAST_LEN] = prev_sat_user_nums
 
         self.state[agent] = state
 

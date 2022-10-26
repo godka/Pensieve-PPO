@@ -6,6 +6,7 @@ BITS_IN_BYTE = 8.0
 RANDOM_SEED = 42
 VIDEO_CHUNCK_LEN = 4000.0  # millisec, every time add this amount to buffer
 BITRATE_LEVELS = 6
+PAST_LEN = 5
 TOTAL_VIDEO_CHUNCK = 48
 BUFFER_THRESH = 60.0 * MILLISECONDS_IN_SECOND  # millisec, max buffer limit
 DRAIN_BUFFER_SLEEP_TIME = 500.0  # millisec
@@ -261,7 +262,7 @@ class Environment:
             next_video_chunk_sizes, \
             self.end_of_video[agent], \
             video_chunk_remain, \
-            next_sat_bandwidth, next_sat_bw_logs, cur_sat_user_num, self.prev_sat_user_nums[agent][-8:]
+            next_sat_bandwidth, next_sat_bw_logs, cur_sat_user_num, self.prev_sat_user_nums[agent]
             
     def reset(self):
         
@@ -329,7 +330,7 @@ class Environment:
         list1, list2, list3 = [], [], []
         bw_list = []
         sat_bw = self.cooked_bw[self.cur_sat_id[agent]]
-        for i in range(5):
+        for i in range(PAST_LEN):
             if mahimahi_ptr - i >= 0:
                 if self.get_num_of_user_sat(self.cur_sat_id[agent]) == 0:
                     bw_list.append(sat_bw[mahimahi_ptr-i])
@@ -343,7 +344,7 @@ class Environment:
             bw_list = []
             if sat_bw[mahimahi_ptr] == 0:
                 continue
-            for i in range(5):
+            for i in range(PAST_LEN):
                 if mahimahi_ptr - i >= 0 and sat_bw[mahimahi_ptr-i] != 0:
                     if self.get_num_of_user_sat(sat_id) == 0:
                         bw_list.append(sat_bw[mahimahi_ptr-i])
@@ -383,7 +384,7 @@ class Environment:
             bw_list = []
             if sat_bw[mahimahi_ptr] == 0:
                 continue
-            for i in range(5):
+            for i in range(PAST_LEN):
                 if mahimahi_ptr - i >= 0 and sat_bw[mahimahi_ptr-i] != 0:
                     if self.get_num_of_user_sat(sat_id) == 0:
                         bw_list.append(sat_bw[mahimahi_ptr-i])
