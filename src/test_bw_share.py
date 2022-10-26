@@ -10,6 +10,7 @@ import ppo_explicit as network
 S_INFO = 6 + 1 + 2  # bit_rate, buffer_size, next_chunk_size, bandwidth_measurement(throughput and time), chunk_til_video_end
 S_LEN = 8  # take how many frames in the past
 A_DIM = 6
+PAST_LEN = 5
 A_SAT = 2
 ACTOR_LR_RATE = 0.0001
 CRITIC_LR_RATE = 0.001
@@ -164,16 +165,18 @@ def main():
             state[agent][3, -1] = float(delay) / M_IN_K / BUFFER_NORM_FACTOR  # 10 sec
             state[agent][4, :A_DIM] = np.array(next_video_chunk_sizes) / M_IN_K / M_IN_K  # mega byte
             state[agent][5, -1] = np.minimum(video_chunk_remain, CHUNK_TIL_VIDEO_END_CAP) / float(CHUNK_TIL_VIDEO_END_CAP)
-            state[agent][6, :] = np.zeros(S_LEN)
-            for i in range(len(next_sat_bw_logs)):
-                state[agent][6, -i - 1] = next_sat_bw_logs[i]
+            state[6, :] = np.zeros(S_LEN)
+            if len(next_sat_bw_logs) < PAST_LEN:
+                next_sat_bw_logs = [0] * (PAST_LEN - len(next_sat_bw_logs)) + next_sat_bw_logs
+            state[6, :PAST_LEN] = next_sat_bw_logs
 
-            state[agent][7, -1] = cur_sat_user_num
+            state[7, -1] = cur_sat_user_num
 
-            state[agent][8, :] = np.zeros(S_LEN)
+            state[8, :] = np.zeros(S_LEN)
+            if len(prev_sat_user_nums) < PAST_LEN:
+                prev_sat_user_nums = [0] * (PAST_LEN - len(prev_sat_user_nums)) + prev_sat_user_nums
 
-            for i in range(len(prev_sat_user_nums)):
-                state[agent][8, -i - 1] = prev_sat_user_nums[i]
+            state[8, :PAST_LEN] = prev_sat_user_nums
 
             action_prob = actor.predict(np.reshape(state[agent], (1, S_INFO, S_LEN)))
             noise = np.random.gumbel(size=len(action_prob))
