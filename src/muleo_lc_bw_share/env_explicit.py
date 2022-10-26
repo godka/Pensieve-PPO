@@ -72,14 +72,14 @@ class ABREnv():
                                 CHUNK_TIL_VIDEO_END_CAP) / float(CHUNK_TIL_VIDEO_END_CAP)
         if len(next_sat_bw_logs) < PAST_LEN:
             next_sat_bw_logs = [0] * (PAST_LEN - len(next_sat_bw_logs)) + next_sat_bw_logs
-        state[6, :PAST_LEN] = next_sat_bw_logs
+        state[6, :PAST_LEN] = next_sat_bw_logs[:5]
 
         state[7, -1] = cur_sat_user_num
 
         if len(prev_sat_user_nums) < PAST_LEN:
             prev_sat_user_nums = [0] * (PAST_LEN - len(prev_sat_user_nums)) + prev_sat_user_nums
 
-        state[8, :PAST_LEN] = prev_sat_user_nums
+        state[8, :PAST_LEN] = prev_sat_user_nums[:5]
 
         self.state[agent] = state
         
