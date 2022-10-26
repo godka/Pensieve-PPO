@@ -167,14 +167,15 @@ def main():
             state[agent][5, -1] = np.minimum(video_chunk_remain, CHUNK_TIL_VIDEO_END_CAP) / float(CHUNK_TIL_VIDEO_END_CAP)
             if len(next_sat_bw_logs) < PAST_LEN:
                 next_sat_bw_logs = [0] * (PAST_LEN - len(next_sat_bw_logs)) + next_sat_bw_logs
-            state[6, :PAST_LEN] = next_sat_bw_logs[:5]
 
-            state[7, -1] = cur_sat_user_num
+            state[agent][6, :PAST_LEN] = next_sat_bw_logs[:5]
+
+            state[agent][7, -1] = cur_sat_user_num
 
             if len(prev_sat_user_nums) < PAST_LEN:
                 prev_sat_user_nums = [0] * (PAST_LEN - len(prev_sat_user_nums)) + prev_sat_user_nums
 
-            state[8, :PAST_LEN] = prev_sat_user_nums[:5]
+            state[agent][8, :PAST_LEN] = prev_sat_user_nums[:5]
 
             action_prob = actor.predict(np.reshape(state[agent], (1, S_INFO, S_LEN)))
             noise = np.random.gumbel(size=len(action_prob))
