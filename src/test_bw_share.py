@@ -165,14 +165,12 @@ def main():
             state[agent][3, -1] = float(delay) / M_IN_K / BUFFER_NORM_FACTOR  # 10 sec
             state[agent][4, :A_DIM] = np.array(next_video_chunk_sizes) / M_IN_K / M_IN_K  # mega byte
             state[agent][5, -1] = np.minimum(video_chunk_remain, CHUNK_TIL_VIDEO_END_CAP) / float(CHUNK_TIL_VIDEO_END_CAP)
-            state[6, :] = np.zeros(S_LEN)
             if len(next_sat_bw_logs) < PAST_LEN:
                 next_sat_bw_logs = [0] * (PAST_LEN - len(next_sat_bw_logs)) + next_sat_bw_logs
             state[6, :PAST_LEN] = next_sat_bw_logs
 
             state[7, -1] = cur_sat_user_num
 
-            state[8, :] = np.zeros(S_LEN)
             if len(prev_sat_user_nums) < PAST_LEN:
                 prev_sat_user_nums = [0] * (PAST_LEN - len(prev_sat_user_nums)) + prev_sat_user_nums
 
