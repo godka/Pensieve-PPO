@@ -166,9 +166,9 @@ def main():
             state[agent][4, :A_DIM] = np.array(next_video_chunk_sizes) / M_IN_K / M_IN_K  # mega byte
             state[agent][5, -1] = np.minimum(video_chunk_remain, CHUNK_TIL_VIDEO_END_CAP) / float(CHUNK_TIL_VIDEO_END_CAP)
             if len(next_sat_bw_logs) < PAST_LEN:
-                next_sat_bw_logs = [0] * (PAST_LEN - len(next_sat_bw_logs)) + np.array(next_sat_bw_logs) / 10
+                next_sat_bw_logs = [0] * (PAST_LEN - len(next_sat_bw_logs)) + next_sat_bw_logs
 
-            state[agent][6, :PAST_LEN] = next_sat_bw_logs[:5]
+            state[agent][6, :PAST_LEN] = np.array(next_sat_bw_logs[:5]) / 10
 
             state[agent][7, :A_SAT] = [cur_sat_user_num, next_sat_user_nums[-1]]
 
