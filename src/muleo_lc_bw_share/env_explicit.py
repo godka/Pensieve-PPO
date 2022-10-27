@@ -55,7 +55,7 @@ class ABREnv():
         delay, sleep_time, self.buffer_size[agent], rebuf, \
             video_chunk_size, next_video_chunk_sizes, \
             end_of_video, video_chunk_remain, \
-            next_sat_bw, next_sat_bw_logs, cur_sat_user_num, prev_sat_user_nums = \
+            next_sat_bw, next_sat_bw_logs, cur_sat_user_num, next_sat_user_nums = \
             self.net_env.get_video_chunk(bit_rate, agent)
         state = np.roll(self.state[agent], -1, axis=1)
 
@@ -71,15 +71,16 @@ class ABREnv():
         state[5, -1] = np.minimum(video_chunk_remain,
                                 CHUNK_TIL_VIDEO_END_CAP) / float(CHUNK_TIL_VIDEO_END_CAP)
         if len(next_sat_bw_logs) < PAST_LEN:
-            next_sat_bw_logs = [0] * (PAST_LEN - len(next_sat_bw_logs)) + next_sat_bw_logs
+            next_sat_bw_logs = [0] * (PAST_LEN - len(next_sat_bw_logs)) + np.array(next_sat_bw_logs / 10)
+
         state[6, :PAST_LEN] = next_sat_bw_logs[:5]
 
-        state[7, -1] = cur_sat_user_num
+        state[7, :A_SAT] = [cur_sat_user_num, next_sat_user_nums[-1]]
 
-        if len(prev_sat_user_nums) < PAST_LEN:
-            prev_sat_user_nums = [0] * (PAST_LEN - len(prev_sat_user_nums)) + prev_sat_user_nums
+        # if len(next_sat_user_nums) < PAST_LEN:
+        #     next_sat_user_nums = [0] * (PAST_LEN - len(next_sat_user_nums)) + next_sat_user_nums
 
-        state[8, :PAST_LEN] = prev_sat_user_nums[:5]
+        # state[agent][8, :PAST_LEN] = next_sat_user_nums[:5]
 
         self.state[agent] = state
         
@@ -138,7 +139,7 @@ class ABREnv():
         delay, sleep_time, self.buffer_size[agent], rebuf, \
             video_chunk_size, next_video_chunk_sizes, \
             end_of_video, video_chunk_remain, \
-            next_sat_bw, next_sat_bw_logs, cur_sat_user_num, prev_sat_user_nums = \
+            next_sat_bw, next_sat_bw_logs, cur_sat_user_num, next_sat_user_nums = \
             self.net_env.get_video_chunk(bit_rate, agent)
 
         self.time_stamp += delay  # in ms
@@ -165,15 +166,16 @@ class ABREnv():
         state[5, -1] = np.minimum(video_chunk_remain,
                                   CHUNK_TIL_VIDEO_END_CAP) / float(CHUNK_TIL_VIDEO_END_CAP)
         if len(next_sat_bw_logs) < PAST_LEN:
-            next_sat_bw_logs = [0] * (PAST_LEN - len(next_sat_bw_logs)) + next_sat_bw_logs
+            next_sat_bw_logs = [0] * (PAST_LEN - len(next_sat_bw_logs)) + np.array(next_sat_bw_logs / 10)
+
         state[6, :PAST_LEN] = next_sat_bw_logs[:5]
 
-        state[7, -1] = cur_sat_user_num
+        state[7, :A_SAT] = [cur_sat_user_num, next_sat_user_nums[-1]]
 
-        if len(prev_sat_user_nums) < PAST_LEN:
-            prev_sat_user_nums = [0] * (PAST_LEN - len(prev_sat_user_nums)) + prev_sat_user_nums
+        # if len(next_sat_user_nums) < PAST_LEN:
+        #     next_sat_user_nums = [0] * (PAST_LEN - len(next_sat_user_nums)) + next_sat_user_nums
 
-        state[8, :PAST_LEN] = prev_sat_user_nums[:5]
+        # state[agent][8, :PAST_LEN] = next_sat_user_nums[:5]
 
         self.state[agent] = state
 

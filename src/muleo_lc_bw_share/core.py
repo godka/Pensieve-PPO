@@ -83,7 +83,7 @@ class Environment:
         # self.next_sat_bandwidth = [[] for _ in range(self.num_agents)]
         self.next_sat_id = [[] for _ in range(self.num_agents)]
         self.delay = [0 for _ in range(self.num_agents)]
-        self.prev_sat_user_nums = [[] for _ in range(self.num_agents)]
+        self.next_sat_user_nums = [[] for _ in range(self.num_agents)]
 
         self.video_size = {}  # in bytes
         for bitrate in range(BITRATE_LEVELS):
@@ -249,9 +249,9 @@ class Environment:
         # num of users
         cur_sat_user_num = self.get_num_of_user_sat(self.cur_sat_id[agent])
         if next_sat_id == self.next_sat_id[agent]:
-            self.prev_sat_user_nums[agent].append(self.get_num_of_user_sat(self.next_sat_id[agent]))
+            self.next_sat_user_nums[agent].append(self.get_num_of_user_sat(self.next_sat_id[agent]))
         else:
-            self.prev_sat_user_nums[agent] = [self.get_num_of_user_sat(next_sat_id)]
+            self.next_sat_user_nums[agent] = [self.get_num_of_user_sat(next_sat_id)]
             self.next_sat_id[agent] = next_sat_id
             
         return delay, \
@@ -262,7 +262,7 @@ class Environment:
             next_video_chunk_sizes, \
             self.end_of_video[agent], \
             video_chunk_remain, \
-            next_sat_bandwidth, next_sat_bw_logs, cur_sat_user_num, self.prev_sat_user_nums[agent]
+            next_sat_bandwidth, next_sat_bw_logs, cur_sat_user_num, self.next_sat_user_nums[agent]
             
     def reset(self):
         
@@ -275,7 +275,7 @@ class Environment:
         # self.next_sat_bandwidth = [[] for _ in range(self.num_agents)]
         self.next_sat_id = [[] for _ in range(self.num_agents)]
         self.delay = [0 for _ in range(self.num_agents)]
-        self.prev_sat_user_nums = [[] for _ in range(self.num_agents)]
+        self.next_sat_user_nums = [[] for _ in range(self.num_agents)]
         self.num_of_user_sat = {}
         
         # pick a random trace file
