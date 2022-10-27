@@ -76,7 +76,8 @@ def testing(epoch, nn_model, log_file):
     log_file.flush()
 
     return rewards_mean, np.mean(entropies)
-        
+
+
 def central_agent(net_params_queues, exp_queues):
 
     assert len(net_params_queues) == NUM_AGENTS
