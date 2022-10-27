@@ -168,7 +168,7 @@ def main():
             if len(next_sat_bw_logs) < PAST_LEN:
                 next_sat_bw_logs = [0] * (PAST_LEN - len(next_sat_bw_logs)) + next_sat_bw_logs
 
-            state[agent][6, :PAST_LEN] = np.array(next_sat_bw_logs[:5]) / 10
+            state[agent][6, :PAST_LEN] = np.array(next_sat_bw_logs[:PAST_LEN]) / 10
 
             state[agent][7, :A_SAT] = [cur_sat_user_num, next_sat_user_nums[-1]]
 
