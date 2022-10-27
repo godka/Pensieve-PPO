@@ -23,7 +23,6 @@ SUMMARY_DIR = './ppo'
 MODEL_DIR = './models'
 TRAIN_TRACES = './train/'
 TEST_LOG_FOLDER = './test_results'
-LOG_FILE = SUMMARY_DIR + '/log'
 PPO_TRAINING_EPO = 5
 
 import argparse
@@ -36,6 +35,8 @@ USERS = args.user
 # A_SAT = USERS + 1
 
 TEST_LOG_FOLDER += str(USERS) + '/'
+SUMMARY_DIR += str(USERS)
+LOG_FILE = SUMMARY_DIR + '/log'
 
 # create result directory
 if not os.path.exists(SUMMARY_DIR):
