@@ -71,7 +71,7 @@ class ABREnv():
         state[5, -1] = np.minimum(video_chunk_remain,
                                 CHUNK_TIL_VIDEO_END_CAP) / float(CHUNK_TIL_VIDEO_END_CAP)
         if len(next_sat_bw_logs) < PAST_LEN:
-            next_sat_bw_logs = [0] * (PAST_LEN - len(next_sat_bw_logs)) + np.array(next_sat_bw_logs / 10)
+            next_sat_bw_logs = [0] * (PAST_LEN - len(next_sat_bw_logs)) + np.array(next_sat_bw_logs) / 10
 
         state[6, :PAST_LEN] = next_sat_bw_logs[:5]
 
@@ -166,7 +166,7 @@ class ABREnv():
         state[5, -1] = np.minimum(video_chunk_remain,
                                   CHUNK_TIL_VIDEO_END_CAP) / float(CHUNK_TIL_VIDEO_END_CAP)
         if len(next_sat_bw_logs) < PAST_LEN:
-            next_sat_bw_logs = [0] * (PAST_LEN - len(next_sat_bw_logs)) + np.array(next_sat_bw_logs / 10)
+            next_sat_bw_logs = [0] * (PAST_LEN - len(next_sat_bw_logs)) + np.array(next_sat_bw_logs) / 10
 
         state[6, :PAST_LEN] = next_sat_bw_logs[:5]
 
