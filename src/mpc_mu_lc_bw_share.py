@@ -150,6 +150,8 @@ def main():
         end_of_video, video_chunk_remain, b, is_handover, cur_sat_id, sat_status, _, _, _, _ = \
             net_env.get_video_chunk(bit_rate[agent], agent, MPC_TYPE)
 
+        bit_rate[agent] = b
+
         time_stamp[agent] += delay  # in ms
         time_stamp[agent] += sleep_time  # in ms
             
