@@ -13,7 +13,7 @@ os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 S_DIM = [6 + 1 + 1, 8]
 A_DIM = 6
 A_SAT = 2
-ACTOR_LR_RATE = 1e-4
+ACTOR_LR_RATE = 1e-5
 NUM_AGENTS = 16
 TRAIN_SEQ_LEN = 1000  # take as a train batch
 TRAIN_EPOCH = 50000
@@ -95,7 +95,6 @@ def testing(epoch, nn_model, log_file):
 
 def central_agent(net_params_queues, exp_queues):
 
-    assert len(net_params_queues) == NUM_AGENTS
     assert len(exp_queues) == NUM_AGENTS
     tf_config = tf.ConfigProto(intra_op_parallelism_threads=1,
                             inter_op_parallelism_threads=1)

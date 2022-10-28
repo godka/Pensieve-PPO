@@ -12,8 +12,8 @@ S_LEN = 8  # take how many frames in the past
 A_DIM = 6
 PAST_LEN = 5
 A_SAT = 2
-ACTOR_LR_RATE = 0.0001
-CRITIC_LR_RATE = 0.001
+ACTOR_LR_RATE = 1e-5
+# CRITIC_LR_RATE = 0.001
 VIDEO_BIT_RATE = [300,750,1200,1850,2850,4300]  # Kbps
 BUFFER_NORM_FACTOR = 10.0
 CHUNK_TIL_VIDEO_END_CAP = 48.0
@@ -122,7 +122,7 @@ def main():
             delay, sleep_time, buffer_size, rebuf, \
             video_chunk_size, next_video_chunk_sizes, \
             end_of_video, video_chunk_remain, _, _, _, _, \
-            next_sat_bw, next_sat_bw_logs, cur_sat_user_num, next_sat_user_nums = \
+            _, next_sat_bw_logs, cur_sat_user_num, next_sat_user_nums = \
                 net_env.get_video_chunk(bit_rate[agent], agent, model_type=None)
 
             time_stamp[agent] += delay  # in ms
@@ -137,14 +137,16 @@ def main():
             r_batch[agent].append(reward)
             results.append(reward)
             
-            last_bit_rate [agent]= bit_rate[agent]
+            last_bit_rate[agent] = bit_rate[agent]
 
             # log time_stamp, bit_rate, buffer_size, reward
             log_file.write(str(time_stamp[agent] / M_IN_K) + '\t' +
+                        str(agent) + '\t' +
+                        str(sat[agent]) + '\t' +
                         str(VIDEO_BIT_RATE[bit_rate[agent]]) + '\t' +
                         str(buffer_size) + '\t' +
                         str(rebuf) + '\t' +
-                        str(video_chunk_size) + '\t' +
+                        str(float(video_chunk_size) / float(delay) / M_IN_K) + '\t' +
                         str(delay) + '\t' +
                         str(reward) + '\n')
             log_file.flush()
@@ -170,7 +172,7 @@ def main():
 
             state[agent][6, :PAST_LEN] = np.array(next_sat_bw_logs[:PAST_LEN]) / 10
 
-            state[agent][7, :A_SAT] = [cur_sat_user_num, next_sat_user_nums[-1]]
+            state[agent][7, :A_SAT] = [cur_sat_user_num, next_sat_user_nums]
 
             # if len(next_sat_user_nums) < PAST_LEN:
             #     next_sat_user_nums = [0] * (PAST_LEN - len(next_sat_user_nums)) + next_sat_user_nums
@@ -187,6 +189,7 @@ def main():
             net_env.set_satellite(agent, sat[agent])
             
             s_batch[agent].append(state[agent])
+
         
             entropy_ = -np.dot(action_prob, np.log(action_prob))
             entropy_record.append(entropy_)

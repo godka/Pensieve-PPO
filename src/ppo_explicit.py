@@ -14,6 +14,7 @@ GAMMA = 0.99
 # PPO2
 EPS = 0.2
 DIM_SIZE = 4
+ENTROPY_WEIGHT = 0.1
 
 
 class Network():
@@ -142,7 +143,7 @@ class Network():
         p_batch = np.clip(p_batch, ACTION_EPS, 1. - ACTION_EPS)
         _H = np.mean(np.sum(-np.log(p_batch) * p_batch, axis=1))
         _g = _H - self.H_target
-        self._entropy_weight -= self.lr_rate * _g * 0.1
+        self._entropy_weight -= self.lr_rate * _g * ENTROPY_WEIGHT
 
     def compute_v(self, s_batch, a_batch, r_batch, terminal):
         ba_size = len(s_batch)

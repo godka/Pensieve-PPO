@@ -248,12 +248,9 @@ class Environment:
 
         # num of users
         cur_sat_user_num = self.get_num_of_user_sat(self.cur_sat_id[agent])
-        if next_sat_id == self.next_sat_id[agent]:
-            self.next_sat_user_nums[agent].append(self.get_num_of_user_sat(self.next_sat_id[agent]))
-        else:
-            self.next_sat_user_nums[agent] = [self.get_num_of_user_sat(next_sat_id)]
-            self.next_sat_id[agent] = next_sat_id
-            
+        self.next_sat_id[agent] = next_sat_id
+        next_sat_user_num = self.get_num_of_user_sat(next_sat_id)
+
         return delay, \
             sleep_time, \
             return_buffer_size / MILLISECONDS_IN_SECOND, \
@@ -262,7 +259,7 @@ class Environment:
             next_video_chunk_sizes, \
             self.end_of_video[agent], \
             video_chunk_remain, \
-            next_sat_bandwidth, next_sat_bw_logs, cur_sat_user_num, self.next_sat_user_nums[agent]
+            next_sat_bandwidth, next_sat_bw_logs, cur_sat_user_num, next_sat_user_num
             
     def reset(self):
         
