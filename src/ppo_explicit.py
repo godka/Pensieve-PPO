@@ -13,6 +13,7 @@ A_SAT = 2
 GAMMA = 0.99
 # PPO2
 EPS = 0.2
+DIM_SIZE = 4
 
 
 class Network():
@@ -20,12 +21,12 @@ class Network():
         with tf.variable_scope('actor'):
             split_0 = tflearn.fully_connected(inputs[:, 0:1, -1], FEATURE_NUM, activation='relu')
             split_1 = tflearn.fully_connected(inputs[:, 1:2, -1], FEATURE_NUM, activation='relu')
-            split_2 = tflearn.conv_1d(inputs[:, 2:3, :], FEATURE_NUM, 1, activation='relu')
-            split_3 = tflearn.conv_1d(inputs[:, 3:4, :], FEATURE_NUM, 1, activation='relu')
-            split_4 = tflearn.conv_1d(inputs[:, 4:5, :self.a_dim], FEATURE_NUM, 1, activation='relu')
+            split_2 = tflearn.conv_1d(inputs[:, 2:3, :], FEATURE_NUM, DIM_SIZE, activation='relu')
+            split_3 = tflearn.conv_1d(inputs[:, 3:4, :], FEATURE_NUM, DIM_SIZE, activation='relu')
+            split_4 = tflearn.conv_1d(inputs[:, 4:5, :self.a_dim], FEATURE_NUM, DIM_SIZE, activation='relu')
             split_5 = tflearn.fully_connected(inputs[:, 5:6, -1], FEATURE_NUM, activation='relu')
-            split_6 = tflearn.conv_1d(inputs[:, 6:7, :PAST_LEN], FEATURE_NUM, 1, activation='relu')
-            split_7 = tflearn.conv_1d(inputs[:, 7:8, :A_SAT], FEATURE_NUM, 1, activation='relu')
+            split_6 = tflearn.conv_1d(inputs[:, 6:7, :PAST_LEN], FEATURE_NUM, DIM_SIZE, activation='relu')
+            split_7 = tflearn.conv_1d(inputs[:, 7:8, :A_SAT], FEATURE_NUM, DIM_SIZE, activation='relu')
             # split_8 = tflearn.fully_connected(inputs[:, 8:9, -1], FEATURE_NUM, activation='relu')
 
             split_2_flat = tflearn.flatten(split_2)
@@ -44,12 +45,12 @@ class Network():
         with tf.variable_scope('critic'):
             split_0 = tflearn.fully_connected(inputs[:, 0:1, -1], FEATURE_NUM, activation='relu')
             split_1 = tflearn.fully_connected(inputs[:, 1:2, -1], FEATURE_NUM, activation='relu')
-            split_2 = tflearn.conv_1d(inputs[:, 2:3, :], FEATURE_NUM, 1, activation='relu')
-            split_3 = tflearn.conv_1d(inputs[:, 3:4, :], FEATURE_NUM, 1, activation='relu')
-            split_4 = tflearn.conv_1d(inputs[:, 4:5, :self.a_dim], FEATURE_NUM, 1, activation='relu')
+            split_2 = tflearn.conv_1d(inputs[:, 2:3, :], FEATURE_NUM, DIM_SIZE, activation='relu')
+            split_3 = tflearn.conv_1d(inputs[:, 3:4, :], FEATURE_NUM, DIM_SIZE, activation='relu')
+            split_4 = tflearn.conv_1d(inputs[:, 4:5, :self.a_dim], FEATURE_NUM, DIM_SIZE, activation='relu')
             split_5 = tflearn.fully_connected(inputs[:, 5:6, -1], FEATURE_NUM, activation='relu')
-            split_6 = tflearn.conv_1d(inputs[:, 6:7, :PAST_LEN], FEATURE_NUM, 1, activation='relu')
-            split_7 = tflearn.conv_1d(inputs[:, 7:8, :A_SAT], FEATURE_NUM, 1, activation='relu')
+            split_6 = tflearn.conv_1d(inputs[:, 6:7, :PAST_LEN], FEATURE_NUM, DIM_SIZE, activation='relu')
+            split_7 = tflearn.conv_1d(inputs[:, 7:8, :A_SAT], FEATURE_NUM, DIM_SIZE, activation='relu')
             # split_8 = tflearn.fully_connected(inputs[:, 8:9, -1], FEATURE_NUM, activation='relu')
 
             split_2_flat = tflearn.flatten(split_2)
