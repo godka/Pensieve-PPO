@@ -269,11 +269,8 @@ class Environment:
 
         # num of users
         cur_sat_user_num = self.get_num_of_user_sat(self.cur_sat_id[agent])
-        if next_sat_id == self.next_sat_id[agent]:
-            self.next_sat_user_nums[agent].append(self.get_num_of_user_sat(self.next_sat_id[agent]))
-        else:
-            self.next_sat_user_nums[agent] = [self.get_num_of_user_sat(next_sat_id)]
-            self.next_sat_id[agent] = next_sat_id
+        self.next_sat_id[agent] = next_sat_id
+        next_sat_user_num = self.get_num_of_user_sat(next_sat_id)
 
         if not self.end_of_video[agent] and model_type is not None:
             is_handover, new_sat_id, bit_rate = self.run_mpc(agent, model_type)
@@ -301,7 +298,7 @@ class Environment:
             self.end_of_video[agent], \
             video_chunk_remain, \
             bit_rate, is_handover, new_sat_id, self.get_num_of_user_sat(sat_id="all"), \
-            next_sat_bandwidth, next_sat_bw_logs, cur_sat_user_num, self.next_sat_user_nums[agent][-8:]
+            next_sat_bandwidth, next_sat_bw_logs, cur_sat_user_num, next_sat_user_num
             
     def reset(self):
         
