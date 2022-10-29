@@ -96,7 +96,7 @@ class Environment:
         # self.next_sat_bandwidth = [[] for _ in range(self.num_agents)]
         self.next_sat_id = [[] for _ in range(self.num_agents)]
         self.delay = [0 for _ in range(self.num_agents)]
-        self.next_sat_user_nums = [[] for _ in range(self.num_agents)]
+
 
         self.bit_rate = None
         self.download_bw = [[] for _ in range(self.num_agents)]
@@ -246,8 +246,7 @@ class Environment:
         self.video_chunk_counter[agent] += 1
         video_chunk_remain = TOTAL_VIDEO_CHUNCK - self.video_chunk_counter[agent]
 
-        next_sat_bandwidth, next_sat_id, next_sat_bw_logs = self.get_next_sat_info(agent, self.mahimahi_ptr[agent] - 1)
-
+        cur_sat_bw_logs, next_sat_bandwidth, next_sat_id, next_sat_bw_logs = self.get_next_sat_info(agent, self.mahimahi_ptr[agent])
         if self.video_chunk_counter[agent] >= TOTAL_VIDEO_CHUNCK or end_of_network:
 
             self.end_of_video[agent] = True
@@ -298,7 +297,7 @@ class Environment:
             self.end_of_video[agent], \
             video_chunk_remain, \
             bit_rate, is_handover, new_sat_id, self.get_num_of_user_sat(sat_id="all"), \
-            next_sat_bandwidth, next_sat_bw_logs, cur_sat_user_num, next_sat_user_num
+            next_sat_bandwidth, next_sat_bw_logs, cur_sat_user_num, next_sat_user_num, cur_sat_bw_logs
             
     def reset(self):
         
@@ -311,7 +310,6 @@ class Environment:
         # self.next_sat_bandwidth = [[] for _ in range(self.num_agents)]
         self.next_sat_id = [[] for _ in range(self.num_agents)]
         self.delay = [0 for _ in range(self.num_agents)]
-        self.next_sat_user_nums = [[] for _ in range(self.num_agents)]
         self.num_of_user_sat = {}
 
         self.trace_idx += 1
@@ -361,13 +359,14 @@ class Environment:
         best_sat_id = None
         best_sat_bw = 0
         best_bw_list = []
+        cur_sat_bw_list = []
         if mahimahi_ptr is None:
             mahimahi_ptr = self.mahimahi_ptr[agent]
 
         list1, list2, list3 = [], [], []
         bw_list = []
         sat_bw = self.cooked_bw[self.cur_sat_id[agent]]
-        for i in range(5):
+        for i in range(5, 0, -1):
             if mahimahi_ptr - i >= 0:
                 if self.get_num_of_user_sat(self.cur_sat_id[agent]) == 0:
                     bw_list.append(sat_bw[mahimahi_ptr - i])
@@ -376,12 +375,13 @@ class Environment:
         bw = sum(bw_list) / len(bw_list)
 
         list1.append(bw)
+        cur_sat_bw_list = bw_list
 
         for sat_id, sat_bw in self.cooked_bw.items():
             bw_list = []
             if sat_bw[mahimahi_ptr] == 0:
                 continue
-            for i in range(5):
+            for i in range(5, 0, -1):
                 if mahimahi_ptr - i >= 0 and sat_bw[mahimahi_ptr - i] != 0:
                     if self.get_num_of_user_sat(sat_id) == 0:
                         bw_list.append(sat_bw[mahimahi_ptr - i])
@@ -409,7 +409,7 @@ class Environment:
         # list1 = [ list1[i] for i in range(1)]
         # list2 = [ list2[i] for i in range(1)]
 
-        return list1, list2, list3
+        return cur_sat_bw_list, list1, list2, list3
 
     def get_best_sat_id(self, agent, mahimahi_ptr=None):
         best_sat_id = None
@@ -533,16 +533,7 @@ class Environment:
                         tmp_next_bw = self.predict_bw(next_sat_id, agent, robustness)
                         tmp_cur_bw = self.predict_bw(self.cur_sat_id[agent], agent, robustness)
                         next_download_bw = cur_download_bw * tmp_next_bw / tmp_cur_bw
-                        """
-                        print(cur_download_bw)
-                        print(tmp_next_bw)
-                        print(next_download_bw)
-                        print(self.cooked_bw[self.cur_sat_id[agent]][self.mahimahi_ptr[agent]-1])
-                        print(self.cooked_bw[next_sat_id][self.mahimahi_ptr[agent]-1])
-                        print(cur_user_num)
-                        print(self.get_num_of_user_sat(next_sat_id))
-                        print("--")
-                        """
+
                     elif method == "holt-winter":
                         # next_harmonic_bw = self.predict_bw_holt_winter(next_sat_id, mahimahi_ptr, num=1)
                         # Change to proper download bw

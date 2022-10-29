@@ -122,7 +122,7 @@ def main():
             delay, sleep_time, buffer_size, rebuf, \
             video_chunk_size, next_video_chunk_sizes, \
             end_of_video, video_chunk_remain, _, _, _, _, \
-            _, next_sat_bw_logs, cur_sat_user_num, next_sat_user_nums = \
+            _, next_sat_bw_logs, cur_sat_user_num, next_sat_user_num, cur_sat_bw_logs = \
                 net_env.get_video_chunk(bit_rate[agent], agent, model_type=None)
 
             time_stamp[agent] += delay  # in ms
@@ -172,12 +172,17 @@ def main():
 
             state[agent][6, :PAST_LEN] = np.array(next_sat_bw_logs[:PAST_LEN]) / 10
 
-            state[agent][7, :A_SAT] = [cur_sat_user_num, next_sat_user_nums]
+            if len(cur_sat_bw_logs) < PAST_LEN:
+                cur_sat_bw_logs = [0] * (PAST_LEN - len(cur_sat_bw_logs)) + cur_sat_bw_logs
 
-            # if len(next_sat_user_nums) < PAST_LEN:
-            #     next_sat_user_nums = [0] * (PAST_LEN - len(next_sat_user_nums)) + next_sat_user_nums
+            state[agent][7, :PAST_LEN] = np.array(cur_sat_bw_logs[:PAST_LEN]) / 10
 
-            # state[agent][8, :PAST_LEN] = next_sat_user_nums[:5]
+            state[agent][8, :A_SAT] = [cur_sat_user_num, next_sat_user_num]
+
+            # if len(next_sat_user_num) < PAST_LEN:
+            #     next_sat_user_num = [0] * (PAST_LEN - len(next_sat_user_num)) + next_sat_user_num
+
+            # state[agent][8, :PAST_LEN] = next_sat_user_num[:5]
 
             action_prob = actor.predict(np.reshape(state[agent], (1, S_INFO, S_LEN)))
             noise = np.random.gumbel(size=len(action_prob))

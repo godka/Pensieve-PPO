@@ -229,7 +229,7 @@ class Environment:
         self.video_chunk_counter[agent] += 1
         video_chunk_remain = TOTAL_VIDEO_CHUNCK - self.video_chunk_counter[agent]
         
-        next_sat_bandwidth, next_sat_id, next_sat_bw_logs = self.get_all_sat_id(agent, self.mahimahi_ptr[agent] - 1)
+        cur_sat_bw_logs, next_sat_bandwidth, next_sat_id, next_sat_bw_logs = self.get_next_sat_info(agent, self.mahimahi_ptr[agent] - 1)
         
         if self.video_chunk_counter[agent] >= TOTAL_VIDEO_CHUNCK:
 
@@ -259,7 +259,7 @@ class Environment:
             next_video_chunk_sizes, \
             self.end_of_video[agent], \
             video_chunk_remain, \
-            next_sat_bandwidth, next_sat_bw_logs, cur_sat_user_num, next_sat_user_num
+            next_sat_bandwidth, next_sat_bw_logs, cur_sat_user_num, next_sat_user_num, cur_sat_bw_logs
             
     def reset(self):
         
@@ -317,39 +317,42 @@ class Environment:
                         
         return user
 
-    def get_all_sat_id(self, agent, mahimahi_ptr=None):
+    def get_next_sat_info(self, agent, mahimahi_ptr=None):
         best_sat_id = None
         best_sat_bw = 0
         best_bw_list = []
+        cur_sat_bw_list = []
         if mahimahi_ptr is None:
             mahimahi_ptr = self.mahimahi_ptr[agent]
-        
+
         list1, list2, list3 = [], [], []
         bw_list = []
         sat_bw = self.cooked_bw[self.cur_sat_id[agent]]
-        for i in range(PAST_LEN):
+        for i in range(5, 0, -1):
             if mahimahi_ptr - i >= 0:
                 if self.get_num_of_user_sat(self.cur_sat_id[agent]) == 0:
-                    bw_list.append(sat_bw[mahimahi_ptr-i])
+                    bw_list.append(sat_bw[mahimahi_ptr - i])
                 else:
-                    bw_list.append(sat_bw[mahimahi_ptr-i] / self.get_num_of_user_sat(self.cur_sat_id[agent]))
+                    bw_list.append(sat_bw[mahimahi_ptr - i] / self.get_num_of_user_sat(self.cur_sat_id[agent]))
         bw = sum(bw_list) / len(bw_list)
-        
+
         list1.append(bw)
-        
+        cur_sat_bw_list = bw_list
+
         for sat_id, sat_bw in self.cooked_bw.items():
             bw_list = []
             if sat_bw[mahimahi_ptr] == 0:
                 continue
-            for i in range(PAST_LEN):
-                if mahimahi_ptr - i >= 0 and sat_bw[mahimahi_ptr-i] != 0:
+            for i in range(5, 0, -1):
+                if mahimahi_ptr - i >= 0 and sat_bw[mahimahi_ptr - i] != 0:
                     if self.get_num_of_user_sat(sat_id) == 0:
-                        bw_list.append(sat_bw[mahimahi_ptr-i])
+                        bw_list.append(sat_bw[mahimahi_ptr - i])
                     else:
-                        bw_list.append(sat_bw[mahimahi_ptr-i] / self.get_num_of_user_sat(sat_id))
+                        bw_list.append(sat_bw[mahimahi_ptr - i] / self.get_num_of_user_sat(sat_id))
             bw = sum(bw_list) / len(bw_list)
             if best_sat_bw < bw:
-                if self.connection[sat_id][mahimahi_ptr + 1] == -1 or self.connection[sat_id][mahimahi_ptr + 1] == agent:
+                if self.connection[sat_id][mahimahi_ptr + 1] == -1 or self.connection[sat_id][
+                    mahimahi_ptr + 1] == agent:
                     best_sat_id = sat_id
                     best_sat_bw = bw
                     best_bw_list = bw_list
@@ -367,8 +370,8 @@ class Environment:
         # list1, list2 = [ list(tuple) for tuple in  tuples]
         # list1 = [ list1[i] for i in range(1)]
         # list2 = [ list2[i] for i in range(1)]
-        
-        return list1, list2, list3
+
+        return cur_sat_bw_list, list1, list2, list3
 
     def get_best_sat_id(self, agent, mahimahi_ptr=None):
         best_sat_id = None
