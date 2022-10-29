@@ -7,7 +7,7 @@ from muleo_lc_bw_share import load_trace
 from muleo_lc_bw_share import fixed_env as env
 import ppo_explicit as network
 
-S_INFO = 6 + 1 + 1  # bit_rate, buffer_size, next_chunk_size, bandwidth_measurement(throughput and time), chunk_til_video_end
+S_INFO = 6 + 1 + 2  # bit_rate, buffer_size, next_chunk_size, bandwidth_measurement(throughput and time), chunk_til_video_end
 S_LEN = 8  # take how many frames in the past
 A_DIM = 6
 PAST_LEN = 5
