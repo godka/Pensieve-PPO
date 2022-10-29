@@ -341,7 +341,7 @@ class Environment:
 
         for sat_id, sat_bw in self.cooked_bw.items():
             bw_list = []
-            if sat_bw[mahimahi_ptr] == 0:
+            if sat_bw[mahimahi_ptr-1] == 0:
                 continue
             for i in range(5, 0, -1):
                 if mahimahi_ptr - i >= 0 and sat_bw[mahimahi_ptr - i] != 0:
