@@ -526,7 +526,7 @@ class Environment:
                     # Based on the bw, not download bw
                     next_download_bw = None
                     if method == "harmonic-mean":
-                        for i in range(-5, 0, 1):
+                        for i in range(5, 0, -1):
                             self.predict_bw(next_sat_id, agent, robustness, mahimahi_ptr=self.mahimahi_ptr[agent]-i, plus=True)
                             self.predict_bw(self.cur_sat_id[agent], agent, robustness, mahimahi_ptr=self.mahimahi_ptr[agent] - i, plus=False)
 
