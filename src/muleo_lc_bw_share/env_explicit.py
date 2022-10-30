@@ -73,12 +73,12 @@ class ABREnv():
         if len(next_sat_bw_logs) < PAST_LEN:
             next_sat_bw_logs = [0] * (PAST_LEN - len(next_sat_bw_logs)) + next_sat_bw_logs
 
-        state[6, :PAST_LEN] = np.array(next_sat_bw_logs[:PAST_LEN]) / 10
+        state[6, :PAST_LEN] = np.array(next_sat_bw_logs[:PAST_LEN])
 
         if len(cur_sat_bw_logs) < PAST_LEN:
             cur_sat_bw_logs = [0] * (PAST_LEN - len(cur_sat_bw_logs)) + cur_sat_bw_logs
 
-        state[7, :PAST_LEN] = np.array(cur_sat_bw_logs[:PAST_LEN]) / 10
+        state[7, :PAST_LEN] = np.array(cur_sat_bw_logs[:PAST_LEN])
 
         state[8, :A_SAT] = [cur_sat_user_num, next_sat_user_nums]
 
@@ -173,12 +173,12 @@ class ABREnv():
         if len(next_sat_bw_logs) < PAST_LEN:
             next_sat_bw_logs = [0] * (PAST_LEN - len(next_sat_bw_logs)) + next_sat_bw_logs
 
-        state[6, :PAST_LEN] = np.array(next_sat_bw_logs[:PAST_LEN]) / 10
+        state[6, :PAST_LEN] = np.array(next_sat_bw_logs[:PAST_LEN])
 
         if len(cur_sat_bw_logs) < PAST_LEN:
             cur_sat_bw_logs = [0] * (PAST_LEN - len(cur_sat_bw_logs)) + cur_sat_bw_logs
 
-        state[7, :PAST_LEN] = np.array(cur_sat_bw_logs[:PAST_LEN]) / 10
+        state[7, :PAST_LEN] = np.array(cur_sat_bw_logs[:PAST_LEN])
 
         state[8, :A_SAT] = [cur_sat_user_num, next_sat_user_nums]
 
