@@ -53,8 +53,8 @@ def testing(epoch, nn_model, log_file):
     if not os.path.exists(TEST_LOG_FOLDER):
         os.makedirs(TEST_LOG_FOLDER)
     # run test script
-    # print('python test_bw_share.py ' + nn_model + ' ' + str(USERS))
-    os.system('python test_bw_share.py ' + nn_model + ' ' + str(USERS))
+    # print('python test_implicit.py ' + nn_model + ' ' + str(USERS))
+    os.system('python test_implicit.py ' + nn_model + ' ' + str(USERS))
 
     # append test performance to the log
     rewards, entropies = [], []
@@ -95,6 +95,7 @@ def testing(epoch, nn_model, log_file):
 
 def central_agent(net_params_queues, exp_queues):
 
+    assert len(net_params_queues) == NUM_AGENTS
     assert len(exp_queues) == NUM_AGENTS
     tf_config = tf.ConfigProto(intra_op_parallelism_threads=1,
                             inter_op_parallelism_threads=1)

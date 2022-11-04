@@ -3,7 +3,7 @@ import numpy as np
 import logging
 import os
 import sys
-from muleo.env import ABREnv
+from muleo_lc_bw_share.env import ABREnv
 import ppo2 as network
 import tensorflow.compat.v1 as tf
 
@@ -51,8 +51,8 @@ def testing(epoch, nn_model, log_file):
     if not os.path.exists(TEST_LOG_FOLDER):
         os.makedirs(TEST_LOG_FOLDER)
     # run test script
-    print('python test2.py ' + nn_model + ' ' + str(USERS))
-    os.system('python test2.py ' + nn_model + ' ' + str(USERS))
+    print('python test_explicit.py ' + nn_model + ' ' + str(USERS))
+    os.system('python test_explicit.py ' + nn_model + ' ' + str(USERS))
 
     # append test performance to the log
     rewards, entropies = [], []
