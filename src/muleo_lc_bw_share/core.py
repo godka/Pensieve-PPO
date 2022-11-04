@@ -353,7 +353,8 @@ class Environment:
 
         if best_sat_id is None:
             best_sat_id = self.cur_sat_id[agent]
-        list1.append(best_sat_bw), list2.append(best_sat_id)
+        list1.append(best_sat_bw)
+        list2 = best_sat_id
         # zipped_lists = zip(list1, list2)
         # sorted_pairs = sorted(zipped_lists)
 
