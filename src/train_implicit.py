@@ -3,7 +3,7 @@ import numpy as np
 import logging
 import os
 import sys
-from muleo_lc_bw_share.env_implicit import ABREnv
+from muleo_lc_bw_share.env import ABREnv
 import ppo_implicit as network
 import tensorflow.compat.v1 as tf
 

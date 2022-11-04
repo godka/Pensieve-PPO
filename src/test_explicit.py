@@ -4,7 +4,7 @@ os.environ['CUDA_VISIBLE_DEVICES']='-1'
 import numpy as np
 import tensorflow.compat.v1 as tf
 from muleo_lc_bw_share import load_trace
-from muleo_lc_bw_share import fixed_env as env
+from muleo_lc_bw_share import fixed_env_explicit as env
 import ppo2 as network
 
 S_INFO = 6 + 1  # bit_rate, buffer_size, next_chunk_size, bandwidth_measurement(throughput and time), chunk_til_video_end
@@ -27,6 +27,7 @@ NN_MODEL = sys.argv[1]
 NUM_AGENTS = int(sys.argv[2])
 
 # A_SAT = NUM_AGENTS
+
 
 def main():
 
@@ -178,7 +179,7 @@ def main():
             entropy_ = -np.dot(action_prob, np.log(action_prob))
             entropy_record.append(entropy_)
 
-    print(results)
+    # print(results)
     print(sum(results) / len(results))
 
 if __name__ == '__main__':

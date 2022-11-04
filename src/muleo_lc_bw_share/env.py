@@ -1,11 +1,11 @@
 # add queuing delay into halo
 import os
 import numpy as np
-from . import core as abrenv
+from . import core_implicit as abrenv
 from . import load_trace
 
 # bit_rate, buffer_size, next_chunk_size, bandwidth_measurement(throughput and time), chunk_til_video_end
-S_INFO = 6 + 1
+S_INFO = 6 + 1 + 2
 S_LEN = 8  # take how many frames in the past
 A_DIM = 6
 PAST_LEN = 5
@@ -55,7 +55,7 @@ class ABREnv():
         delay, sleep_time, self.buffer_size[agent], rebuf, \
             video_chunk_size, next_video_chunk_sizes, \
             end_of_video, video_chunk_remain, \
-            next_sat_bw = \
+            _, next_sat_bw_logs, cur_sat_user_num, next_sat_user_nums, cur_sat_bw_logs = \
             self.net_env.get_video_chunk(bit_rate, agent)
         state = np.roll(self.state[agent], -1, axis=1)
 
@@ -70,7 +70,22 @@ class ABREnv():
             next_video_chunk_sizes) / M_IN_K / M_IN_K  # mega byte
         state[5, -1] = np.minimum(video_chunk_remain,
                                 CHUNK_TIL_VIDEO_END_CAP) / float(CHUNK_TIL_VIDEO_END_CAP)
-        state[6, :SAT_DIM] = np.array(next_sat_bw)
+        if len(next_sat_bw_logs) < PAST_LEN:
+            next_sat_bw_logs = [0] * (PAST_LEN - len(next_sat_bw_logs)) + next_sat_bw_logs
+
+        state[6, :PAST_LEN] = np.array(next_sat_bw_logs[:PAST_LEN])
+
+        if len(cur_sat_bw_logs) < PAST_LEN:
+            cur_sat_bw_logs = [0] * (PAST_LEN - len(cur_sat_bw_logs)) + cur_sat_bw_logs
+
+        state[7, :PAST_LEN] = np.array(cur_sat_bw_logs[:PAST_LEN])
+
+        state[8, :A_SAT] = [cur_sat_user_num, next_sat_user_nums]
+
+        # if len(next_sat_user_nums) < PAST_LEN:
+        #     next_sat_user_nums = [0] * (PAST_LEN - len(next_sat_user_nums)) + next_sat_user_nums
+
+        # state[agent][8, :PAST_LEN] = next_sat_user_nums[:5]
 
         self.state[agent] = state
         
@@ -129,7 +144,7 @@ class ABREnv():
         delay, sleep_time, self.buffer_size[agent], rebuf, \
             video_chunk_size, next_video_chunk_sizes, \
             end_of_video, video_chunk_remain, \
-            next_sat_bw = \
+            next_sat_bw, next_sat_bw_logs, cur_sat_user_num, next_sat_user_nums, cur_sat_bw_logs = \
             self.net_env.get_video_chunk(bit_rate, agent)
 
         self.time_stamp += delay  # in ms
@@ -155,7 +170,22 @@ class ABREnv():
             next_video_chunk_sizes) / M_IN_K / M_IN_K  # mega byte
         state[5, -1] = np.minimum(video_chunk_remain,
                                   CHUNK_TIL_VIDEO_END_CAP) / float(CHUNK_TIL_VIDEO_END_CAP)
-        state[6, :SAT_DIM] = np.array(next_sat_bw)
+        if len(next_sat_bw_logs) < PAST_LEN:
+            next_sat_bw_logs = [0] * (PAST_LEN - len(next_sat_bw_logs)) + next_sat_bw_logs
+
+        state[6, :PAST_LEN] = np.array(next_sat_bw_logs[:PAST_LEN])
+
+        if len(cur_sat_bw_logs) < PAST_LEN:
+            cur_sat_bw_logs = [0] * (PAST_LEN - len(cur_sat_bw_logs)) + cur_sat_bw_logs
+
+        state[7, :PAST_LEN] = np.array(cur_sat_bw_logs[:PAST_LEN])
+
+        state[8, :A_SAT] = [cur_sat_user_num, next_sat_user_nums]
+
+        # if len(next_sat_user_nums) < PAST_LEN:
+        #     next_sat_user_nums = [0] * (PAST_LEN - len(next_sat_user_nums)) + next_sat_user_nums
+
+        # state[agent][8, :PAST_LEN] = next_sat_user_nums[:5]
 
         self.state[agent] = state
 
