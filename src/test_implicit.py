@@ -5,7 +5,7 @@ import numpy as np
 import tensorflow.compat.v1 as tf
 from muleo_lc_bw_share import load_trace
 from muleo_lc_bw_share import fixed_env as env
-import ppo_explicit as network
+import ppo_implicit as network
 
 S_INFO = 6 + 1 + 2  # bit_rate, buffer_size, next_chunk_size, bandwidth_measurement(throughput and time), chunk_til_video_end
 S_LEN = 8  # take how many frames in the past

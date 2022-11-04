@@ -3,8 +3,8 @@ import numpy as np
 import logging
 import os
 import sys
-from muleo_lc_bw_share.env_explicit import ABREnv
-import ppo_explicit as network
+from muleo_lc_bw_share.env_implicit import ABREnv
+import ppo_implicit as network
 import tensorflow.compat.v1 as tf
 
 os.environ['CUDA_VISIBLE_DEVICES'] = '-1'
@@ -53,8 +53,8 @@ def testing(epoch, nn_model, log_file):
     if not os.path.exists(TEST_LOG_FOLDER):
         os.makedirs(TEST_LOG_FOLDER)
     # run test script
-    # print('python test_implicit.py ' + nn_model + ' ' + str(USERS))
-    os.system('python test_implicit.py ' + nn_model + ' ' + str(USERS))
+    print('python test_explicit.py ' + nn_model + ' ' + str(USERS))
+    os.system('python test_explicit.py ' + nn_model + ' ' + str(USERS))
 
     # append test performance to the log
     rewards, entropies = [], []

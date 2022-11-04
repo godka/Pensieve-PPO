@@ -246,9 +246,6 @@ class Environment:
         for i in range(BITRATE_LEVELS):
             next_video_chunk_sizes.append(self.video_size[i][self.video_chunk_counter[agent]])
 
-        # num of users
-        cur_sat_user_num = self.get_num_of_user_sat(self.cur_sat_id[agent])
-
         return delay, \
             sleep_time, \
             return_buffer_size / MILLISECONDS_IN_SECOND, \
@@ -326,9 +323,12 @@ class Environment:
         list1, list2 = [], []
         bw_list = []
         sat_bw = self.cooked_bw[self.cur_sat_id[agent]]
-        for i in range(PAST_LEN):
+        for i in range(5, 0, -1):
             if mahimahi_ptr - i >= 0:
-                bw_list.append(sat_bw[mahimahi_ptr - i])
+                if self.get_num_of_user_sat(self.cur_sat_id[agent]) == 0:
+                    bw_list.append(sat_bw[mahimahi_ptr - i])
+                else:
+                    bw_list.append(sat_bw[mahimahi_ptr - i] / self.get_num_of_user_sat(self.cur_sat_id[agent]))
         bw = sum(bw_list) / len(bw_list)
 
         list1.append(bw), list2.append(self.cur_sat_id[agent])
@@ -337,9 +337,12 @@ class Environment:
             bw_list = []
             if sat_bw[mahimahi_ptr] == 0:
                 continue
-            for i in range(PAST_LEN):
+            for i in range(5, 0, -1):
                 if mahimahi_ptr - i >= 0 and sat_bw[mahimahi_ptr - i] != 0:
-                    bw_list.append(sat_bw[mahimahi_ptr - i])
+                    if self.get_num_of_user_sat(sat_id) == 0:
+                        bw_list.append(sat_bw[mahimahi_ptr - i])
+                    else:
+                        bw_list.append(sat_bw[mahimahi_ptr - i] / (self.get_num_of_user_sat(sat_id) + 1))
             bw = sum(bw_list) / len(bw_list)
             if best_sat_bw < bw:
                 if self.connection[sat_id][mahimahi_ptr + 1] == -1 or self.connection[sat_id][

@@ -8,6 +8,7 @@ from . import load_trace
 S_INFO = 6 + 1
 S_LEN = 8  # take how many frames in the past
 A_DIM = 6
+PAST_LEN = 5
 A_SAT = 2
 TRAIN_SEQ_LEN = 100  # take as a train batch
 MODEL_SAVE_INTERVAL = 100
