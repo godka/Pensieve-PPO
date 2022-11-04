@@ -1,6 +1,6 @@
 import numpy as np
 from muleo_lc_bw_share import load_trace
-from muleo_lc_bw_share import fixed_env as env
+from muleo_lc_bw_share import fixed_env_implicit as env
 import matplotlib.pyplot as plt
 import itertools
 import os
