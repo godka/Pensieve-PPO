@@ -93,7 +93,7 @@ class Environment:
         self.video_chunk_remain = [0 for _ in range(self.num_agents)]
         self.end_of_video = [False for _ in range(self.num_agents)]
         self.next_video_chunk_sizes = [[] for _ in range(self.num_agents)]
-        # self.next_sat_bandwidth = [[] for _ in range(self.num_agents)]
+        self.next_sat_bandwidth = [[] for _ in range(self.num_agents)]
         self.next_sat_id = [[] for _ in range(self.num_agents)]
         self.delay = [0 for _ in range(self.num_agents)]
 
@@ -302,7 +302,7 @@ class Environment:
         self.video_chunk_remain = [0 for _ in range(self.num_agents)]
         self.end_of_video = [False for _ in range(self.num_agents)]
         self.next_video_chunk_sizes = [[] for _ in range(self.num_agents)]
-        # self.next_sat_bandwidth = [[] for _ in range(self.num_agents)]
+        self.next_sat_bandwidth = [[] for _ in range(self.num_agents)]
         self.next_sat_id = [[] for _ in range(self.num_agents)]
         self.delay = [0 for _ in range(self.num_agents)]
         self.num_of_user_sat = {}
