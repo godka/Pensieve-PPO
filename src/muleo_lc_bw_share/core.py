@@ -102,7 +102,7 @@ class Environment:
         """
         if id_list is None:
             sat_id = self.next_sat_id[agent]
-
+        print(self.connection)
         self.connection[sat_id][self.mahimahi_ptr[agent]] = agent
 
         if sat_id == self.cur_sat_id[agent]:
