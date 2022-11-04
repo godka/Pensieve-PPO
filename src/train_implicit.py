@@ -53,8 +53,8 @@ def testing(epoch, nn_model, log_file):
     if not os.path.exists(TEST_LOG_FOLDER):
         os.makedirs(TEST_LOG_FOLDER)
     # run test script
-    print('python test_explicit.py ' + nn_model + ' ' + str(USERS))
-    os.system('python test_explicit.py ' + nn_model + ' ' + str(USERS))
+    print('python test_implicit.py ' + nn_model + ' ' + str(USERS))
+    os.system('python test_implicit.py ' + nn_model + ' ' + str(USERS))
 
     # append test performance to the log
     rewards, entropies = [], []
@@ -200,7 +200,7 @@ def agent(agent_id, net_params_queue, exp_queue):
                 
                 if agent == -1:
                     break
-                    
+
                 s_batch_user[agent].append(obs[agent])
                     
                 obs[agent], rew, done, info = env.step(bit_rate[agent], agent)
