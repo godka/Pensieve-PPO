@@ -6,6 +6,7 @@ BITS_IN_BYTE = 8.0
 RANDOM_SEED = 42
 VIDEO_CHUNCK_LEN = 4000.0  # millisec, every time add this amount to buffer
 BITRATE_LEVELS = 6
+PAST_LEN = 5
 TOTAL_VIDEO_CHUNCK = 48
 BUFFER_THRESH = 60.0 * MILLISECONDS_IN_SECOND  # millisec, max buffer limit
 DRAIN_BUFFER_SLEEP_TIME = 500.0  # millisec
@@ -21,6 +22,10 @@ HANDOVER_DELAY = 0.2  # sec
 HANDOVER_WEIGHT = 1
 SCALE_VIDEO_SIZE_FOR_TEST = 20
 SCALE_VIDEO_LEN_FOR_TEST = 2
+
+# Multi-user setting
+NUM_AGENTS = 2
+
 
 class Environment:
     def __init__(self, all_cooked_time, all_cooked_bw, random_seed=RANDOM_SEED):
