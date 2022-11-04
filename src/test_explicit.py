@@ -119,7 +119,7 @@ def main():
             video_chunk_size, next_video_chunk_sizes, \
             end_of_video, video_chunk_remain, \
             next_sat_bw = \
-                net_env.get_video_chunk(bit_rate[agent], agent)
+                net_env.get_video_chunk(bit_rate[agent], agent, model_type=None)
 
             time_stamp[agent] += delay  # in ms
             time_stamp[agent] += sleep_time  # in ms
