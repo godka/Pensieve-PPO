@@ -19,11 +19,10 @@ TRAIN_SEQ_LEN = 1000  # take as a train batch
 TRAIN_EPOCH = 50000
 MODEL_SAVE_INTERVAL = 300
 RANDOM_SEED = 42
-SUMMARY_DIR = './ppo'
+SUMMARY_DIR = './ppo_exp'
 MODEL_DIR = './models'
 TRAIN_TRACES = './train/'
 TEST_LOG_FOLDER = './test_results/'
-LOG_FILE = SUMMARY_DIR + '/log'
 PPO_TRAINING_EPO = 5
 
 
@@ -35,6 +34,10 @@ parser.add_argument('--user', type=int, default=2)
 args = parser.parse_args()
 USERS = args.user
 # A_SAT = USERS + 1
+
+TEST_LOG_FOLDER += str(USERS) + '/'
+SUMMARY_DIR += str(USERS)
+LOG_FILE = SUMMARY_DIR + '/log'
 
 # create result directory
 if not os.path.exists(SUMMARY_DIR):
