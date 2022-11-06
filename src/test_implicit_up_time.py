@@ -4,10 +4,10 @@ os.environ['CUDA_VISIBLE_DEVICES']='-1'
 import numpy as np
 import tensorflow.compat.v1 as tf
 from muleo_lc_bw_share import load_trace
-from muleo_lc_bw_share import fixed_env as env
-import ppo_implicit as network
+from muleo_lc_bw_share import fixed_env_up_time as env
+import ppo_implicit_up_time as network
 
-S_INFO = 6 + 1 + 2  # bit_rate, buffer_size, next_chunk_size, bandwidth_measurement(throughput and time), chunk_til_video_end
+S_INFO = 6 + 1 + 4  # bit_rate, buffer_size, next_chunk_size, bandwidth_measurement(throughput and time), chunk_til_video_end
 S_LEN = 8  # take how many frames in the past
 A_DIM = 6
 PAST_LEN = 5
@@ -26,7 +26,7 @@ TEST_TRACES = './test/'
 NN_MODEL = sys.argv[1]
 NUM_AGENTS = int(sys.argv[2])
 
-LOG_FILE = './test_results_imp' + str(NUM_AGENTS) + '/log_sim_ppo'
+LOG_FILE = './test_results_imp_up_time' + str(NUM_AGENTS) + '/log_sim_ppo'
 
 # A_SAT = NUM_AGENTS
 
@@ -179,6 +179,8 @@ def main():
 
             state[agent][8, :A_SAT] = [cur_sat_user_num, next_sat_user_num]
 
+            state[agent][9, -1] = float(connected_time[0]) / M_IN_K / BUFFER_NORM_FACTOR
+            state[agent][10, -1] = float(connected_time[1]) / M_IN_K / BUFFER_NORM_FACTOR
             # if len(next_sat_user_num) < PAST_LEN:
             #     next_sat_user_num = [0] * (PAST_LEN - len(next_sat_user_num)) + next_sat_user_num
 
