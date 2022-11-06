@@ -147,6 +147,7 @@ class Environment:
 
                 self.switch_sat(agent, sat_id)
                 delay += HANDOVER_DELAY
+                self.connected_time[agent] = 0
                 is_handover = True
                 print("Forced Handover")
             
@@ -166,7 +167,8 @@ class Environment:
             video_chunk_counter_sent += packet_payload
             delay += duration
             self.last_mahimahi_time[agent] = self.cooked_time[self.mahimahi_ptr[agent]]
-            
+
+
             self.mahimahi_ptr[agent] += 1
             
             if self.mahimahi_ptr[agent] >= len(self.cooked_bw[self.cur_sat_id[agent]]):
@@ -246,6 +248,8 @@ class Environment:
         self.video_chunk_counter[agent] += 1
         video_chunk_remain = TOTAL_VIDEO_CHUNCK - self.video_chunk_counter[agent]
 
+        self.connected_time[agent] += delay
+
         cur_sat_bw_logs, next_sat_bandwidth, next_sat_id, next_sat_bw_logs = self.get_next_sat_info(agent, self.mahimahi_ptr[agent])
         if self.video_chunk_counter[agent] >= TOTAL_VIDEO_CHUNCK or end_of_network:
 
@@ -297,7 +301,7 @@ class Environment:
             self.end_of_video[agent], \
             video_chunk_remain, \
             bit_rate, is_handover, new_sat_id, self.get_num_of_user_sat(sat_id="all"), \
-            next_sat_bandwidth, next_sat_bw_logs, cur_sat_user_num, next_sat_user_num, cur_sat_bw_logs
+            next_sat_bandwidth, next_sat_bw_logs, cur_sat_user_num, next_sat_user_num, cur_sat_bw_logs, self.connected_time[agent]
             
     def reset(self):
         
@@ -327,10 +331,12 @@ class Environment:
             self.connection[sat_id] = [-1 for _ in range(len(sat_bw))]
 
         self.cur_sat_id = []
+        self.connected_time = []
         for agent in range(self.num_agents):
             cur_sat_id = self.get_best_sat_id(agent)
             # self.connection[cur_sat_id] = agent
             self.cur_sat_id.append(cur_sat_id)
+            self.connected_time.append(0)
             self.connection[cur_sat_id][self.mahimahi_ptr[agent] - 1] = agent
             self.update_sat_info(cur_sat_id, self.mahimahi_ptr[agent], 1)
 
@@ -1036,3 +1042,4 @@ class Environment:
             self.update_sat_info(self.cur_sat_id[agent], self.mahimahi_ptr[agent], -1)
             self.cur_sat_id[agent] = sat_id
             self.delay[agent] = HANDOVER_DELAY
+            self.connected_time[agent] = 0

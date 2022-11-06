@@ -7,8 +7,8 @@ from muleo_lc_bw_share import load_trace
 from muleo_lc_bw_share import fixed_env as env
 import ppo_implicit as network
 
-S_INFO = 6 + 1 + 3  # bit_rate, buffer_size, next_chunk_size, bandwidth_measurement(throughput and time), chunk_til_video_end
-S_LEN = 9  # take how many frames in the past
+S_INFO = 6 + 1 + 2  # bit_rate, buffer_size, next_chunk_size, bandwidth_measurement(throughput and time), chunk_til_video_end
+S_LEN = 8  # take how many frames in the past
 A_DIM = 6
 PAST_LEN = 5
 A_SAT = 2
@@ -122,7 +122,7 @@ def main():
             delay, sleep_time, buffer_size, rebuf, \
             video_chunk_size, next_video_chunk_sizes, \
             end_of_video, video_chunk_remain, _, _, _, _, \
-            _, next_sat_bw_logs, cur_sat_user_num, next_sat_user_num, cur_sat_bw_logs, connected_time = \
+            _, next_sat_bw_logs, cur_sat_user_num, next_sat_user_num, cur_sat_bw_logs = \
                 net_env.get_video_chunk(bit_rate[agent], agent, model_type=None)
 
             time_stamp[agent] += delay  # in ms
@@ -179,7 +179,6 @@ def main():
 
             state[agent][8, :A_SAT] = [cur_sat_user_num, next_sat_user_num]
 
-            state[agent][9, -1] = float(connected_time) / M_IN_K / BUFFER_NORM_FACTOR
             # if len(next_sat_user_num) < PAST_LEN:
             #     next_sat_user_num = [0] * (PAST_LEN - len(next_sat_user_num)) + next_sat_user_num
 
@@ -195,6 +194,7 @@ def main():
             net_env.set_satellite(agent, sat[agent])
             
             s_batch[agent].append(state[agent])
+
         
             entropy_ = -np.dot(action_prob, np.log(action_prob))
             entropy_record.append(entropy_)

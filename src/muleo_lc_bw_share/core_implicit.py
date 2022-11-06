@@ -68,9 +68,11 @@ class Environment:
 
         # multiuser setting
         self.cur_sat_id = []
+        self.connected_time = []
         for agent in range(self.num_agents):
             cur_sat_id = self.get_best_sat_id(agent)
             self.cur_sat_id.append(cur_sat_id)
+            self.connected_time.append(0)
             self.connection[cur_sat_id][self.mahimahi_ptr[agent] - 1] = agent
             self.update_sat_info(cur_sat_id, self.mahimahi_ptr[agent], 1)
 
@@ -112,6 +114,7 @@ class Environment:
             self.update_sat_info(self.cur_sat_id[agent], self.mahimahi_ptr[agent], -1)
             self.cur_sat_id[agent] = sat_id
             self.delay[agent] = HANDOVER_DELAY
+            self.connected_time[agent] = 0
     
     def step_ahead(self, agent):
         self.connection[self.cur_sat_id[agent]][self.mahimahi_ptr[agent]] = agent
@@ -147,6 +150,7 @@ class Environment:
                 self.connection[cur_sat_id][self.mahimahi_ptr[agent]] = agent
     
                 self.cur_sat_id[agent] = cur_sat_id
+                self.connected_time[agent] = 0
                 delay += HANDOVER_DELAY
             
             duration = self.cooked_time[self.mahimahi_ptr[agent]] \
@@ -228,6 +232,8 @@ class Environment:
 
         self.video_chunk_counter[agent] += 1
         video_chunk_remain = TOTAL_VIDEO_CHUNCK - self.video_chunk_counter[agent]
+
+        self.connected_time[agent] += delay
         
         cur_sat_bw_logs, next_sat_bandwidth, next_sat_id, next_sat_bw_logs = self.get_next_sat_info(agent, self.mahimahi_ptr[agent] - 1)
         
@@ -259,7 +265,7 @@ class Environment:
             next_video_chunk_sizes, \
             self.end_of_video[agent], \
             video_chunk_remain, \
-            next_sat_bandwidth, next_sat_bw_logs, cur_sat_user_num, next_sat_user_num, cur_sat_bw_logs
+            next_sat_bandwidth, next_sat_bw_logs, cur_sat_user_num, next_sat_user_num, cur_sat_bw_logs, self.connected_time[agent]
             
     def reset(self):
         

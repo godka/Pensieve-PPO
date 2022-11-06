@@ -5,8 +5,8 @@ from . import core_implicit as abrenv
 from . import load_trace
 
 # bit_rate, buffer_size, next_chunk_size, bandwidth_measurement(throughput and time), chunk_til_video_end
-S_INFO = 6 + 1 + 2
-S_LEN = 8  # take how many frames in the past
+S_INFO = 6 + 1 + 3
+S_LEN = 9  # take how many frames in the past
 A_DIM = 6
 PAST_LEN = 5
 A_SAT = 2
@@ -55,7 +55,7 @@ class ABREnv():
         delay, sleep_time, self.buffer_size[agent], rebuf, \
             video_chunk_size, next_video_chunk_sizes, \
             end_of_video, video_chunk_remain, \
-            _, next_sat_bw_logs, cur_sat_user_num, next_sat_user_nums, cur_sat_bw_logs = \
+            _, next_sat_bw_logs, cur_sat_user_num, next_sat_user_nums, cur_sat_bw_logs, connected_time = \
             self.net_env.get_video_chunk(bit_rate, agent)
         state = np.roll(self.state[agent], -1, axis=1)
 
@@ -81,6 +81,8 @@ class ABREnv():
         state[7, :PAST_LEN] = np.array(cur_sat_bw_logs[:PAST_LEN])
 
         state[8, :A_SAT] = [cur_sat_user_num, next_sat_user_nums]
+
+        state[9, -1] = float(connected_time) / M_IN_K / BUFFER_NORM_FACTOR
 
         # if len(next_sat_user_nums) < PAST_LEN:
         #     next_sat_user_nums = [0] * (PAST_LEN - len(next_sat_user_nums)) + next_sat_user_nums
@@ -144,7 +146,7 @@ class ABREnv():
         delay, sleep_time, self.buffer_size[agent], rebuf, \
             video_chunk_size, next_video_chunk_sizes, \
             end_of_video, video_chunk_remain, \
-            next_sat_bw, next_sat_bw_logs, cur_sat_user_num, next_sat_user_nums, cur_sat_bw_logs = \
+            next_sat_bw, next_sat_bw_logs, cur_sat_user_num, next_sat_user_nums, cur_sat_bw_logs, connected_time = \
             self.net_env.get_video_chunk(bit_rate, agent)
 
         self.time_stamp += delay  # in ms
@@ -181,6 +183,8 @@ class ABREnv():
         state[7, :PAST_LEN] = np.array(cur_sat_bw_logs[:PAST_LEN])
 
         state[8, :A_SAT] = [cur_sat_user_num, next_sat_user_nums]
+
+        state[9, -1] = float(connected_time) / M_IN_K / BUFFER_NORM_FACTOR
 
         # if len(next_sat_user_nums) < PAST_LEN:
         #     next_sat_user_nums = [0] * (PAST_LEN - len(next_sat_user_nums)) + next_sat_user_nums
