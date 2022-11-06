@@ -26,7 +26,7 @@ TEST_TRACES = './test/'
 NN_MODEL = sys.argv[1]
 NUM_AGENTS = int(sys.argv[2])
 
-LOG_FILE = './test_results' + str(NUM_AGENTS) + '/log_sim_ppo'
+LOG_FILE = './test_results_imp' + str(NUM_AGENTS) + '/log_sim_ppo'
 
 # A_SAT = NUM_AGENTS
 
