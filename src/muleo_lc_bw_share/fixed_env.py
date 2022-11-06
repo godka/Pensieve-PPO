@@ -80,10 +80,12 @@ class Environment:
         # exit(1)
         # multiuser setting
         self.cur_sat_id = []
+        self.connected_time = 0
         self.prev_sat_id = [None for _ in range(self.num_agents)]
         for agent in range(self.num_agents):
             cur_sat_id = self.get_best_sat_id(agent)
             self.cur_sat_id.append(cur_sat_id)
+            self.connected_time.append(0)
             self.connection[cur_sat_id][self.mahimahi_ptr[agent] - 1] = agent
             self.update_sat_info(cur_sat_id, self.mahimahi_ptr[agent], 1)
 
