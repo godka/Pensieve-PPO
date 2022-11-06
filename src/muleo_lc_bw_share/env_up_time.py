@@ -82,8 +82,8 @@ class ABREnv():
 
         state[8, :A_SAT] = [cur_sat_user_num, next_sat_user_nums]
 
-        state[9, -1] = float(connected_time[0]) / M_IN_K / BUFFER_NORM_FACTOR
-        state[10, -1] = float(connected_time[1]) / M_IN_K / BUFFER_NORM_FACTOR
+        state[9, -1] = float(connected_time[0]) / BUFFER_NORM_FACTOR
+        state[10, -1] = float(connected_time[1]) / BUFFER_NORM_FACTOR
 
         # if len(next_sat_user_nums) < PAST_LEN:
         #     next_sat_user_nums = [0] * (PAST_LEN - len(next_sat_user_nums)) + next_sat_user_nums
@@ -185,8 +185,8 @@ class ABREnv():
 
         state[8, :A_SAT] = [cur_sat_user_num, next_sat_user_nums]
 
-        state[9, -1] = float(connected_time[0]) / M_IN_K / BUFFER_NORM_FACTOR
-        state[10, -1] = float(connected_time[1]) / M_IN_K / BUFFER_NORM_FACTOR
+        state[9, -1] = float(connected_time[0]) / BUFFER_NORM_FACTOR
+        state[10, -1] = float(connected_time[1]) / BUFFER_NORM_FACTOR
 
         # if len(next_sat_user_nums) < PAST_LEN:
         #     next_sat_user_nums = [0] * (PAST_LEN - len(next_sat_user_nums)) + next_sat_user_nums

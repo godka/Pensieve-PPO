@@ -179,8 +179,8 @@ def main():
 
             state[agent][8, :A_SAT] = [cur_sat_user_num, next_sat_user_num]
 
-            state[agent][9, -1] = float(connected_time[0]) / M_IN_K / BUFFER_NORM_FACTOR
-            state[agent][10, -1] = float(connected_time[1]) / M_IN_K / BUFFER_NORM_FACTOR
+            state[agent][9, -1] = float(connected_time[0]) / BUFFER_NORM_FACTOR
+            state[agent][10, -1] = float(connected_time[1]) / BUFFER_NORM_FACTOR
             # if len(next_sat_user_num) < PAST_LEN:
             #     next_sat_user_num = [0] * (PAST_LEN - len(next_sat_user_num)) + next_sat_user_num
 
