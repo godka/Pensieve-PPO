@@ -22,7 +22,7 @@ RANDOM_SEED = 42
 SUMMARY_DIR = './ppo_imp'
 MODEL_DIR = './models'
 TRAIN_TRACES = './train/'
-TEST_LOG_FOLDER = './test_results'
+TEST_LOG_FOLDER = './test_results_imp'
 PPO_TRAINING_EPO = 5
 
 import argparse
