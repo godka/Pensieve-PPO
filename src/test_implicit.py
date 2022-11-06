@@ -8,7 +8,7 @@ from muleo_lc_bw_share import fixed_env as env
 import ppo_implicit as network
 
 S_INFO = 6 + 1 + 3  # bit_rate, buffer_size, next_chunk_size, bandwidth_measurement(throughput and time), chunk_til_video_end
-S_LEN = 10  # take how many frames in the past
+S_LEN = 8  # take how many frames in the past
 A_DIM = 6
 PAST_LEN = 5
 A_SAT = 2
