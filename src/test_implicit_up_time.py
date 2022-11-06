@@ -122,7 +122,7 @@ def main():
             delay, sleep_time, buffer_size, rebuf, \
             video_chunk_size, next_video_chunk_sizes, \
             end_of_video, video_chunk_remain, _, _, _, _, \
-            _, next_sat_bw_logs, cur_sat_user_num, next_sat_user_num, cur_sat_bw_logs = \
+            _, next_sat_bw_logs, cur_sat_user_num, next_sat_user_num, cur_sat_bw_logs, connected_time = \
                 net_env.get_video_chunk(bit_rate[agent], agent, model_type=None)
 
             time_stamp[agent] += delay  # in ms
