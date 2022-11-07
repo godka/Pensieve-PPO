@@ -5,7 +5,7 @@ from . import core_implicit_up_time as abrenv
 from . import load_trace
 
 # bit_rate, buffer_size, next_chunk_size, bandwidth_measurement(throughput and time), chunk_til_video_end
-S_INFO = 6 + 1 + 4
+S_INFO = 6 + 1 + 3
 S_LEN = 8  # take how many frames in the past
 A_DIM = 6
 PAST_LEN = 5
@@ -82,9 +82,7 @@ class ABREnv():
 
         state[8, :A_SAT] = [cur_sat_user_num, next_sat_user_nums]
 
-        state[9, -1] = float(connected_time[0]) / BUFFER_NORM_FACTOR
-        state[10, -1] = float(connected_time[1]) / BUFFER_NORM_FACTOR
-
+        state[9, :2] = [float(connected_time[0]) / BUFFER_NORM_FACTOR, float(connected_time[1]) / BUFFER_NORM_FACTOR]
         # if len(next_sat_user_nums) < PAST_LEN:
         #     next_sat_user_nums = [0] * (PAST_LEN - len(next_sat_user_nums)) + next_sat_user_nums
 
@@ -184,10 +182,8 @@ class ABREnv():
         state[7, :PAST_LEN] = np.array(cur_sat_bw_logs[:PAST_LEN])
 
         state[8, :A_SAT] = [cur_sat_user_num, next_sat_user_nums]
-
-        state[9, -1] = float(connected_time[0]) / BUFFER_NORM_FACTOR
-        state[10, -1] = float(connected_time[1]) / BUFFER_NORM_FACTOR
-
+        state[9, :2] = [float(connected_time[0]) / BUFFER_NORM_FACTOR, float(connected_time[1]) / BUFFER_NORM_FACTOR]
+        print(state)
         # if len(next_sat_user_nums) < PAST_LEN:
         #     next_sat_user_nums = [0] * (PAST_LEN - len(next_sat_user_nums)) + next_sat_user_nums
 

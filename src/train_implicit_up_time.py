@@ -10,7 +10,7 @@ import tensorflow.compat.v1 as tf
 os.environ['CUDA_VISIBLE_DEVICES'] = '-1'
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 
-S_DIM = [6 + 1 + 4, 8]
+S_DIM = [6 + 1 + 3, 8]
 A_DIM = 6
 A_SAT = 2
 ACTOR_LR_RATE = 1e-4
@@ -29,7 +29,7 @@ import argparse
 
 parser = argparse.ArgumentParser(description='PyTorch Synthetic Benchmark',
                                  formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-parser.add_argument('--user', type=int, default=6)
+parser.add_argument('--user', type=int, default=1)
 args = parser.parse_args()
 USERS = args.user
 # A_SAT = USERS + 1

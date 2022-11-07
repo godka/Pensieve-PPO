@@ -7,12 +7,12 @@ from muleo_lc_bw_share import load_trace
 from muleo_lc_bw_share import fixed_env_up_time as env
 import ppo_implicit_up_time as network
 
-S_INFO = 6 + 1 + 4  # bit_rate, buffer_size, next_chunk_size, bandwidth_measurement(throughput and time), chunk_til_video_end
+S_INFO = 6 + 1 + 3  # bit_rate, buffer_size, next_chunk_size, bandwidth_measurement(throughput and time), chunk_til_video_end
 S_LEN = 8  # take how many frames in the past
 A_DIM = 6
 PAST_LEN = 5
 A_SAT = 2
-ACTOR_LR_RATE = 1e-5
+ACTOR_LR_RATE = 1e-4
 # CRITIC_LR_RATE = 0.001
 VIDEO_BIT_RATE = [300,750,1200,1850,2850,4300]  # Kbps
 BUFFER_NORM_FACTOR = 10.0
@@ -178,9 +178,8 @@ def main():
             state[agent][7, :PAST_LEN] = np.array(cur_sat_bw_logs[:PAST_LEN])
 
             state[agent][8, :A_SAT] = [cur_sat_user_num, next_sat_user_num]
+            state[agent][9, :2] = [float(connected_time[0]) / BUFFER_NORM_FACTOR, float(connected_time[1]) / BUFFER_NORM_FACTOR]
 
-            state[agent][9, -1] = float(connected_time[0]) / BUFFER_NORM_FACTOR
-            state[agent][10, -1] = float(connected_time[1]) / BUFFER_NORM_FACTOR
             # if len(next_sat_user_num) < PAST_LEN:
             #     next_sat_user_num = [0] * (PAST_LEN - len(next_sat_user_num)) + next_sat_user_num
 
