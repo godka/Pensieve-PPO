@@ -4,8 +4,8 @@ os.environ['CUDA_VISIBLE_DEVICES']='-1'
 import numpy as np
 import tensorflow.compat.v1 as tf
 from muleo_lc_bw_share import load_trace
-from muleo_lc_bw_share import fixed_env_up_time as env
-import ppo_implicit_up_time as network
+from muleo_lc_bw_share import fixed_env as env
+import ppo_implicit as network
 
 S_INFO = 6 + 1 + 3  # bit_rate, buffer_size, next_chunk_size, bandwidth_measurement(throughput and time), chunk_til_video_end
 S_LEN = 8  # take how many frames in the past

@@ -4,7 +4,7 @@ import logging
 import os
 import sys
 from muleo_lc_bw_share.env_up_time import ABREnv
-import ppo_implicit_up_time as network
+import ppo_implicit as network
 import tensorflow.compat.v1 as tf
 
 os.environ['CUDA_VISIBLE_DEVICES'] = '-1'
@@ -53,8 +53,8 @@ def testing(epoch, nn_model, log_file):
     if not os.path.exists(TEST_LOG_FOLDER):
         os.makedirs(TEST_LOG_FOLDER)
     # run test script
-    print('python test_implicit_up_time.py ' + nn_model + ' ' + str(USERS))
-    os.system('python test_implicit_up_time.py ' + nn_model + ' ' + str(USERS))
+    print('python test_implicit.py ' + nn_model + ' ' + str(USERS))
+    os.system('python test_implicit.py ' + nn_model + ' ' + str(USERS))
 
     # append test performance to the log
     rewards, entropies = [], []

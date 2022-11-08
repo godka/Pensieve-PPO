@@ -147,7 +147,7 @@ def main():
         # this is to make the framework similar to the real
         delay, sleep_time, buffer_size, rebuf, \
         video_chunk_size, next_video_chunk_sizes, \
-        end_of_video, video_chunk_remain, b, is_handover, cur_sat_id, sat_status, _, _, _, _, _ = \
+        end_of_video, video_chunk_remain, b, is_handover, cur_sat_id, sat_status, _, _, _, _, _, _ = \
             net_env.get_video_chunk(bit_rate[agent], agent, MPC_TYPE)
 
         bit_rate[agent] = b

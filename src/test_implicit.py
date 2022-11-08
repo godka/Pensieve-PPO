@@ -12,7 +12,7 @@ S_LEN = 8  # take how many frames in the past
 A_DIM = 6
 PAST_LEN = 5
 A_SAT = 2
-ACTOR_LR_RATE = 1e-5
+ACTOR_LR_RATE = 1e-4
 # CRITIC_LR_RATE = 0.001
 VIDEO_BIT_RATE = [300,750,1200,1850,2850,4300]  # Kbps
 BUFFER_NORM_FACTOR = 10.0
@@ -26,7 +26,7 @@ TEST_TRACES = './test/'
 NN_MODEL = sys.argv[1]
 NUM_AGENTS = int(sys.argv[2])
 
-LOG_FILE = './test_results_imp' + str(NUM_AGENTS) + '/log_sim_ppo'
+LOG_FILE = './test_results_imp_up_time' + str(NUM_AGENTS) + '/log_sim_ppo'
 
 # A_SAT = NUM_AGENTS
 
@@ -178,8 +178,8 @@ def main():
             state[agent][7, :PAST_LEN] = np.array(cur_sat_bw_logs[:PAST_LEN])
 
             state[agent][8, :A_SAT] = [cur_sat_user_num, next_sat_user_num]
+            state[agent][9, :2] = [float(connected_time[0]) / BUFFER_NORM_FACTOR, float(connected_time[1]) / BUFFER_NORM_FACTOR]
 
-            state[agent][9, -1] = float(connected_time) / M_IN_K / BUFFER_NORM_FACTOR
             # if len(next_sat_user_num) < PAST_LEN:
             #     next_sat_user_num = [0] * (PAST_LEN - len(next_sat_user_num)) + next_sat_user_num
 
@@ -195,6 +195,7 @@ def main():
             net_env.set_satellite(agent, sat[agent])
             
             s_batch[agent].append(state[agent])
+
         
             entropy_ = -np.dot(action_prob, np.log(action_prob))
             entropy_record.append(entropy_)

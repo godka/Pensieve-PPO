@@ -1,7 +1,7 @@
 # add queuing delay into halo
 import os
 import numpy as np
-from . import core_implicit_up_time as abrenv
+from . import core_implicit as abrenv
 from . import load_trace
 
 # bit_rate, buffer_size, next_chunk_size, bandwidth_measurement(throughput and time), chunk_til_video_end
