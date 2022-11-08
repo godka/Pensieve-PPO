@@ -4,14 +4,15 @@ os.environ['CUDA_VISIBLE_DEVICES']='-1'
 import numpy as np
 import tensorflow.compat.v1 as tf
 from muleo_lc_bw_share import load_trace
-from muleo_lc_bw_share import fixed_env as env
-import ppo_implicit as network
+from muleo_lc_bw_share import fixed_env_cent3 as env
+import ppo_cent3 as network
 
-S_INFO = 6 + 1 + 3  # bit_rate, buffer_size, next_chunk_size, bandwidth_measurement(throughput and time), chunk_til_video_end
+S_INFO = 10 + 1 + 3 + 2  # Original + nums of sat + bw of sats + decisions of users
 S_LEN = 8  # take how many frames in the past
 A_DIM = 6
 PAST_LEN = 5
 A_SAT = 2
+MAX_SAT = 5
 ACTOR_LR_RATE = 1e-4
 # CRITIC_LR_RATE = 0.001
 VIDEO_BIT_RATE = [300,750,1200,1850,2850,4300]  # Kbps
@@ -26,9 +27,69 @@ TEST_TRACES = './test/'
 NN_MODEL = sys.argv[1]
 NUM_AGENTS = int(sys.argv[2])
 
-LOG_FILE = './test_results_imp_up_time' + str(NUM_AGENTS) + '/log_sim_ppo'
+LOG_FILE = './test_results_cent3' + str(NUM_AGENTS) + '/log_sim_ppo'
+
 
 # A_SAT = NUM_AGENTS
+def encode_other_sat_info(net_env, cur_sat_id, next_sat_id, agent, other_sat_users, other_sat_bw_logs):
+    # self.sat_decision_log
+    # one hot encoding by bw strength
+    # MAX_SAT
+    assert len(other_sat_users.keys()) == len(other_sat_bw_logs.keys())
+    other_user_sat_decisions = []
+    other_sat_num_users = []
+    other_sat_bws = []
+    other_sat_id_bw = {}
+    other_index_ids = {}
+    """
+    for sat_id in other_sat_bw_logs.keys():
+        avg_bw = sum(other_sat_bw_logs[sat_id]) / len(other_sat_bw_logs[sat_id])
+        other_sat_id_bw[sat_id] = avg_bw
+    """
+    other_ids = sorted(other_sat_users, reverse=True)
+    other_ids = other_ids[:MAX_SAT - 2]
+    for i in range(MAX_SAT - 2):
+        if len(other_ids) <= i:
+            break
+        other_index_ids[other_ids[i]] = i
+
+    for i in range(MAX_SAT - 2):
+        if len(other_sat_users.keys()) <= i:
+            other_sat_num_users.append(0)
+            other_sat_bws.append([0, 0, 0, 0, 0])
+            continue
+        other_sat_num_users.append(other_sat_users[other_ids[i]])
+        if len(other_sat_bw_logs[other_ids[i]]) < PAST_LEN:
+            tmp_len = len(other_sat_bw_logs[other_ids[i]])
+            other_sat_bws.append([0] * (PAST_LEN - tmp_len) + other_sat_bw_logs[other_ids[i]])
+        else:
+            other_sat_bws.append(other_sat_bw_logs[other_ids[i]])
+    # print(cur_sat_id)
+    # print(next_sat_id)
+    # print(other_index_ids)
+    # print(other_sat_bws)
+    for i_agent in range(NUM_AGENTS):
+        if i_agent == agent:
+            continue
+        sat_logs = net_env.sat_decision_log[i_agent][-PAST_LEN:]
+        # print(sat_logs)
+        encoded_logs = []
+        for log_data in sat_logs:
+            if log_data == cur_sat_id:
+                encoded_logs = [1, 0, 0, 0, 0]
+            elif log_data == next_sat_id:
+                encoded_logs = [0, 1, 0, 0, 0]
+            elif log_data in other_index_ids.keys():
+                tmp_array = [0, 0, 0, 0, 0]
+                tmp_array[other_index_ids[log_data] + 2] = 1
+                encoded_logs = tmp_array
+            else:
+                # print("Cannot happen")
+                encoded_logs = [0, 0, 0, 0, 0]
+        # print(encoded_logs)
+        other_user_sat_decisions.append(encoded_logs)
+
+    return other_user_sat_decisions, other_sat_num_users, other_sat_bws
 
 
 def main():
@@ -116,13 +177,15 @@ def main():
 
                 log_path = LOG_FILE + '_' + all_file_names[net_env.trace_idx]
                 log_file = open(log_path, 'w')
+                continue
             
             # the action is from the last decision
             # this is to make the framework similar to the real
             delay, sleep_time, buffer_size, rebuf, \
             video_chunk_size, next_video_chunk_sizes, \
             end_of_video, video_chunk_remain, _, _, _, _, \
-            _, next_sat_bw_logs, cur_sat_user_num, next_sat_user_num, cur_sat_bw_logs, connected_time = \
+            _, next_sat_bw_logs, cur_sat_user_num, next_sat_user_num, cur_sat_bw_logs, connected_time, \
+                cur_sat_id, next_sat_id, other_sat_users, other_sat_bw_logs = \
                 net_env.get_video_chunk(bit_rate[agent], agent, model_type=None)
 
             time_stamp[agent] += delay  # in ms
@@ -179,7 +242,14 @@ def main():
 
             state[agent][8, :A_SAT] = [cur_sat_user_num, next_sat_user_num]
             state[agent][9, :2] = [float(connected_time[0]) / BUFFER_NORM_FACTOR, float(connected_time[1]) / BUFFER_NORM_FACTOR]
+            other_user_sat_decisions, other_sat_num_users, other_sat_bws \
+                = encode_other_sat_info(net_env, cur_sat_id, next_sat_id, agent, other_sat_users, other_sat_bw_logs)
 
+            state[agent][10, :MAX_SAT - 2] = other_sat_num_users
+
+            state[agent][11:11 + MAX_SAT - 2, :PAST_LEN] = other_sat_bws
+
+            state[agent][14:14 + NUM_AGENTS - 1, :PAST_LEN] = other_user_sat_decisions
             # if len(next_sat_user_num) < PAST_LEN:
             #     next_sat_user_num = [0] * (PAST_LEN - len(next_sat_user_num)) + next_sat_user_num
 
@@ -192,16 +262,16 @@ def main():
             sat[agent] = action // A_DIM
             bit_rate[agent] = action % A_DIM
 
-            net_env.set_satellite(agent, sat[agent])
-            
+            changed_sat_id = net_env.set_satellite(agent, sat[agent])
+
             s_batch[agent].append(state[agent])
 
-        
             entropy_ = -np.dot(action_prob, np.log(action_prob))
             entropy_record.append(entropy_)
 
     # print(results)
     print(sum(results) / len(results))
+
 
 
 if __name__ == '__main__':

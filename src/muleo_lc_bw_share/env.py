@@ -10,6 +10,7 @@ S_LEN = 8  # take how many frames in the past
 A_DIM = 6
 PAST_LEN = 5
 A_SAT = 2
+MAX_SAT = 5
 TRAIN_SEQ_LEN = 100  # take as a train batch
 MODEL_SAVE_INTERVAL = 100
 VIDEO_BIT_RATE = np.array([300., 750., 1200., 1850., 2850., 4300.])  # Kbps
@@ -46,6 +47,7 @@ class ABREnv():
         self.last_bit_rate = DEFAULT_QUALITY
         self.buffer_size = [0 for _ in range(self.num_agents)]
         self.state = [np.zeros((S_INFO, S_LEN))for _ in range(self.num_agents)]
+        self.sat_decision_log = [[] for _ in range(self.num_agents)]
         
     def seed(self, num):
         np.random.seed(num)
@@ -82,8 +84,7 @@ class ABREnv():
 
         state[8, :A_SAT] = [cur_sat_user_num, next_sat_user_nums]
 
-        state[9, -1] = float(connected_time) / M_IN_K / BUFFER_NORM_FACTOR
-
+        state[9, :2] = [float(connected_time[0]) / BUFFER_NORM_FACTOR, float(connected_time[1]) / BUFFER_NORM_FACTOR]
         # if len(next_sat_user_nums) < PAST_LEN:
         #     next_sat_user_nums = [0] * (PAST_LEN - len(next_sat_user_nums)) + next_sat_user_nums
 
@@ -137,6 +138,7 @@ class ABREnv():
 
     def set_sat(self, agent, sat):
         self.net_env.set_satellite(agent, sat)
+        self.sat_decision_log[agent].append(sat)
 
     def step(self, action, agent):
         bit_rate = int(action) % A_DIM
@@ -183,9 +185,8 @@ class ABREnv():
         state[7, :PAST_LEN] = np.array(cur_sat_bw_logs[:PAST_LEN])
 
         state[8, :A_SAT] = [cur_sat_user_num, next_sat_user_nums]
-
-        state[9, -1] = float(connected_time) / M_IN_K / BUFFER_NORM_FACTOR
-
+        state[9, :2] = [float(connected_time[0]) / BUFFER_NORM_FACTOR, float(connected_time[1]) / BUFFER_NORM_FACTOR]
+        print(state)
         # if len(next_sat_user_nums) < PAST_LEN:
         #     next_sat_user_nums = [0] * (PAST_LEN - len(next_sat_user_nums)) + next_sat_user_nums
 
