@@ -208,9 +208,6 @@ class ABREnv():
         # state[agent][8, :PAST_LEN] = next_sat_user_nums[:5]
 
         self.state[agent] = state
-        print("===")
-        print(state)
-        print(other_user_sat_decisions)
         #observation, reward, done, info = env.step(action)
         return state, reward, end_of_video, {'bitrate': VIDEO_BIT_RATE[bit_rate], 'rebuffer': rebuf}
 
