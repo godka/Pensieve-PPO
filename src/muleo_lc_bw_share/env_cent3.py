@@ -25,7 +25,7 @@ RANDOM_SEED = 42
 RAND_RANGE = 1000
 EPS = 1e-6
 
-NUM_AGENTS = 2
+NUM_AGENTS = None
 SAT_DIM = A_SAT
 
 
@@ -75,25 +75,25 @@ class ABREnv():
         if len(next_sat_bw_logs) < PAST_LEN:
             next_sat_bw_logs = [0] * (PAST_LEN - len(next_sat_bw_logs)) + next_sat_bw_logs
 
-        state[6, :PAST_LEN] = np.array(next_sat_bw_logs[:PAST_LEN])
+        state[6, :PAST_LEN] = np.array(next_sat_bw_logs[:PAST_LEN]) / 10
 
         if len(cur_sat_bw_logs) < PAST_LEN:
             cur_sat_bw_logs = [0] * (PAST_LEN - len(cur_sat_bw_logs)) + cur_sat_bw_logs
 
-        state[7, :PAST_LEN] = np.array(cur_sat_bw_logs[:PAST_LEN])
+        state[7, :PAST_LEN] = np.array(cur_sat_bw_logs[:PAST_LEN]) / 10
 
-        state[8, :A_SAT] = [cur_sat_user_num, next_sat_user_nums]
-        state[9, :2] = [float(connected_time[0]) / BUFFER_NORM_FACTOR, float(connected_time[1]) / BUFFER_NORM_FACTOR]
         other_user_sat_decisions, other_sat_num_users, other_sat_bws \
             = self.encode_other_sat_info(cur_sat_id, next_sat_id, agent, other_sat_users, other_sat_bw_logs)
 
-        state[10, :MAX_SAT - 2] = other_sat_num_users
-        # print(other_sat_bws)
-        # print(other_user_sat_decisions)
+        state[8, :A_SAT] = np.array([cur_sat_user_num, next_sat_user_nums]) / 10
+        state[9, :A_SAT] = [float(connected_time[0]) / BUFFER_NORM_FACTOR,
+                                   float(connected_time[1]) / BUFFER_NORM_FACTOR]
 
-        state[11:11+MAX_SAT-2, :PAST_LEN] = other_sat_bws
+        state[10, :MAX_SAT - A_SAT] = np.array(other_sat_num_users) / 10
 
-        state[14:14+self.num_agents-1, :PAST_LEN] = other_user_sat_decisions
+        state[11:(11 + MAX_SAT - A_SAT), :PAST_LEN] = np.array(other_sat_bws) / 10
+
+        state[(11 + MAX_SAT - A_SAT):(11 + MAX_SAT - A_SAT + self.num_agents - 1), :PAST_LEN] = other_user_sat_decisions
 
         self.state[agent] = state
         
@@ -182,25 +182,25 @@ class ABREnv():
         if len(next_sat_bw_logs) < PAST_LEN:
             next_sat_bw_logs = [0] * (PAST_LEN - len(next_sat_bw_logs)) + next_sat_bw_logs
 
-        state[6, :PAST_LEN] = np.array(next_sat_bw_logs[:PAST_LEN])
+        state[6, :PAST_LEN] = np.array(next_sat_bw_logs[:PAST_LEN]) / 10
 
         if len(cur_sat_bw_logs) < PAST_LEN:
             cur_sat_bw_logs = [0] * (PAST_LEN - len(cur_sat_bw_logs)) + cur_sat_bw_logs
 
-        state[7, :PAST_LEN] = np.array(cur_sat_bw_logs[:PAST_LEN])
+        state[7, :PAST_LEN] = np.array(cur_sat_bw_logs[:PAST_LEN]) / 10
 
-        state[8, :A_SAT] = [cur_sat_user_num, next_sat_user_nums]
-        state[9, :2] = [float(connected_time[0]) / BUFFER_NORM_FACTOR, float(connected_time[1]) / BUFFER_NORM_FACTOR]
         other_user_sat_decisions, other_sat_num_users, other_sat_bws \
             = self.encode_other_sat_info(cur_sat_id, next_sat_id, agent, other_sat_users, other_sat_bw_logs)
 
-        state[10, :MAX_SAT - 2] = other_sat_num_users
-        # print(other_sat_bws)
-        # print(other_user_sat_decisions)
+        state[8, :A_SAT] = np.array([cur_sat_user_num, next_sat_user_nums]) / 10
+        state[9, :A_SAT] = [float(connected_time[0]) / BUFFER_NORM_FACTOR,
+                            float(connected_time[1]) / BUFFER_NORM_FACTOR]
 
-        state[11:11+MAX_SAT-2, :PAST_LEN] = other_sat_bws
+        state[10, :MAX_SAT - A_SAT] = np.array(other_sat_num_users) / 10
 
-        state[14:14+self.num_agents-1, :PAST_LEN] = other_user_sat_decisions
+        state[11:(11 + MAX_SAT - A_SAT), :PAST_LEN] = np.array(other_sat_bws) / 10
+
+        state[(11 + MAX_SAT - A_SAT):(11 + MAX_SAT - A_SAT + self.num_agents - 1), :PAST_LEN] = other_user_sat_decisions
 
         # if len(next_sat_user_nums) < PAST_LEN:
         #     next_sat_user_nums = [0] * (PAST_LEN - len(next_sat_user_nums)) + next_sat_user_nums
@@ -208,7 +208,9 @@ class ABREnv():
         # state[agent][8, :PAST_LEN] = next_sat_user_nums[:5]
 
         self.state[agent] = state
-
+        print("===")
+        print(state)
+        print(other_user_sat_decisions)
         #observation, reward, done, info = env.step(action)
         return state, reward, end_of_video, {'bitrate': VIDEO_BIT_RATE[bit_rate], 'rebuffer': rebuf}
 
