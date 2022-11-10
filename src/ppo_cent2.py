@@ -35,6 +35,10 @@ class Network():
             split_12 = tflearn.conv_1d(inputs[:, 12:13, :PAST_LEN], FEATURE_NUM, DIM_SIZE, activation='relu')
             split_13 = tflearn.conv_1d(inputs[:, 13:14, :PAST_LEN], FEATURE_NUM, DIM_SIZE, activation='relu')
             split_14 = tflearn.conv_1d(inputs[:, 14:15, :PAST_LEN], FEATURE_NUM, DIM_SIZE, activation='relu')
+            split_15 = tflearn.conv_1d(inputs[:, 15:16, :PAST_LEN], FEATURE_NUM, DIM_SIZE, activation='relu')
+            split_16 = tflearn.conv_1d(inputs[:, 16:17, :PAST_LEN], FEATURE_NUM, DIM_SIZE, activation='relu')
+            split_17 = tflearn.conv_1d(inputs[:, 17:18, :PAST_LEN], FEATURE_NUM, DIM_SIZE, activation='relu')
+            split_18 = tflearn.conv_1d(inputs[:, 18:19, :PAST_LEN], FEATURE_NUM, DIM_SIZE, activation='relu')
 
             split_2_flat = tflearn.flatten(split_2)
             split_3_flat = tflearn.flatten(split_3)
@@ -48,11 +52,16 @@ class Network():
             split_12_flat = tflearn.flatten(split_12)
             split_13_flat = tflearn.flatten(split_13)
             split_14_flat = tflearn.flatten(split_14)
+            split_15_flat = tflearn.flatten(split_15)
+
+            split_16_flat = tflearn.flatten(split_16)
+            split_17_flat = tflearn.flatten(split_17)
+            split_18_flat = tflearn.flatten(split_18)
 
             merge_net = tflearn.merge(
                 [split_0, split_1, split_2_flat, split_3_flat, split_4_flat, split_5, split_6_flat,
                  split_7_flat, split_8_flat, split_9_flat, split_10_flat, split_11_flat, split_12_flat,
-                 split_13_flat, split_14_flat], 'concat')
+                 split_13_flat, split_14_flat, split_15_flat, split_16_flat, split_17_flat, split_18_flat], 'concat')
 
             pi_net = tflearn.fully_connected(merge_net, FEATURE_NUM, activation='relu')
             pi = tflearn.fully_connected(pi_net, self.a_dim, activation='softmax')
@@ -73,6 +82,10 @@ class Network():
             split_12 = tflearn.conv_1d(inputs[:, 12:13, :PAST_LEN], FEATURE_NUM, DIM_SIZE, activation='relu')
             split_13 = tflearn.conv_1d(inputs[:, 13:14, :PAST_LEN], FEATURE_NUM, DIM_SIZE, activation='relu')
             split_14 = tflearn.conv_1d(inputs[:, 14:15, :PAST_LEN], FEATURE_NUM, DIM_SIZE, activation='relu')
+            split_15 = tflearn.conv_1d(inputs[:, 15:16, :PAST_LEN], FEATURE_NUM, DIM_SIZE, activation='relu')
+            split_16 = tflearn.conv_1d(inputs[:, 16:17, :PAST_LEN], FEATURE_NUM, DIM_SIZE, activation='relu')
+            split_17 = tflearn.conv_1d(inputs[:, 17:18, :PAST_LEN], FEATURE_NUM, DIM_SIZE, activation='relu')
+            split_18 = tflearn.conv_1d(inputs[:, 18:19, :PAST_LEN], FEATURE_NUM, DIM_SIZE, activation='relu')
 
             split_2_flat = tflearn.flatten(split_2)
             split_3_flat = tflearn.flatten(split_3)
@@ -86,11 +99,16 @@ class Network():
             split_12_flat = tflearn.flatten(split_12)
             split_13_flat = tflearn.flatten(split_13)
             split_14_flat = tflearn.flatten(split_14)
+            split_15_flat = tflearn.flatten(split_15)
+
+            split_16_flat = tflearn.flatten(split_16)
+            split_17_flat = tflearn.flatten(split_17)
+            split_18_flat = tflearn.flatten(split_18)
 
             merge_net = tflearn.merge(
                 [split_0, split_1, split_2_flat, split_3_flat, split_4_flat, split_5, split_6_flat,
                  split_7_flat, split_8_flat, split_9_flat, split_10_flat, split_11_flat, split_12_flat,
-                 split_13_flat, split_14_flat], 'concat')
+                 split_13_flat, split_14_flat, split_15_flat, split_16_flat, split_17_flat, split_18_flat], 'concat')
 
             value_net = tflearn.fully_connected(merge_net, FEATURE_NUM, activation='relu')
             value = tflearn.fully_connected(value_net, 1, activation='linear')
