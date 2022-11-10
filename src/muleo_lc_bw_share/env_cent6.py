@@ -5,7 +5,7 @@ from . import core_cent as abrenv
 from . import load_trace
 
 # bit_rate, buffer_size, next_chunk_size, bandwidth_measurement(throughput and time), chunk_til_video_end
-S_INFO = 10 + 1 + 3 + 2 # Original + nums of sat + bw of sats + decisions of users
+S_INFO = 10 + 1 + 3 + 5 # Original + nums of sat + bw of sats + decisions of users
 S_LEN = 8  # take how many frames in the past
 A_DIM = 6
 PAST_LEN = 5
