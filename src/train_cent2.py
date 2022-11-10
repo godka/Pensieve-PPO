@@ -4,7 +4,7 @@ import logging
 import os
 import sys
 from muleo_lc_bw_share.env_cent2 import ABREnv
-import ppo_cent2x as network
+import ppo_cent2 as network
 import tensorflow.compat.v1 as tf
 
 os.environ['CUDA_VISIBLE_DEVICES'] = '-1'
