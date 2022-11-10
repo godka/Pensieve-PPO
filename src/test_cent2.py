@@ -7,7 +7,7 @@ from muleo_lc_bw_share import load_trace
 from muleo_lc_bw_share import fixed_env_cent as env
 import ppo_cent2 as network
 
-S_INFO = 10 + 1 + 3 + 1  # Original + nums of sat + bw of sats + decisions of users
+S_INFO = 10 + 1 + 3 + 1 * 5  # Original + nums of sat + bw of sats + decisions of users
 S_LEN = 8  # take how many frames in the past
 A_DIM = 6
 PAST_LEN = 5
@@ -249,7 +249,7 @@ def main():
 
             state[agent][11:(11 + MAX_SAT - A_SAT), :PAST_LEN] = np.array(other_sat_bws) / 10
 
-            state[agent][(11 + MAX_SAT - A_SAT):(11 + MAX_SAT - A_SAT + NUM_AGENTS - 1), :PAST_LEN] = other_user_sat_decisions
+            state[agent][(11 + MAX_SAT - A_SAT):(11 + MAX_SAT - A_SAT + (NUM_AGENTS - 1) * PAST_LEN), 0:PAST_LEN] = np.reshape(other_user_sat_decisions, (-1, 5))
             # if len(next_sat_user_num) < PAST_LEN:
             #     next_sat_user_num = [0] * (PAST_LEN - len(next_sat_user_num)) + next_sat_user_num
 

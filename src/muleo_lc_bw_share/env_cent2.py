@@ -5,7 +5,7 @@ from . import core_cent as abrenv
 from . import load_trace
 
 # bit_rate, buffer_size, next_chunk_size, bandwidth_measurement(throughput and time), chunk_til_video_end
-S_INFO = 10 + 1 + 3 + 1 # Original + nums of sat + bw of sats + decisions of users
+S_INFO = 10 + 1 + 3 + 1 * 5  # Original + nums of sat + bw of sats + decisions of users
 S_LEN = 8  # take how many frames in the past
 A_DIM = 6
 PAST_LEN = 5
@@ -86,14 +86,13 @@ class ABREnv():
             = self.encode_other_sat_info(cur_sat_id, next_sat_id, agent, other_sat_users, other_sat_bw_logs)
 
         state[8, :A_SAT] = np.array([cur_sat_user_num, next_sat_user_nums]) / 10
-        state[9, :A_SAT] = [float(connected_time[0]) / BUFFER_NORM_FACTOR,
-                                   float(connected_time[1]) / BUFFER_NORM_FACTOR]
+        state[9, :A_SAT] = [float(connected_time[0]) / BUFFER_NORM_FACTOR, float(connected_time[1]) / BUFFER_NORM_FACTOR]
 
         state[10, :MAX_SAT - A_SAT] = np.array(other_sat_num_users) / 10
 
         state[11:(11 + MAX_SAT - A_SAT), :PAST_LEN] = np.array(other_sat_bws) / 10
-
-        state[(11 + MAX_SAT - A_SAT):(11 + MAX_SAT - A_SAT + self.num_agents - 1), :PAST_LEN] = other_user_sat_decisions
+        state[(11 + MAX_SAT - A_SAT):(11 + MAX_SAT - A_SAT + (self.num_agents - 1) * PAST_LEN), 0:PAST_LEN] = np.reshape(other_user_sat_decisions, (-1, 5))
+        # print(other_user_sat_decisions)
 
         self.state[agent] = state
         
@@ -199,8 +198,7 @@ class ABREnv():
         state[10, :MAX_SAT - A_SAT] = np.array(other_sat_num_users) / 10
 
         state[11:(11 + MAX_SAT - A_SAT), :PAST_LEN] = np.array(other_sat_bws) / 10
-
-        state[(11 + MAX_SAT - A_SAT):(11 + MAX_SAT - A_SAT + self.num_agents - 1), :PAST_LEN] = other_user_sat_decisions
+        state[(11 + MAX_SAT - A_SAT):(11 + MAX_SAT - A_SAT + (self.num_agents - 1) * PAST_LEN), 0:PAST_LEN] = np.reshape(other_user_sat_decisions, (-1, 5))
 
         # if len(next_sat_user_nums) < PAST_LEN:
         #     next_sat_user_nums = [0] * (PAST_LEN - len(next_sat_user_nums)) + next_sat_user_nums
@@ -236,7 +234,7 @@ class ABREnv():
         for i in range(MAX_SAT-2):
             if len(other_sat_users.keys()) <= i:
                 other_sat_num_users.append(0)
-                other_sat_bws.append([0,0,0,0,0])
+                other_sat_bws.append([0, 0, 0, 0, 0])
                 continue
             other_sat_num_users.append(other_sat_users[other_ids[i]])
             if len(other_sat_bw_logs[other_ids[i]]) < PAST_LEN:
@@ -244,29 +242,27 @@ class ABREnv():
                 other_sat_bws.append([0] * (PAST_LEN - tmp_len) + other_sat_bw_logs[other_ids[i]])
             else:
                 other_sat_bws.append(other_sat_bw_logs[other_ids[i]])
-        # print(cur_sat_id)
-        # print(next_sat_id)
-        # print(other_index_ids)
-        # print(other_sat_bws)
-        for i_agent in range(self.num_agents):
+
+        for index, i_agent in enumerate(range(self.num_agents)):
             if i_agent == agent:
                 continue
             sat_logs = self.sat_decision_log[i_agent][-PAST_LEN:]
-            # print(sat_logs)
-            encoded_logs = []
+            tmp_logs = []
             for log_data in sat_logs:
                 if log_data == cur_sat_id:
-                    encoded_logs = [1,0,0,0,0]
+                    encoded_logs = [1, 0, 0, 0, 0]
                 elif log_data == next_sat_id:
-                    encoded_logs = [0,1,0,0,0]
+                    encoded_logs = [0, 1, 0, 0, 0]
                 elif log_data in other_index_ids.keys():
-                    tmp_array = [0,0,0,0,0]
+                    tmp_array = [0, 0, 0, 0, 0]
                     tmp_array[other_index_ids[log_data] + 2] = 1
                     encoded_logs = tmp_array
                 else:
                     # print("Cannot happen")
-                    encoded_logs = [0,0,0,0,0]
-            # print(encoded_logs)
-            other_user_sat_decisions.append(encoded_logs)
+                    encoded_logs = [0, 0, 0, 0, 0]
+                # encoded_logs = encoded_logs + [0] * 3
+                tmp_logs.append(encoded_logs)
+            other_user_sat_decisions.append(tmp_logs)
+
         return other_user_sat_decisions, other_sat_num_users, other_sat_bws
 
