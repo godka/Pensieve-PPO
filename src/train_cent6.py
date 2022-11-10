@@ -53,8 +53,8 @@ def testing(epoch, nn_model, log_file):
     if not os.path.exists(TEST_LOG_FOLDER):
         os.makedirs(TEST_LOG_FOLDER)
     # run test script
-    print('python test_cent3.py ' + nn_model + ' ' + str(USERS))
-    os.system('python test_cent3.py ' + nn_model + ' ' + str(USERS))
+    print('python test_cent6.py ' + nn_model + ' ' + str(USERS))
+    os.system('python test_cent6.py ' + nn_model + ' ' + str(USERS))
 
     # append test performance to the log
     rewards, entropies = [], []
