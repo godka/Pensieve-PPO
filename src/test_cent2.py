@@ -5,7 +5,7 @@ import numpy as np
 import tensorflow.compat.v1 as tf
 from muleo_lc_bw_share import load_trace
 from muleo_lc_bw_share import fixed_env_cent as env
-import ppo_cent6 as network
+import ppo_cent2 as network
 
 S_INFO = 10 + 1 + 3 + 1  # Original + nums of sat + bw of sats + decisions of users
 S_LEN = 8  # take how many frames in the past
