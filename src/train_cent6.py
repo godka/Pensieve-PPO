@@ -10,7 +10,7 @@ import tensorflow.compat.v1 as tf
 os.environ['CUDA_VISIBLE_DEVICES'] = '-1'
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 
-S_DIM = [10 + 1 + 3 + 4, 8]
+S_DIM = [10 + 1 + 3 + 5, 8]
 A_DIM = 6
 A_SAT = 2
 ACTOR_LR_RATE = 1e-4
