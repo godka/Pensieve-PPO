@@ -31,7 +31,7 @@ LOG_FILE = './test_results_cent3' + str(NUM_AGENTS) + '/log_sim_ppo'
 
 
 # A_SAT = NUM_AGENTS
-def encode_other_sat_info(net_env, cur_sat_id, next_sat_id, agent, other_sat_users, other_sat_bw_logs):
+def encode_other_sat_info(self, cur_sat_id, next_sat_id, agent, other_sat_users, other_sat_bw_logs):
     # self.sat_decision_log
     # one hot encoding by bw strength
     # MAX_SAT
@@ -64,16 +64,12 @@ def encode_other_sat_info(net_env, cur_sat_id, next_sat_id, agent, other_sat_use
             other_sat_bws.append([0] * (PAST_LEN - tmp_len) + other_sat_bw_logs[other_ids[i]])
         else:
             other_sat_bws.append(other_sat_bw_logs[other_ids[i]])
-    # print(cur_sat_id)
-    # print(next_sat_id)
-    # print(other_index_ids)
-    # print(other_sat_bws)
-    for i_agent in range(NUM_AGENTS):
+
+    for index, i_agent in enumerate(range(self.num_agents)):
         if i_agent == agent:
             continue
-        sat_logs = net_env.sat_decision_log[i_agent][-PAST_LEN:]
-        # print(sat_logs)
-        encoded_logs = []
+        sat_logs = self.sat_decision_log[i_agent][-PAST_LEN:]
+        tmp_logs = []
         for log_data in sat_logs:
             if log_data == cur_sat_id:
                 encoded_logs = [1, 0, 0, 0, 0]
@@ -86,8 +82,9 @@ def encode_other_sat_info(net_env, cur_sat_id, next_sat_id, agent, other_sat_use
             else:
                 # print("Cannot happen")
                 encoded_logs = [0, 0, 0, 0, 0]
-        # print(encoded_logs)
-        other_user_sat_decisions.append(encoded_logs)
+            # encoded_logs = encoded_logs + [0] * 3
+            tmp_logs.append(encoded_logs)
+        other_user_sat_decisions.append(tmp_logs)
 
     return other_user_sat_decisions, other_sat_num_users, other_sat_bws
 
