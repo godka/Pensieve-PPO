@@ -19,7 +19,7 @@ ENTROPY_WEIGHT = 0.1
 MAX_SAT = 5
 
 class Network():
-    def CreateNetwork(self, inputs, num_of_users):
+    def CreateNetwork(self, inputs):
         with tf.variable_scope('actor'):
             split_0 = tflearn.fully_connected(inputs[:, 0:1, -1], FEATURE_NUM, activation='relu')
             split_1 = tflearn.fully_connected(inputs[:, 1:2, -1], FEATURE_NUM, activation='relu')
@@ -37,7 +37,7 @@ class Network():
             split_13 = tflearn.conv_1d(inputs[:, 13:14, :PAST_LEN], FEATURE_NUM, DIM_SIZE, activation='relu')
 
             split_list = []
-            for i in range(num_of_users*PAST_LEN):
+            for i in range(self.num_agents*PAST_LEN):
                 split_tmp = tflearn.conv_1d(inputs[:, 14+i:15+i, :PAST_LEN], FEATURE_NUM, DIM_SIZE, activation='relu')
                 split_tmp_flat = tflearn.flatten(split_tmp)
                 split_list.append(split_tmp_flat)
@@ -80,7 +80,7 @@ class Network():
             split_13 = tflearn.conv_1d(inputs[:, 13:14, :PAST_LEN], FEATURE_NUM, DIM_SIZE, activation='relu')
 
             split_list = []
-            for i in range(num_of_users * PAST_LEN):
+            for i in range(self.num_agents * PAST_LEN):
                 split_tmp = tflearn.conv_1d(inputs[:, 14 + i:15 + i, :PAST_LEN], FEATURE_NUM, DIM_SIZE,
                                             activation='relu')
                 split_tmp_flat = tflearn.flatten(split_tmp)
@@ -127,13 +127,14 @@ class Network():
         self.sess = sess
         self._entropy_weight = np.log(self.a_dim)
         self.H_target = 0.1
+        self.num_agents = num_of_users
 
         self.R = tf.placeholder(tf.float32, [None, 1])
         self.inputs = tf.placeholder(tf.float32, [None, self.s_dim[0], self.s_dim[1]])
         self.old_pi = tf.placeholder(tf.float32, [None, self.a_dim])
         self.acts = tf.placeholder(tf.float32, [None, self.a_dim])
         self.entropy_weight = tf.placeholder(tf.float32)
-        self.pi, self.val = self.CreateNetwork(inputs=self.inputs, num_of_users)
+        self.pi, self.val = self.CreateNetwork(inputs=self.inputs)
         self.real_out = tf.clip_by_value(self.pi, ACTION_EPS, 1. - ACTION_EPS)
 
         self.entropy = -tf.reduce_sum(tf.multiply(self.real_out, tf.log(self.real_out)), reduction_indices=1,
