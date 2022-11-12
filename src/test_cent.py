@@ -61,9 +61,9 @@ def encode_other_sat_info(self, cur_sat_id, next_sat_id, agent, other_sat_users,
             other_sat_bws.append([0, 0, 0, 0, 0])
             continue
         other_sat_num_users.append(other_sat_users[other_ids[i]])
-        if len(other_sat_bw_logs[other_ids[i]]) < PAST_SAT_LOG_LEN:
+        if len(other_sat_bw_logs[other_ids[i]]) < PAST_LEN:
             tmp_len = len(other_sat_bw_logs[other_ids[i]])
-            other_sat_bws.append([0] * (PAST_SAT_LOG_LEN - tmp_len) + other_sat_bw_logs[other_ids[i]])
+            other_sat_bws.append([0] * (PAST_LEN - tmp_len) + other_sat_bw_logs[other_ids[i]])
         else:
             other_sat_bws.append(other_sat_bw_logs[other_ids[i]])
 
