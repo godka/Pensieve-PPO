@@ -18,7 +18,6 @@ DIM_SIZE = 4
 ENTROPY_WEIGHT = 0.1
 MAX_SAT = 5
 
-NUM_USERS = 6
 
 
 class Network():
@@ -40,7 +39,7 @@ class Network():
             split_13 = tflearn.conv_1d(inputs[:, 13:14, :PAST_LEN], FEATURE_NUM, DIM_SIZE, activation='relu')
 
             split_list = []
-            for i in range(NUM_USERS*5):
+            for i in range(self.num_agents*PAST_LEN):
                 split_tmp = tflearn.conv_1d(inputs[:, 14+i:15+i, :PAST_LEN], FEATURE_NUM, DIM_SIZE, activation='relu')
                 split_tmp_flat = tflearn.flatten(split_tmp)
                 split_list.append(split_tmp_flat)
@@ -83,7 +82,7 @@ class Network():
             split_13 = tflearn.conv_1d(inputs[:, 13:14, :PAST_LEN], FEATURE_NUM, DIM_SIZE, activation='relu')
 
             split_list = []
-            for i in range(NUM_USERS * 5):
+            for i in range(self.num_agents * PAST_LEN):
                 split_tmp = tflearn.conv_1d(inputs[:, 14 + i:15 + i, :PAST_LEN], FEATURE_NUM, DIM_SIZE,
                                             activation='relu')
                 split_tmp_flat = tflearn.flatten(split_tmp)
@@ -123,7 +122,7 @@ class Network():
         return tf.reduce_sum(tf.multiply(pi_new, acts), reduction_indices=1, keepdims=True) / \
                tf.reduce_sum(tf.multiply(pi_old, acts), reduction_indices=1, keepdims=True)
 
-    def __init__(self, sess, state_dim, action_dim, learning_rate):
+    def __init__(self, sess, state_dim, action_dim, learning_rate, num_of_users):
         self.s_dim = state_dim
         self.a_dim = action_dim
         self.lr_rate = learning_rate
@@ -168,6 +167,8 @@ class Network():
         self.policy_opt = tf.train.AdamOptimizer(self.lr_rate).minimize(self.policy_loss)
         self.val_loss = tflearn.mean_square(self.val, self.R)
         self.val_opt = tf.train.AdamOptimizer(self.lr_rate * 10.).minimize(self.val_loss)
+
+        self.num_agents = num_of_users
 
     def predict(self, input):
         action = self.sess.run(self.real_out, feed_dict={

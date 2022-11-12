@@ -3,16 +3,17 @@ import numpy as np
 import logging
 import os
 import sys
-from muleo_lc_bw_share.env_cent6 import ABREnv
-import ppo_cent6 as network
+from muleo_lc_bw_share.env_cent import ABREnv
+import ppo_cent as network
 import tensorflow.compat.v1 as tf
 
 os.environ['CUDA_VISIBLE_DEVICES'] = '-1'
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 
-S_DIM = [10 + 1 + 3 + 6 * 5, 8]
+# S_DIM = [10 + 1 + 3 + 6 * 5, 8]
 A_DIM = 6
 A_SAT = 2
+PAST_LEN = 5
 ACTOR_LR_RATE = 1e-4
 NUM_AGENTS = 16
 TRAIN_SEQ_LEN = 1000  # take as a train batch
@@ -33,6 +34,7 @@ parser.add_argument('--user', type=int, default=6)
 args = parser.parse_args()
 USERS = args.user
 # A_SAT = USERS + 1
+S_DIM = [10 + 1 + 3 + USERS * PAST_LEN, 8]
 
 TEST_LOG_FOLDER += str(USERS) + '/'
 SUMMARY_DIR += str(USERS)
@@ -53,8 +55,8 @@ def testing(epoch, nn_model, log_file):
     if not os.path.exists(TEST_LOG_FOLDER):
         os.makedirs(TEST_LOG_FOLDER)
     # run test script
-    print('python test_cent6.py ' + nn_model + ' ' + str(USERS))
-    os.system('python test_cent6.py ' + nn_model + ' ' + str(USERS))
+    print('python test_cent.py ' + nn_model + ' ' + str(USERS))
+    os.system('python test_cent.py ' + nn_model + ' ' + str(USERS))
 
     # append test performance to the log
     rewards, entropies = [], []
@@ -104,7 +106,7 @@ def central_agent(net_params_queues, exp_queues):
 
         actor = network.Network(sess,
                 state_dim=S_DIM, action_dim=A_DIM * A_SAT,
-                learning_rate=ACTOR_LR_RATE)
+                learning_rate=ACTOR_LR_RATE, num_of_users=USERS)
 
         sess.run(tf.global_variables_initializer())
         writer = tf.summary.FileWriter(SUMMARY_DIR, sess.graph)  # training monitor

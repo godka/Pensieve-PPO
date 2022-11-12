@@ -5,9 +5,9 @@ import numpy as np
 import tensorflow.compat.v1 as tf
 from muleo_lc_bw_share import load_trace
 from muleo_lc_bw_share import fixed_env_cent as env
-import ppo_cent6 as network
+import ppo_cent as network
 
-S_INFO = 10 + 1 + 3 + 6 * 5  # Original + nums of sat + bw of sats + decisions of users
+# S_INFO = 10 + 1 + 3 + 6 * 5  # Original + nums of sat + bw of sats + decisions of users
 S_LEN = 8  # take how many frames in the past
 A_DIM = 6
 PAST_LEN = 5
@@ -26,6 +26,7 @@ RANDOM_SEED = 42
 TEST_TRACES = './test/'
 NN_MODEL = sys.argv[1]
 NUM_AGENTS = int(sys.argv[2])
+S_INFO = 10 + 1 + 3 + NUM_AGENTS * PAST_LEN
 
 LOG_FILE = './test_results_cent6' + str(NUM_AGENTS) + '/log_sim_ppo'
 
