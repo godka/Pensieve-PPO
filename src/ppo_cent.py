@@ -18,10 +18,8 @@ DIM_SIZE = 4
 ENTROPY_WEIGHT = 0.1
 MAX_SAT = 5
 
-
-
 class Network():
-    def CreateNetwork(self, inputs, num_of_users=num_of_users):
+    def CreateNetwork(self, inputs, num_of_users):
         with tf.variable_scope('actor'):
             split_0 = tflearn.fully_connected(inputs[:, 0:1, -1], FEATURE_NUM, activation='relu')
             split_1 = tflearn.fully_connected(inputs[:, 1:2, -1], FEATURE_NUM, activation='relu')
@@ -135,7 +133,7 @@ class Network():
         self.old_pi = tf.placeholder(tf.float32, [None, self.a_dim])
         self.acts = tf.placeholder(tf.float32, [None, self.a_dim])
         self.entropy_weight = tf.placeholder(tf.float32)
-        self.pi, self.val = self.CreateNetwork(inputs=self.inputs, num_of_users=num_of_users)
+        self.pi, self.val = self.CreateNetwork(inputs=self.inputs, num_of_users)
         self.real_out = tf.clip_by_value(self.pi, ACTION_EPS, 1. - ACTION_EPS)
 
         self.entropy = -tf.reduce_sum(tf.multiply(self.real_out, tf.log(self.real_out)), reduction_indices=1,
