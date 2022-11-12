@@ -56,14 +56,12 @@ class Network():
             split_11_flat = tflearn.flatten(split_11)
             split_12_flat = tflearn.flatten(split_12)
             split_13_flat = tflearn.flatten(split_13)
-            print([split_0, split_1, split_2_flat, split_3_flat, split_4_flat, split_5, split_6_flat,
+
+            merged_list = [split_0, split_1, split_2_flat, split_3_flat, split_4_flat, split_5, split_6_flat,
                  split_7_flat, split_8_flat, split_9_flat, split_10_flat, split_11_flat, split_12_flat,
-                 split_13_flat].extend(split_list))
-            print("--")
-            merge_net = tflearn.merge(
-                [split_0, split_1, split_2_flat, split_3_flat, split_4_flat, split_5, split_6_flat,
-                 split_7_flat, split_8_flat, split_9_flat, split_10_flat, split_11_flat, split_12_flat,
-                 split_13_flat].extend(split_list), 'concat')
+                 split_13_flat]
+            merged_list.extend(split_list)
+            merge_net = tflearn.merge(merged_list, 'concat')
 
             pi_net = tflearn.fully_connected(merge_net, FEATURE_NUM, activation='relu')
             pi = tflearn.fully_connected(pi_net, self.a_dim, activation='softmax')
@@ -103,10 +101,11 @@ class Network():
             split_12_flat = tflearn.flatten(split_12)
             split_13_flat = tflearn.flatten(split_13)
 
-            merge_net = tflearn.merge(
-                [split_0, split_1, split_2_flat, split_3_flat, split_4_flat, split_5, split_6_flat,
+            merged_list = [split_0, split_1, split_2_flat, split_3_flat, split_4_flat, split_5, split_6_flat,
                  split_7_flat, split_8_flat, split_9_flat, split_10_flat, split_11_flat, split_12_flat,
-                 split_13_flat].extend(split_list), 'concat')
+                 split_13_flat]
+            merged_list.extend(split_list)
+            merge_net = tflearn.merge(merged_list, 'concat')
 
             value_net = tflearn.fully_connected(merge_net, FEATURE_NUM, activation='relu')
             value = tflearn.fully_connected(value_net, 1, activation='linear')
