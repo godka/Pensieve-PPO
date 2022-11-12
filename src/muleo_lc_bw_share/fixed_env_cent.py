@@ -98,7 +98,6 @@ class Environment:
         self.delay = [0 for _ in range(self.num_agents)]
         self.sat_decision_log = [[-1,-1,-1,-1,-1] for _ in range(self.num_agents)]
 
-
         self.bit_rate = None
         self.download_bw = [[] for _ in range(self.num_agents)]
         self.past_download_ests = [[] for _ in range(self.num_agents)]
@@ -291,7 +290,9 @@ class Environment:
                 # self.past_download_ests[agent] = []
         else:
             is_handover, new_sat_id, bit_rate = False, None, 1
-        
+
+        self.sat_decision_log[agent].append(self.cur_sat_id[agent])
+
         return delay, \
             sleep_time, \
             return_buffer_size / MILLISECONDS_IN_SECOND, \
@@ -1071,5 +1072,5 @@ class Environment:
             self.update_sat_info(self.cur_sat_id[agent], self.mahimahi_ptr[agent], -1)
             self.cur_sat_id[agent] = sat_id
             self.delay[agent] = HANDOVER_DELAY
-            self.sat_decision_log[agent].append(sat_id)
+            # self.sat_decision_log[agent].append(sat_id)
             return sat_id
