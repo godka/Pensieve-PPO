@@ -163,7 +163,7 @@ def agent(agent_id, net_params_queue, exp_queue):
     with tf.Session() as sess:
         actor = network.Network(sess,
                                 state_dim=S_DIM, action_dim=A_DIM * A_SAT,
-                                learning_rate=ACTOR_LR_RATE)
+                                learning_rate=ACTOR_LR_RATE, num_of_users=USERS)
 
         # initial synchronization of the network parameters from the coordinator
         actor_net_params = net_params_queue.get()

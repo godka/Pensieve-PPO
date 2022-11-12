@@ -114,7 +114,7 @@ def main():
 
         actor = network.Network(sess,
                                 state_dim=[S_INFO, S_LEN], action_dim=A_DIM * A_SAT,
-                                learning_rate=ACTOR_LR_RATE)
+                                learning_rate=ACTOR_LR_RATE, num_of_users=NUM_AGENTS)
 
         sess.run(tf.global_variables_initializer())
         saver = tf.train.Saver()  # save neural net parameters
