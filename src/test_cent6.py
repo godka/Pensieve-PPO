@@ -7,7 +7,7 @@ from muleo_lc_bw_share import load_trace
 from muleo_lc_bw_share import fixed_env_cent as env
 import ppo_cent6 as network
 
-S_INFO = 10 + 1 + 3 + 5  # Original + nums of sat + bw of sats + decisions of users
+S_INFO = 10 + 1 + 3 + 6 * 5  # Original + nums of sat + bw of sats + decisions of users
 S_LEN = 8  # take how many frames in the past
 A_DIM = 6
 PAST_LEN = 5
@@ -69,8 +69,9 @@ def encode_other_sat_info(net_env, cur_sat_id, next_sat_id, agent, other_sat_use
     # print(other_index_ids)
     # print(other_sat_bws)
     for i_agent in range(NUM_AGENTS):
-        if i_agent == agent:
-            continue
+        # Exclude the current user's decision
+        # if i_agent == agent:
+        #     continue
         sat_logs = net_env.sat_decision_log[i_agent][-PAST_LEN:]
         # print(sat_logs)
         encoded_logs = []

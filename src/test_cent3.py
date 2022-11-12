@@ -69,6 +69,7 @@ def encode_other_sat_info(self, cur_sat_id, next_sat_id, agent, other_sat_users,
         if i_agent == agent:
             continue
         sat_logs = self.sat_decision_log[i_agent][-PAST_LEN:]
+
         tmp_logs = []
         for log_data in sat_logs:
             if log_data == cur_sat_id:
