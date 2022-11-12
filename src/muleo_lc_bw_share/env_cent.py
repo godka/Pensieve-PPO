@@ -6,7 +6,6 @@ from . import load_trace
 
 # bit_rate, buffer_size, next_chunk_size, bandwidth_measurement(throughput and time), chunk_til_video_end
 # S_INFO = 10 + 1 + 3 + 6 * 5 # Original + nums of sat + bw of sats + decisions of users
-S_INFO = None
 S_LEN = 8  # take how many frames in the past
 A_DIM = 6
 PAST_LEN = 5
@@ -34,7 +33,7 @@ class ABREnv():
 
     def __init__(self, random_seed=RANDOM_SEED, num_agents=NUM_AGENTS):
         self.num_agents = num_agents
-        S_INFO = 10 + 1 + 3 + self.num_agents * PAST_LEN
+        global S_INFO = 10 + 1 + 3 + self.num_agents * PAST_LEN
         # SAT_DIM = num_agents
         # A_SAT = num_agents
         # SAT_DIM = num_agents + 1
