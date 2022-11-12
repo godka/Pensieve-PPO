@@ -248,7 +248,7 @@ def main():
 
             state[agent][11:(11 + MAX_SAT - A_SAT), :PAST_LEN] = np.array(other_sat_bws) / 10
 
-            state[agent][(11 + MAX_SAT - A_SAT):(11 + MAX_SAT - A_SAT + (NUM_AGENTS - 1) * PAST_LEN), 0:PAST_LEN] = np.reshape(other_user_sat_decisions, (-1, 5))
+            state[agent][(11 + MAX_SAT - A_SAT):(11 + MAX_SAT - A_SAT + (NUM_AGENTS) * PAST_LEN), 0:PAST_LEN] = np.reshape(other_user_sat_decisions, (-1, 5))
             # if len(next_sat_user_num) < PAST_LEN:
             #     next_sat_user_num = [0] * (PAST_LEN - len(next_sat_user_num)) + next_sat_user_num
 

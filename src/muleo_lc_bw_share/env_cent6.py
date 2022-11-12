@@ -93,7 +93,7 @@ class ABREnv():
 
         state[11:(11 + MAX_SAT - A_SAT), :PAST_LEN] = np.array(other_sat_bws) / 10
 
-        state[(11 + MAX_SAT - A_SAT):(11 + MAX_SAT - A_SAT + self.num_agents - 1), :PAST_LEN] = other_user_sat_decisions
+        state[(11 + MAX_SAT - A_SAT):(11 + MAX_SAT - A_SAT + self.num_agents), :PAST_LEN] = other_user_sat_decisions
 
         self.state[agent] = state
         
