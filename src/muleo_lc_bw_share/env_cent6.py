@@ -246,8 +246,9 @@ class ABREnv():
                 other_sat_bws.append(other_sat_bw_logs[other_ids[i]])
 
         for index, i_agent in enumerate(range(self.num_agents)):
-            if i_agent == agent:
-                continue
+            # Exclude the current user's deicision
+            # if i_agent == agent:
+            #     continue
             sat_logs = self.sat_decision_log[i_agent][-PAST_LEN:]
             tmp_logs = []
             for log_data in sat_logs:
