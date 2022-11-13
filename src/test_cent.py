@@ -189,8 +189,6 @@ def main():
             state[agent][8, :A_SAT] = np.array([cur_sat_user_num, next_sat_user_num]) / 10
             state[agent][9, :A_SAT] = [float(connected_time[0]) / BUFFER_NORM_FACTOR, float(connected_time[1]) / BUFFER_NORM_FACTOR]
             other_user_sat_decisions, other_sat_num_users, other_sat_bws, cur_user_sat_decisions \
-                = encode_other_sat_info(net_env, cur_sat_id, next_sat_id, agent, other_sat_users, other_sat_bw_logs)
-            other_user_sat_decisions, other_sat_num_users, other_sat_bws, cur_user_sat_decisions \
                 = encode_other_sat_info(net_env.sat_decision_log, NUM_AGENTS, cur_sat_id, next_sat_id, agent,
                                         other_sat_users, other_sat_bw_logs)
 
