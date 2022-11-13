@@ -10,6 +10,7 @@ import tflearn
 FEATURE_NUM = 128
 ACTION_EPS = 1e-4
 PAST_LEN = 5
+PAST_SAT_LOG_LEN = 3
 A_SAT = 2
 GAMMA = 0.99
 # PPO2
@@ -37,7 +38,7 @@ class Network():
             split_13 = tflearn.conv_1d(inputs[:, 13:14, :PAST_LEN], FEATURE_NUM, DIM_SIZE, activation='relu')
 
             split_list = []
-            for i in range(self.num_agents*PAST_LEN):
+            for i in range(self.num_agents*PAST_SAT_LOG_LEN):
                 split_tmp = tflearn.conv_1d(inputs[:, 14+i:15+i, :PAST_LEN], FEATURE_NUM, DIM_SIZE, activation='relu')
                 split_tmp_flat = tflearn.flatten(split_tmp)
                 split_list.append(split_tmp_flat)
@@ -80,7 +81,7 @@ class Network():
             split_13 = tflearn.conv_1d(inputs[:, 13:14, :PAST_LEN], FEATURE_NUM, DIM_SIZE, activation='relu')
 
             split_list = []
-            for i in range(self.num_agents * PAST_LEN):
+            for i in range(self.num_agents * PAST_SAT_LOG_LEN):
                 split_tmp = tflearn.conv_1d(inputs[:, 14 + i:15 + i, :PAST_LEN], FEATURE_NUM, DIM_SIZE,
                                             activation='relu')
                 split_tmp_flat = tflearn.flatten(split_tmp)
