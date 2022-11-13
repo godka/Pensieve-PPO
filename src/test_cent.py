@@ -1,5 +1,8 @@
 import os
 import sys
+
+from src.util.encode import encode_other_sat_info
+
 os.environ['CUDA_VISIBLE_DEVICES']='-1'
 import numpy as np
 import tensorflow.compat.v1 as tf
@@ -33,65 +36,6 @@ LOG_FILE = './test_results_cent6' + str(NUM_AGENTS) + '/log_sim_ppo'
 
 
 # A_SAT = NUM_AGENTS
-def encode_other_sat_info(self, cur_sat_id, next_sat_id, agent, other_sat_users, other_sat_bw_logs):
-    # self.sat_decision_log
-    # one hot encoding by bw strength
-    # MAX_SAT
-    assert len(other_sat_users.keys()) == len(other_sat_bw_logs.keys())
-    other_user_sat_decisions = []
-    other_sat_num_users = []
-    other_sat_bws = []
-    other_sat_id_bw = {}
-    other_index_ids = {}
-    """
-    for sat_id in other_sat_bw_logs.keys():
-        avg_bw = sum(other_sat_bw_logs[sat_id]) / len(other_sat_bw_logs[sat_id])
-        other_sat_id_bw[sat_id] = avg_bw
-    """
-    other_ids = sorted(other_sat_users, reverse=True)
-    other_ids = other_ids[:MAX_SAT - 2]
-    for i in range(MAX_SAT - 2):
-        if len(other_ids) <= i:
-            break
-        other_index_ids[other_ids[i]] = i
-
-    for i in range(MAX_SAT - 2):
-        if len(other_sat_users.keys()) <= i:
-            other_sat_num_users.append(0)
-            other_sat_bws.append([0, 0, 0, 0, 0])
-            continue
-        other_sat_num_users.append(other_sat_users[other_ids[i]])
-        if len(other_sat_bw_logs[other_ids[i]]) < PAST_LEN:
-            tmp_len = len(other_sat_bw_logs[other_ids[i]])
-            other_sat_bws.append([0] * (PAST_LEN - tmp_len) + other_sat_bw_logs[other_ids[i]])
-        else:
-            other_sat_bws.append(other_sat_bw_logs[other_ids[i]])
-
-    for index, i_agent in enumerate(range(self.num_agents)):
-        # Exclude the current user's deicision
-        # if i_agent == agent:
-        #     continue
-        sat_logs = self.sat_decision_log[i_agent][-PAST_SAT_LOG_LEN:]
-
-        tmp_logs = []
-        for log_data in sat_logs:
-            if log_data == cur_sat_id:
-                encoded_logs = [1, 0, 0, 0, 0]
-            elif log_data == next_sat_id:
-                encoded_logs = [0, 1, 0, 0, 0]
-            elif log_data in other_index_ids.keys():
-                tmp_array = [0, 0, 0, 0, 0]
-                tmp_array[other_index_ids[log_data] + 2] = 1
-                encoded_logs = tmp_array
-            else:
-                # print("Cannot happen")
-                encoded_logs = [0, 0, 0, 0, 0]
-            # encoded_logs = encoded_logs + [0] * 3
-            tmp_logs.append(encoded_logs)
-        other_user_sat_decisions.append(tmp_logs)
-
-    return other_user_sat_decisions, other_sat_num_users, other_sat_bws
-
 
 
 def main():
@@ -244,14 +188,18 @@ def main():
 
             state[agent][8, :A_SAT] = np.array([cur_sat_user_num, next_sat_user_num]) / 10
             state[agent][9, :A_SAT] = [float(connected_time[0]) / BUFFER_NORM_FACTOR, float(connected_time[1]) / BUFFER_NORM_FACTOR]
-            other_user_sat_decisions, other_sat_num_users, other_sat_bws \
+            other_user_sat_decisions, other_sat_num_users, other_sat_bws, cur_user_sat_decisions \
                 = encode_other_sat_info(net_env, cur_sat_id, next_sat_id, agent, other_sat_users, other_sat_bw_logs)
 
             state[agent][10, :MAX_SAT - A_SAT] = np.array(other_sat_num_users) / 10
 
             state[agent][11:(11 + MAX_SAT - A_SAT), :PAST_LEN] = np.array(other_sat_bws) / 10
 
-            state[agent][(11 + MAX_SAT - A_SAT):(11 + MAX_SAT - A_SAT + NUM_AGENTS * PAST_SAT_LOG_LEN),
+            state[agent][(11 + MAX_SAT - A_SAT):(11 + MAX_SAT - A_SAT + PAST_SAT_LOG_LEN),
+            0:PAST_LEN] = np.reshape(cur_user_sat_decisions, (-1, 5))
+
+            state[agent][(11 + MAX_SAT - A_SAT + PAST_SAT_LOG_LEN):(11 + MAX_SAT - A_SAT + PAST_SAT_LOG_LEN
+                                                                    + (NUM_AGENTS-1) * PAST_SAT_LOG_LEN),
             0:PAST_LEN] = np.reshape(other_user_sat_decisions, (-1, 5))
             # if len(next_sat_user_num) < PAST_LEN:
             #     next_sat_user_num = [0] * (PAST_LEN - len(next_sat_user_num)) + next_sat_user_num

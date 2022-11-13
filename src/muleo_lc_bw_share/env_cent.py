@@ -4,6 +4,7 @@ import numpy as np
 from . import core_cent as abrenv
 from . import load_trace
 
+from src.util.encode import encode_other_sat_info
 # bit_rate, buffer_size, next_chunk_size, bandwidth_measurement(throughput and time), chunk_til_video_end
 # S_INFO = 10 + 1 + 3 + 6 * 5 # Original + nums of sat + bw of sats + decisions of users
 S_LEN = 8  # take how many frames in the past
@@ -86,8 +87,8 @@ class ABREnv():
 
         state[7, :PAST_LEN] = np.array(cur_sat_bw_logs[:PAST_LEN]) / 10
 
-        other_user_sat_decisions, other_sat_num_users, other_sat_bws \
-            = self.encode_other_sat_info(cur_sat_id, next_sat_id, agent, other_sat_users, other_sat_bw_logs)
+        other_user_sat_decisions, other_sat_num_users, other_sat_bws, cur_user_sat_decisions \
+            = encode_other_sat_info(cur_sat_id, next_sat_id, agent, other_sat_users, other_sat_bw_logs)
 
         state[8, :A_SAT] = np.array([cur_sat_user_num, next_sat_user_nums]) / 10
         state[9, :A_SAT] = [float(connected_time[0]) / BUFFER_NORM_FACTOR,
@@ -97,7 +98,11 @@ class ABREnv():
 
         state[11:(11 + MAX_SAT - A_SAT), :PAST_LEN] = np.array(other_sat_bws) / 10
 
-        state[(11 + MAX_SAT - A_SAT):(11 + MAX_SAT - A_SAT + (self.num_agents) * PAST_SAT_LOG_LEN),
+        state[(11 + MAX_SAT - A_SAT):(11 + MAX_SAT - A_SAT + PAST_SAT_LOG_LEN),
+        0:PAST_LEN] = np.reshape(cur_user_sat_decisions, (-1, 5))
+
+        state[(11 + MAX_SAT - A_SAT + PAST_SAT_LOG_LEN):(11 + MAX_SAT - A_SAT + PAST_SAT_LOG_LEN +
+                                                         (self.num_agents-1) * PAST_SAT_LOG_LEN),
         0:PAST_LEN] = np.reshape(other_user_sat_decisions, (-1, 5))
 
         self.state[agent] = state
@@ -193,8 +198,8 @@ class ABREnv():
 
         state[7, :PAST_LEN] = np.array(cur_sat_bw_logs[:PAST_LEN]) / 10
 
-        other_user_sat_decisions, other_sat_num_users, other_sat_bws \
-            = self.encode_other_sat_info(cur_sat_id, next_sat_id, agent, other_sat_users, other_sat_bw_logs)
+        other_user_sat_decisions, other_sat_num_users, other_sat_bws, cur_user_sat_decisions \
+            = encode_other_sat_info(cur_sat_id, next_sat_id, agent, other_sat_users, other_sat_bw_logs)
 
         state[8, :A_SAT] = np.array([cur_sat_user_num, next_sat_user_nums]) / 10
         state[9, :A_SAT] = [float(connected_time[0]) / BUFFER_NORM_FACTOR,
@@ -203,8 +208,12 @@ class ABREnv():
         state[10, :MAX_SAT - A_SAT] = np.array(other_sat_num_users) / 10
 
         state[11:(11 + MAX_SAT - A_SAT), :PAST_LEN] = np.array(other_sat_bws) / 10
-        state[(11 + MAX_SAT - A_SAT):(11 + MAX_SAT - A_SAT + (self.num_agents) * PAST_SAT_LOG_LEN),
-        0:PAST_LEN] = np.reshape(other_user_sat_decisions, (-1, 5))
+        state[(11 + MAX_SAT - A_SAT):(11 + MAX_SAT - A_SAT + PAST_SAT_LOG_LEN),
+        0:PAST_LEN] = np.reshape(cur_user_sat_decisions, (-1, 5))
+
+        state[(11 + MAX_SAT - A_SAT + PAST_SAT_LOG_LEN):(11 + MAX_SAT - A_SAT + PAST_SAT_LOG_LEN + (self.num_agents-1)
+                                                         * PAST_SAT_LOG_LEN), 0:PAST_LEN] \
+            = np.reshape(other_user_sat_decisions, (-1, 5))
 
         # if len(next_sat_user_nums) < PAST_LEN:
         #     next_sat_user_nums = [0] * (PAST_LEN - len(next_sat_user_nums)) + next_sat_user_nums
