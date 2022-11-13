@@ -13,6 +13,8 @@ def encode_other_sat_info(sat_decision_log, num_agents, cur_sat_id, next_sat_id,
     other_sat_bws = []
     other_sat_id_bw = {}
     other_index_ids = {}
+    cur_user_sat_decisions = []
+
     """
     for sat_id in other_sat_bw_logs.keys():
         avg_bw = sum(other_sat_bw_logs[sat_id]) / len(other_sat_bw_logs[sat_id])
@@ -39,7 +41,6 @@ def encode_other_sat_info(sat_decision_log, num_agents, cur_sat_id, next_sat_id,
 
     for index, i_agent in enumerate(range(num_agents)):
         # Exclude the current user's decision
-        cur_user_sat_decisions = None
         sat_logs = sat_decision_log[i_agent][-PAST_SAT_LOG_LEN:]
 
         tmp_logs = []
@@ -58,7 +59,7 @@ def encode_other_sat_info(sat_decision_log, num_agents, cur_sat_id, next_sat_id,
             # encoded_logs = encoded_logs + [0] * 3
             tmp_logs.append(encoded_logs)
         if i_agent == agent:
-            cur_user_sat_decisions = tmp_logs
+            cur_user_sat_decisions.append(tmp_logs)
         else:
             other_user_sat_decisions.append(tmp_logs)
 
