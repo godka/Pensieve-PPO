@@ -4,7 +4,7 @@ import numpy as np
 from . import core_cent as abrenv
 from . import load_trace
 
-from src.util.encode import encode_other_sat_info
+from util.encode import encode_other_sat_info
 # bit_rate, buffer_size, next_chunk_size, bandwidth_measurement(throughput and time), chunk_til_video_end
 # S_INFO = 10 + 1 + 3 + 6 * 5 # Original + nums of sat + bw of sats + decisions of users
 S_LEN = 8  # take how many frames in the past

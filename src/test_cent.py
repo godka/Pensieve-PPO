@@ -1,7 +1,7 @@
 import os
 import sys
 
-from src.util.encode import encode_other_sat_info
+from util.encode import encode_other_sat_info
 
 os.environ['CUDA_VISIBLE_DEVICES']='-1'
 import numpy as np
