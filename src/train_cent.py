@@ -14,6 +14,7 @@ os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 A_DIM = 6
 A_SAT = 2
 PAST_LEN = 5
+PAST_SAT_LOG_LEN = 3
 ACTOR_LR_RATE = 1e-4
 NUM_AGENTS = 16
 TRAIN_SEQ_LEN = 1000  # take as a train batch
@@ -34,7 +35,7 @@ parser.add_argument('--user', type=int, default=9)
 args = parser.parse_args()
 USERS = args.user
 # A_SAT = USERS + 1
-S_DIM = [10 + 1 + 3 + USERS * PAST_LEN, 8]
+S_DIM = [10 + 1 + 3 + USERS * PAST_SAT_LOG_LEN, 8]
 
 TEST_LOG_FOLDER += str(USERS) + '/'
 SUMMARY_DIR += str(USERS)
