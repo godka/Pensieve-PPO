@@ -1,4 +1,9 @@
-def encode_other_sat_info(self, cur_sat_id, next_sat_id, agent, other_sat_users, other_sat_bw_logs):
+MAX_SAT = 5
+PAST_LEN = 5
+PAST_SAT_LOG_LEN = 3
+
+
+def encode_other_sat_info(sat_decision_log, num_agents, cur_sat_id, next_sat_id, agent, other_sat_users, other_sat_bw_logs):
     # self.sat_decision_log
     # one hot encoding by bw strength
     # MAX_SAT
@@ -32,10 +37,10 @@ def encode_other_sat_info(self, cur_sat_id, next_sat_id, agent, other_sat_users,
         else:
             other_sat_bws.append(other_sat_bw_logs[other_ids[i]])
 
-    for index, i_agent in enumerate(range(self.num_agents)):
+    for index, i_agent in enumerate(range(num_agents)):
         # Exclude the current user's decision
         cur_user_sat_decisions = None
-        sat_logs = self.sat_decision_log[i_agent][-PAST_SAT_LOG_LEN:]
+        sat_logs = sat_decision_log[i_agent][-PAST_SAT_LOG_LEN:]
 
         tmp_logs = []
         for log_data in sat_logs:
