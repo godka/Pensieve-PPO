@@ -218,7 +218,6 @@ class ABREnv():
         #     next_sat_user_nums = [0] * (PAST_LEN - len(next_sat_user_nums)) + next_sat_user_nums
 
         # state[agent][8, :PAST_LEN] = next_sat_user_nums[:5]
-        print(np.reshape(cur_user_sat_decisions, (-1, 3)))
         self.state[agent] = state
         #observation, reward, done, info = env.step(action)
         return state, reward, end_of_video, {'bitrate': VIDEO_BIT_RATE[bit_rate], 'rebuffer': rebuf}
