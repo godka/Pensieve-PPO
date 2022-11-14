@@ -16,7 +16,7 @@ A_DIM = 6
 PAST_SAT_LOG_LEN = 3
 PAST_LEN = 5
 A_SAT = 2
-MAX_SAT = 5
+MAX_SAT = 8
 ACTOR_LR_RATE = 1e-4
 # CRITIC_LR_RATE = 0.001
 VIDEO_BIT_RATE = [300,750,1200,1850,2850,4300]  # Kbps
@@ -30,9 +30,9 @@ RANDOM_SEED = 42
 TEST_TRACES = './test/'
 NN_MODEL = sys.argv[1]
 NUM_AGENTS = int(sys.argv[2])
-S_INFO = 10 + 1 + 3 + NUM_AGENTS * PAST_SAT_LOG_LEN
+S_INFO = 11 + MAX_SAT - A_SAT + NUM_AGENTS * PAST_SAT_LOG_LEN
 
-LOG_FILE = './test_results_cent6' + str(NUM_AGENTS) + '/log_sim_ppo'
+LOG_FILE = './test_results_cent' + str(NUM_AGENTS) + '/log_sim_ppo'
 
 
 # A_SAT = NUM_AGENTS
@@ -188,6 +188,7 @@ def main():
 
             state[agent][8, :A_SAT] = np.array([cur_sat_user_num, next_sat_user_num]) / 10
             state[agent][9, :A_SAT] = [float(connected_time[0]) / BUFFER_NORM_FACTOR, float(connected_time[1]) / BUFFER_NORM_FACTOR]
+
             other_user_sat_decisions, other_sat_num_users, other_sat_bws, cur_user_sat_decisions \
                 = encode_other_sat_info(net_env.sat_decision_log, NUM_AGENTS, cur_sat_id, next_sat_id, agent,
                                         other_sat_users, other_sat_bw_logs)
@@ -197,11 +198,11 @@ def main():
             state[agent][11:(11 + MAX_SAT - A_SAT), :PAST_LEN] = np.array(other_sat_bws) / 10
 
             state[agent][(11 + MAX_SAT - A_SAT):(11 + MAX_SAT - A_SAT + PAST_SAT_LOG_LEN),
-            0:PAST_LEN] = np.reshape(cur_user_sat_decisions, (-1, 5))
+            0:3] = np.reshape(cur_user_sat_decisions, (-1, 3))
 
             state[agent][(11 + MAX_SAT - A_SAT + PAST_SAT_LOG_LEN):(11 + MAX_SAT - A_SAT + PAST_SAT_LOG_LEN
                                                                     + (NUM_AGENTS-1) * PAST_SAT_LOG_LEN),
-            0:PAST_LEN] = np.reshape(other_user_sat_decisions, (-1, 5))
+            0:3] = np.reshape(other_user_sat_decisions, (-1, 3))
             # if len(next_sat_user_num) < PAST_LEN:
             #     next_sat_user_num = [0] * (PAST_LEN - len(next_sat_user_num)) + next_sat_user_num
 
@@ -223,7 +224,6 @@ def main():
 
     # print(results)
     print(sum(results) / len(results))
-
 
 
 if __name__ == '__main__':

@@ -1,4 +1,4 @@
-MAX_SAT = 5
+MAX_SAT = 8
 PAST_LEN = 5
 PAST_SAT_LOG_LEN = 3
 
@@ -46,16 +46,17 @@ def encode_other_sat_info(sat_decision_log, num_agents, cur_sat_id, next_sat_id,
         tmp_logs = []
         for log_data in sat_logs:
             if log_data == cur_sat_id:
-                encoded_logs = [1, 0, 0, 0, 0]
+                encoded_logs = [1, 0, 0]
             elif log_data == next_sat_id:
-                encoded_logs = [0, 1, 0, 0, 0]
+                encoded_logs = [0, 1, 0]
             elif log_data in other_index_ids.keys():
-                tmp_array = [0, 0, 0, 0, 0]
-                tmp_array[other_index_ids[log_data] + 2] = 1
+                tmp_array = [0, 0, 1]
+                # tmp_array[other_index_ids[log_data] + 2] = 1
                 encoded_logs = tmp_array
             else:
                 # print("Cannot happen")
-                encoded_logs = [0, 0, 0, 0, 0]
+                # encoded_logs = [0, 0, 0, 0, 0, 0, 0, 0]
+                encoded_logs = [0, 0, 1]
             # encoded_logs = encoded_logs + [0] * 3
             tmp_logs.append(encoded_logs)
         if i_agent == agent:

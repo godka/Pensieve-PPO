@@ -14,6 +14,7 @@ os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 A_DIM = 6
 A_SAT = 2
 PAST_LEN = 5
+MAX_SAT = 8
 PAST_SAT_LOG_LEN = 3
 ACTOR_LR_RATE = 1e-4
 NUM_AGENTS = 8
@@ -21,21 +22,21 @@ TRAIN_SEQ_LEN = 1000  # take as a train batch
 TRAIN_EPOCH = 500000
 MODEL_SAVE_INTERVAL = 1000
 RANDOM_SEED = 42
-SUMMARY_DIR = './ppo_cent6'
+SUMMARY_DIR = './ppo_cent'
 MODEL_DIR = './models'
 TRAIN_TRACES = './train/'
-TEST_LOG_FOLDER = './test_results_cent6'
+TEST_LOG_FOLDER = './test_results_cent'
 PPO_TRAINING_EPO = 5
 
 import argparse
 
 parser = argparse.ArgumentParser(description='PyTorch Synthetic Benchmark',
                                  formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-parser.add_argument('--user', type=int, default=9)
+parser.add_argument('--user', type=int, default=2)
 args = parser.parse_args()
 USERS = args.user
 # A_SAT = USERS + 1
-S_DIM = [10 + 1 + 3 + USERS * PAST_SAT_LOG_LEN, 8]
+S_DIM = [11 + MAX_SAT - A_SAT + USERS * PAST_SAT_LOG_LEN, 8]
 
 TEST_LOG_FOLDER += str(USERS) + '/'
 SUMMARY_DIR += str(USERS)

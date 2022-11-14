@@ -15,7 +15,7 @@ A_SAT = 2
 GAMMA = 0.99
 # PPO2
 EPS = 0.2
-DIM_SIZE = 4
+DIM_SIZE = 1
 ENTROPY_WEIGHT = 0.1
 MAX_SAT = 5
 
@@ -39,7 +39,7 @@ class Network():
 
             split_list = []
             for i in range(self.num_agents*PAST_SAT_LOG_LEN):
-                split_tmp = tflearn.conv_1d(inputs[:, 14+i:15+i, :PAST_LEN], FEATURE_NUM, DIM_SIZE, activation='relu')
+                split_tmp = tflearn.conv_1d(inputs[:, 14+i:15+i, :], FEATURE_NUM, DIM_SIZE, activation='relu')
                 split_tmp_flat = tflearn.flatten(split_tmp)
                 split_list.append(split_tmp_flat)
 
@@ -82,7 +82,7 @@ class Network():
 
             split_list = []
             for i in range(self.num_agents * PAST_SAT_LOG_LEN):
-                split_tmp = tflearn.conv_1d(inputs[:, 14 + i:15 + i, :PAST_LEN], FEATURE_NUM, DIM_SIZE,
+                split_tmp = tflearn.conv_1d(inputs[:, 14 + i:15 + i, :], FEATURE_NUM, DIM_SIZE,
                                             activation='relu')
                 split_tmp_flat = tflearn.flatten(split_tmp)
                 split_list.append(split_tmp_flat)
