@@ -8,13 +8,13 @@ import numpy as np
 import tensorflow.compat.v1 as tf
 from muleo_lc_bw_share import load_trace
 from muleo_lc_bw_share import fixed_env_cent as env
-import ppo_cent as network
+import ppo_cent_his as network
 
 # S_INFO = 10 + 1 + 3 + 6 * 5  # Original + nums of sat + bw of sats + decisions of users
 S_LEN = 8  # take how many frames in the past
 A_DIM = 6
 PAST_SAT_LOG_LEN = 3
-PAST_LEN = 5
+PAST_LEN = 8
 A_SAT = 2
 MAX_SAT = 8
 ACTOR_LR_RATE = 1e-4
@@ -30,7 +30,7 @@ RANDOM_SEED = 42
 TEST_TRACES = './test/'
 NN_MODEL = sys.argv[1]
 NUM_AGENTS = int(sys.argv[2])
-S_INFO = 10 + MAX_SAT - A_SAT + NUM_AGENTS * PAST_SAT_LOG_LEN
+S_INFO = 17 + MAX_SAT - A_SAT + NUM_AGENTS * PAST_SAT_LOG_LEN
 
 LOG_FILE = './test_results_cent' + str(NUM_AGENTS) + '/log_sim_ppo'
 
@@ -186,21 +186,21 @@ def main():
 
             state[agent][7, :PAST_LEN] = np.array(cur_sat_bw_logs[:PAST_LEN]) / 10
 
-            state[agent][8, :A_SAT] = np.array([cur_sat_user_num, next_sat_user_num]) / 10
-            state[agent][9, :A_SAT] = [float(connected_time[0]) / BUFFER_NORM_FACTOR / 10, float(connected_time[1]) / BUFFER_NORM_FACTOR / 10]
+            state[agent][8:8+A_SAT, -1] = np.reshape(np.array([cur_sat_user_num, next_sat_user_num]), (2, 1)) / 10
+            state[agent][10, :A_SAT] = [float(connected_time[0]) / BUFFER_NORM_FACTOR / 10, float(connected_time[1]) / BUFFER_NORM_FACTOR / 10]
 
             other_user_sat_decisions, other_sat_num_users, other_sat_bws, cur_user_sat_decisions \
                 = encode_other_sat_info(net_env.sat_decision_log, NUM_AGENTS, cur_sat_id, next_sat_id, agent,
                                         other_sat_users, other_sat_bw_logs)
 
-            # state[agent][10, :MAX_SAT - A_SAT] = np.array(other_sat_num_users) / 10
+            # state[agent][11:11+MAX_SAT - A_SAT, -1] = np.reshape(np.array(other_sat_num_users), (MAX_SAT - A_SAT, 1)) / 10
 
-            state[agent][10:(10 + MAX_SAT - A_SAT), :PAST_LEN] = np.array(other_sat_bws) / 10
+            state[agent][11:(11 + MAX_SAT - A_SAT), :PAST_LEN] = np.array(other_sat_bws) / 10
 
-            state[agent][(10 + MAX_SAT - A_SAT):(10 + MAX_SAT - A_SAT + PAST_SAT_LOG_LEN),
+            state[agent][(11 + MAX_SAT - A_SAT):(11 + MAX_SAT - A_SAT + PAST_SAT_LOG_LEN),
             0:3] = np.reshape(cur_user_sat_decisions, (-1, 3))
 
-            state[agent][(10 + MAX_SAT - A_SAT + PAST_SAT_LOG_LEN):(10 + MAX_SAT - A_SAT + PAST_SAT_LOG_LEN
+            state[agent][(11 + MAX_SAT - A_SAT + PAST_SAT_LOG_LEN):(11 + MAX_SAT - A_SAT + PAST_SAT_LOG_LEN
                                                                     + (NUM_AGENTS-1) * PAST_SAT_LOG_LEN),
             0:3] = np.reshape(other_user_sat_decisions, (-1, 3))
             # if len(next_sat_user_num) < PAST_LEN:
