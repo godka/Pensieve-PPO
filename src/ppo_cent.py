@@ -19,6 +19,7 @@ DIM_SIZE = 1
 ENTROPY_WEIGHT = 0.1
 MAX_SAT = 5
 
+
 class Network():
     def CreateNetwork(self, inputs):
         with tf.variable_scope('actor'):
