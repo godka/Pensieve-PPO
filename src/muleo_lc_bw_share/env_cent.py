@@ -96,7 +96,7 @@ class ABREnv():
 
         # state[10, :MAX_SAT - A_SAT] = np.array(other_sat_num_users) / 10
 
-        state[10:(10 + MAX_SAT - A_SAT), :PAST_LEN] = np.array(other_sat_bws) / 10
+        state[10:(10 + MAX_SAT - A_SAT), 0:PAST_LEN] = np.array(other_sat_bws) / 10
 
         state[(10 + MAX_SAT - A_SAT):(10 + MAX_SAT - A_SAT + PAST_SAT_LOG_LEN),
         0:3] = np.reshape(cur_user_sat_decisions, (-1, 3))

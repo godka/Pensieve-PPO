@@ -30,7 +30,7 @@ def encode_other_sat_info(sat_decision_log, num_agents, cur_sat_id, next_sat_id,
     for i in range(MAX_SAT - 2):
         if len(other_sat_users.keys()) <= i:
             other_sat_num_users.append(0)
-            other_sat_bws.append([0, 0, 0, 0, 0])
+            other_sat_bws.append([0, 0, 0, 0, 0, 0, 0, 0])
             continue
         other_sat_num_users.append(other_sat_users[other_ids[i]])
         if len(other_sat_bw_logs[other_ids[i]]) < PAST_LEN:
