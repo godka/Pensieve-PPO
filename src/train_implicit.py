@@ -29,7 +29,7 @@ import argparse
 
 parser = argparse.ArgumentParser(description='PyTorch Synthetic Benchmark',
                                  formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-parser.add_argument('--user', type=int, default=1)
+parser.add_argument('--user', type=int, default=6)
 args = parser.parse_args()
 USERS = args.user
 # A_SAT = USERS + 1
@@ -204,7 +204,7 @@ def agent(agent_id, net_params_queue, exp_queue):
                 s_batch_user[agent].append(obs[agent])
                     
                 obs[agent], rew, done, info = env.step(bit_rate[agent], agent)
-                
+
                 action_vec = np.zeros(A_DIM * A_SAT)
                 action_vec[bit_rate[agent]] = 1
                 a_batch_user[agent].append(action_vec)

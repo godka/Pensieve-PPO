@@ -8,7 +8,7 @@ import tflearn
 
 FEATURE_NUM = 128
 ACTION_EPS = 1e-4
-PAST_LEN = 5
+PAST_LEN = 8
 A_SAT = 2
 GAMMA = 0.99
 # PPO2
