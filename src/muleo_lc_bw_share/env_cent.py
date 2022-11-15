@@ -91,8 +91,8 @@ class ABREnv():
             = encode_other_sat_info(self.sat_decision_log, self.num_agents, cur_sat_id, next_sat_id, agent, other_sat_users, other_sat_bw_logs)
 
         state[8, :A_SAT] = np.array([cur_sat_user_num, next_sat_user_nums]) / 10
-        state[9, :A_SAT] = [float(connected_time[0]) / BUFFER_NORM_FACTOR,
-                                   float(connected_time[1]) / BUFFER_NORM_FACTOR]
+        state[9, :A_SAT] = [float(connected_time[0]) / BUFFER_NORM_FACTOR / 10,
+                                   float(connected_time[1]) / BUFFER_NORM_FACTOR / 10]
 
         state[10, :MAX_SAT - A_SAT] = np.array(other_sat_num_users) / 10
 
@@ -201,8 +201,8 @@ class ABREnv():
             = encode_other_sat_info(self.sat_decision_log, self.num_agents, cur_sat_id, next_sat_id, agent, other_sat_users, other_sat_bw_logs)
 
         state[8, :A_SAT] = np.array([cur_sat_user_num, next_sat_user_nums]) / 10
-        state[9, :A_SAT] = [float(connected_time[0]) / BUFFER_NORM_FACTOR,
-                            float(connected_time[1]) / BUFFER_NORM_FACTOR]
+        state[9, :A_SAT] = [float(connected_time[0]) / BUFFER_NORM_FACTOR / 10,
+                            float(connected_time[1]) / BUFFER_NORM_FACTOR / 10]
 
         state[10, :MAX_SAT - A_SAT] = np.array(other_sat_num_users) / 10
 
@@ -213,7 +213,7 @@ class ABREnv():
         state[(11 + MAX_SAT - A_SAT + PAST_SAT_LOG_LEN):(11 + MAX_SAT - A_SAT + PAST_SAT_LOG_LEN + (self.num_agents-1)
                                                          * PAST_SAT_LOG_LEN), 0:3] \
             = np.reshape(other_user_sat_decisions, (-1, 3))
-
+        print(state)
         # if len(next_sat_user_nums) < PAST_LEN:
         #     next_sat_user_nums = [0] * (PAST_LEN - len(next_sat_user_nums)) + next_sat_user_nums
 
