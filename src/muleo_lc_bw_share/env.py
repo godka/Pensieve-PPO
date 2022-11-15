@@ -82,7 +82,8 @@ class ABREnv():
 
         state[7, :PAST_LEN] = np.array(cur_sat_bw_logs[:PAST_LEN])
 
-        state[8, :A_SAT] = [cur_sat_user_num, next_sat_user_nums]
+        # state[8, :A_SAT] = [cur_sat_user_num, next_sat_user_nums]
+        state[8, -1] = cur_sat_user_num
 
         state[9, :2] = [float(connected_time[0]) / BUFFER_NORM_FACTOR, float(connected_time[1]) / BUFFER_NORM_FACTOR]
         # if len(next_sat_user_nums) < PAST_LEN:
@@ -184,7 +185,8 @@ class ABREnv():
 
         state[7, :PAST_LEN] = np.array(cur_sat_bw_logs[:PAST_LEN]) / 10
 
-        state[8, :A_SAT] = [cur_sat_user_num, next_sat_user_nums]
+        # state[8, :A_SAT] = [cur_sat_user_num, next_sat_user_nums]
+        state[8, -1] = cur_sat_user_num
         state[9, :2] = [float(connected_time[0]) / BUFFER_NORM_FACTOR, float(connected_time[1]) / BUFFER_NORM_FACTOR]
 
         # if len(next_sat_user_nums) < PAST_LEN:
