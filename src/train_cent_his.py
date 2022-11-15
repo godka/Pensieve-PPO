@@ -17,7 +17,7 @@ PAST_LEN = 8
 MAX_SAT = 8
 PAST_SAT_LOG_LEN = 3
 ACTOR_LR_RATE = 1e-5
-NUM_AGENTS = 8
+NUM_AGENTS = 16
 TRAIN_SEQ_LEN = 1000  # take as a train batch
 TRAIN_EPOCH = 500000
 MODEL_SAVE_INTERVAL = 1000
@@ -25,14 +25,14 @@ RANDOM_SEED = 42
 SUMMARY_DIR = './ppo_cent'
 MODEL_DIR = './models'
 TRAIN_TRACES = './train/'
-TEST_LOG_FOLDER = './test_results_cent'
+TEST_LOG_FOLDER = './test_results_cent_his'
 PPO_TRAINING_EPO = 5
 
 import argparse
 
 parser = argparse.ArgumentParser(description='PyTorch Synthetic Benchmark',
                                  formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-parser.add_argument('--user', type=int, default=2)
+parser.add_argument('--user', type=int, default=3)
 args = parser.parse_args()
 USERS = args.user
 # A_SAT = USERS + 1
