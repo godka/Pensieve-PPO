@@ -186,7 +186,7 @@ def main():
 
             state[agent][7, :PAST_LEN] = np.array(cur_sat_bw_logs[:PAST_LEN]) / 10
             state[agent][8:9, -1] = np.array(cur_sat_user_num) / 10
-            state[agent][9:10, -1] = np.array(next_sat_user_nums) / 10
+            state[agent][9:10, -1] = np.array(next_sat_user_num) / 10
             state[agent][10, :A_SAT] = [float(connected_time[0]) / BUFFER_NORM_FACTOR / 10, float(connected_time[1]) / BUFFER_NORM_FACTOR / 10]
 
             other_user_sat_decisions, other_sat_num_users, other_sat_bws, cur_user_sat_decisions \
