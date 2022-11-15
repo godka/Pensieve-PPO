@@ -9,7 +9,7 @@ from util.encode import encode_other_sat_info
 # S_INFO = 10 + 1 + 3 + 6 * 5 # Original + nums of sat + bw of sats + decisions of users
 S_LEN = 8  # take how many frames in the past
 A_DIM = 6
-PAST_LEN = 5
+PAST_LEN = 8
 A_SAT = 2
 PAST_SAT_LOG_LEN = 3
 MAX_SAT = 8

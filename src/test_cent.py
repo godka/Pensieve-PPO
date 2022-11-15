@@ -14,7 +14,7 @@ import ppo_cent as network
 S_LEN = 8  # take how many frames in the past
 A_DIM = 6
 PAST_SAT_LOG_LEN = 3
-PAST_LEN = 5
+PAST_LEN = 8
 A_SAT = 2
 MAX_SAT = 8
 ACTOR_LR_RATE = 1e-4
