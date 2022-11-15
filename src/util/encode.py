@@ -1,5 +1,5 @@
 MAX_SAT = 8
-PAST_LEN = 5
+PAST_LEN = 8
 PAST_SAT_LOG_LEN = 3
 
 
