@@ -30,9 +30,9 @@ RANDOM_SEED = 42
 TEST_TRACES = './test/'
 NN_MODEL = sys.argv[1]
 NUM_AGENTS = int(sys.argv[2])
-S_INFO = 17 + MAX_SAT - A_SAT + NUM_AGENTS * PAST_SAT_LOG_LEN
+S_INFO = 11 + MAX_SAT - A_SAT + NUM_AGENTS * PAST_SAT_LOG_LEN
 
-LOG_FILE = './test_results_cent' + str(NUM_AGENTS) + '/log_sim_ppo'
+LOG_FILE = './test_results_cent_his' + str(NUM_AGENTS) + '/log_sim_ppo'
 
 
 # A_SAT = NUM_AGENTS
@@ -195,7 +195,7 @@ def main():
 
             # state[agent][11:11+MAX_SAT - A_SAT, -1] = np.reshape(np.array(other_sat_num_users), (MAX_SAT - A_SAT, 1)) / 10
 
-            state[agent][11:(11 + MAX_SAT - A_SAT), :PAST_LEN] = np.array(other_sat_bws) / 10
+            state[agent][11:(11 + MAX_SAT - A_SAT), 0:PAST_LEN] = np.array(other_sat_bws) / 10
 
             state[agent][(11 + MAX_SAT - A_SAT):(11 + MAX_SAT - A_SAT + PAST_SAT_LOG_LEN),
             0:3] = np.reshape(cur_user_sat_decisions, (-1, 3))

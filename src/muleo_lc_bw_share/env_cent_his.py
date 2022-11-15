@@ -36,7 +36,7 @@ class ABREnv():
     def __init__(self, random_seed=RANDOM_SEED, num_agents=NUM_AGENTS):
         self.num_agents = num_agents
         global S_INFO
-        S_INFO = 17 + MAX_SAT - A_SAT + self.num_agents * PAST_SAT_LOG_LEN
+        S_INFO = 11 + MAX_SAT - A_SAT + self.num_agents * PAST_SAT_LOG_LEN
         # SAT_DIM = num_agents
         # A_SAT = num_agents
         # SAT_DIM = num_agents + 1
@@ -94,13 +94,13 @@ class ABREnv():
         state[10, :A_SAT] = [float(connected_time[0]) / BUFFER_NORM_FACTOR / 10,
                                    float(connected_time[1]) / BUFFER_NORM_FACTOR / 10]
 
-        state[11:11 + MAX_SAT - A_SAT, -1] = np.reshape(np.array(other_sat_num_users), (MAX_SAT - A_SAT, 1)) / 10
+        # state[11:11 + MAX_SAT - A_SAT, -1] = np.reshape(np.array(other_sat_num_users), (MAX_SAT - A_SAT, 1)) / 10
 
-        state[17:(17 + MAX_SAT - A_SAT), :PAST_LEN] = np.array(other_sat_bws) / 10
+        state[11:(11 + MAX_SAT - A_SAT), 0:PAST_LEN] = np.array(other_sat_bws) / 10
 
-        state[(17 + MAX_SAT - A_SAT):(17 + MAX_SAT - A_SAT + PAST_SAT_LOG_LEN),
+        state[(11 + MAX_SAT - A_SAT):(11 + MAX_SAT - A_SAT + PAST_SAT_LOG_LEN),
         0:3] = np.reshape(cur_user_sat_decisions, (-1, 3))
-        state[(17 + MAX_SAT - A_SAT + PAST_SAT_LOG_LEN):(17 + MAX_SAT - A_SAT + PAST_SAT_LOG_LEN +
+        state[(11 + MAX_SAT - A_SAT + PAST_SAT_LOG_LEN):(11 + MAX_SAT - A_SAT + PAST_SAT_LOG_LEN +
                                                          (self.num_agents-1) * PAST_SAT_LOG_LEN),
         0:3] = np.reshape(other_user_sat_decisions, (-1, 3))
 
@@ -204,13 +204,13 @@ class ABREnv():
         state[10, :A_SAT] = [float(connected_time[0]) / BUFFER_NORM_FACTOR / 10,
                                    float(connected_time[1]) / BUFFER_NORM_FACTOR / 10]
 
-        state[11:11 + MAX_SAT - A_SAT, -1] = np.reshape(np.array(other_sat_num_users), (MAX_SAT - A_SAT, 1)) / 10
+        # state[11:11 + MAX_SAT - A_SAT, -1] = np.reshape(np.array(other_sat_num_users), (MAX_SAT - A_SAT, 1)) / 10
 
-        state[17:(17 + MAX_SAT - A_SAT), :PAST_LEN] = np.array(other_sat_bws) / 10
+        state[11:(11 + MAX_SAT - A_SAT), 0:PAST_LEN] = np.array(other_sat_bws) / 10
 
-        state[(17 + MAX_SAT - A_SAT):(17 + MAX_SAT - A_SAT + PAST_SAT_LOG_LEN),
+        state[(11 + MAX_SAT - A_SAT):(11 + MAX_SAT - A_SAT + PAST_SAT_LOG_LEN),
         0:3] = np.reshape(cur_user_sat_decisions, (-1, 3))
-        state[(17 + MAX_SAT - A_SAT + PAST_SAT_LOG_LEN):(17 + MAX_SAT - A_SAT + PAST_SAT_LOG_LEN +
+        state[(11 + MAX_SAT - A_SAT + PAST_SAT_LOG_LEN):(11 + MAX_SAT - A_SAT + PAST_SAT_LOG_LEN +
                                                          (self.num_agents-1) * PAST_SAT_LOG_LEN),
         0:3] = np.reshape(other_user_sat_decisions, (-1, 3))
 

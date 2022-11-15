@@ -13,7 +13,7 @@ os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 # S_DIM = [10 + 1 + 3 + 6 * 5, 8]
 A_DIM = 6
 A_SAT = 2
-PAST_LEN = 5
+PAST_LEN = 8
 MAX_SAT = 8
 PAST_SAT_LOG_LEN = 3
 ACTOR_LR_RATE = 1e-5
@@ -36,7 +36,7 @@ parser.add_argument('--user', type=int, default=2)
 args = parser.parse_args()
 USERS = args.user
 # A_SAT = USERS + 1
-S_DIM = [17 + MAX_SAT - A_SAT + USERS * PAST_SAT_LOG_LEN, 8]
+S_DIM = [11 + MAX_SAT - A_SAT + USERS * PAST_SAT_LOG_LEN, 8]
 
 TEST_LOG_FOLDER += str(USERS) + '/'
 SUMMARY_DIR += str(USERS)
