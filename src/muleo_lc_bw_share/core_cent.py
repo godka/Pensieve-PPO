@@ -103,6 +103,8 @@ class Environment:
         sat_id = self.next_sat_id[agent]
 
         if ho == 1:
+            print(sat_id)
+            print(self.cur_sat_id[agent])
             assert sat_id != self.cur_sat_id[agent]
 
             self.connection[sat_id][self.mahimahi_ptr[agent]] = agent
