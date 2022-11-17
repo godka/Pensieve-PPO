@@ -99,8 +99,6 @@ class Environment:
         sat_id = self.next_sat_id[agent]
 
         if ho == 1:
-            print(sat_id)
-            print(self.cur_sat_id[agent])
             assert sat_id != self.cur_sat_id[agent]
             self.update_sat_info(sat_id, self.mahimahi_ptr[agent], 1)
             self.update_sat_info(self.cur_sat_id[agent], self.mahimahi_ptr[agent], -1)
