@@ -44,6 +44,8 @@ def main():
 
     assert len(VIDEO_BIT_RATE) == A_DIM
 
+    is_handover = False
+
     all_cooked_time, all_cooked_bw, all_file_names = load_trace.load_trace(TEST_TRACES)
 
     net_env = env.Environment(all_cooked_time=all_cooked_time,
