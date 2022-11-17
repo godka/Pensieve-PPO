@@ -1048,12 +1048,10 @@ class Environment:
         sat_id = self.next_sat_id[agent]
 
         if ho == 1:
+            assert sat_id != self.cur_sat_id[agent]
             self.connection[sat_id][self.mahimahi_ptr[agent]] = agent
-            if sat_id == self.cur_sat_id[agent]:
-                return
-            else:
-                self.update_sat_info(sat_id, self.mahimahi_ptr[agent], 1)
-                self.update_sat_info(self.cur_sat_id[agent], self.mahimahi_ptr[agent], -1)
-                self.cur_sat_id[agent] = sat_id
-                self.delay[agent] = HANDOVER_DELAY
-                return sat_id
+            self.update_sat_info(sat_id, self.mahimahi_ptr[agent], 1)
+            self.update_sat_info(self.cur_sat_id[agent], self.mahimahi_ptr[agent], -1)
+            self.cur_sat_id[agent] = sat_id
+            self.delay[agent] = HANDOVER_DELAY
+            return sat_id
