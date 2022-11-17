@@ -337,7 +337,6 @@ class Environment:
         list1.append(bw)
         cur_sat_bw_list = bw_list
 
-        best_sat_bw = -1
         for sat_id, sat_bw in self.cooked_bw.items():
             bw_list = []
             if sat_bw[mahimahi_ptr-1] == 0 or sat_id == self.cur_sat_id[agent]:
@@ -358,8 +357,10 @@ class Environment:
                 best_bw_list = bw_list
 
         if best_sat_id is None:
-            print("NEVEEEEEEEEEEEEEEEEEEEEER")
-
+            for sat_id, sat_bw in self.cooked_bw.items():
+                print(sat_id)
+                print(sat_bw[mahimahi_ptr-1])
+            print("Never happen")
             best_sat_id = self.cur_sat_id[agent]
 
         if best_sat_id in other_sat_users:
