@@ -54,9 +54,6 @@ class Environment:
         self.cooked_bw = self.all_cooked_bw[self.trace_idx]
         self.cooked_remain = self.all_cooked_remain[self.trace_idx]
 
-        self.connection = {}
-        for sat_id, sat_bw in self.cooked_bw.items():
-            self.connection[sat_id] = [-1 for _ in range(len(sat_bw))]
 
         self.mahimahi_start_ptr = 1
         # randomize the start point of the trace
@@ -71,7 +68,6 @@ class Environment:
         for agent in range(self.num_agents):
             cur_sat_id = self.get_best_sat_id(agent)
             self.cur_sat_id.append(cur_sat_id)
-            self.connection[cur_sat_id][self.mahimahi_ptr[agent] - 1] = agent
             self.update_sat_info(cur_sat_id, self.mahimahi_ptr[agent], 1)
 
         self.video_chunk_counter = [0 for _ in range(self.num_agents)]
@@ -106,8 +102,6 @@ class Environment:
             print(sat_id)
             print(self.cur_sat_id[agent])
             assert sat_id != self.cur_sat_id[agent]
-
-            self.connection[sat_id][self.mahimahi_ptr[agent]] = agent
             self.update_sat_info(sat_id, self.mahimahi_ptr[agent], 1)
             self.update_sat_info(self.cur_sat_id[agent], self.mahimahi_ptr[agent], -1)
             self.cur_sat_id[agent] = sat_id
@@ -115,8 +109,7 @@ class Environment:
             return sat_id
     
     def step_ahead(self, agent):
-        self.connection[self.cur_sat_id[agent]][self.mahimahi_ptr[agent]] = agent
-        self.mahimahi_ptr[agent] += 1
+          self.mahimahi_ptr[agent] += 1
 
     def get_video_chunk(self, quality, agent):
         
@@ -144,8 +137,6 @@ class Environment:
                 cur_sat_id = self.get_best_sat_id(agent, self.mahimahi_ptr[agent])
                 self.update_sat_info(cur_sat_id, self.mahimahi_ptr[agent], 1)
                 self.update_sat_info(self.cur_sat_id[agent], self.mahimahi_ptr[agent], -1)
-
-                self.connection[cur_sat_id][self.mahimahi_ptr[agent]] = agent
     
                 self.cur_sat_id[agent] = cur_sat_id
                 delay += HANDOVER_DELAY
@@ -289,16 +280,12 @@ class Environment:
 
         self.mahimahi_ptr = [1 for _ in range(self.num_agents)]
         self.last_mahimahi_time = [self.cooked_time[self.mahimahi_start_ptr - 1] for _ in range(self.num_agents)]
-        
-        self.connection = {}
-        for sat_id, sat_bw in self.cooked_bw.items():
-            self.connection[sat_id] = [-1 for _ in range(len(sat_bw))]
+
 
         self.cur_sat_id = []
         for agent in range(self.num_agents):
             cur_sat_id = self.get_best_sat_id(agent)
             self.cur_sat_id.append(cur_sat_id)
-            self.connection[cur_sat_id][self.mahimahi_ptr[agent] - 1] = agent
             self.update_sat_info(cur_sat_id, self.mahimahi_ptr[agent], 1)
 
     def check_end(self):
@@ -367,10 +354,9 @@ class Environment:
             other_sat_bw_logs[sat_id] = bw_list
 
             if best_sat_bw < bw:
-                if self.connection[sat_id][mahimahi_ptr + 1] == -1 or self.connection[sat_id][mahimahi_ptr + 1] == agent:
-                    best_sat_id = sat_id
-                    best_sat_bw = bw
-                    best_bw_list = bw_list
+                best_sat_id = sat_id
+                best_sat_bw = bw
+                best_bw_list = bw_list
 
         if best_sat_id is None:
             print("NEVEEEEEEEEEEEEEEEEEEEEER")
@@ -425,9 +411,8 @@ class Environment:
                         bw_list.append(sat_bw[mahimahi_ptr-i] / (self.get_num_of_user_sat(sat_id) + 1))
             bw = sum(bw_list) / len(bw_list)
             if best_sat_bw < bw:
-                if self.connection[sat_id][mahimahi_ptr] == -1 or self.connection[sat_id][mahimahi_ptr] == agent:
-                    best_sat_id = sat_id
-                    best_sat_bw = bw
+                best_sat_id = sat_id
+                best_sat_bw = bw
         
         if best_sat_id is None:
             best_sat_id = self.cur_sat_id[agent]
