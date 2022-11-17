@@ -358,7 +358,8 @@ class Environment:
 
         if best_sat_id is None:
             print("NEVEEEEEEEEEEEEEEEEEEEEER")
-            print(other_sat_bw_logs)
+            print(self.cooked_bw)
+            print(mahimahi_ptr)
             best_sat_id = self.cur_sat_id[agent]
 
         if best_sat_id in other_sat_users:
