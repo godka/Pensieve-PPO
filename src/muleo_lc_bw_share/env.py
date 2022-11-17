@@ -37,6 +37,9 @@ class ABREnv():
         # A_SAT = num_agents
         # SAT_DIM = num_agents + 1
 
+        self.is_handover = False
+
+
         np.random.seed(random_seed)
         all_cooked_time, all_cooked_bw, _ = load_trace.load_trace()
         self.net_env = abrenv.Environment(all_cooked_time=all_cooked_time,
@@ -141,6 +144,12 @@ class ABREnv():
         return
 
     def set_sat(self, agent, sat):
+        if sat == 0:
+            self.is_handover = False
+        elif sat == 1:
+            self.is_handover = True
+        else:
+            print("Never!")
         self.net_env.set_satellite(agent, sat)
         self.sat_decision_log[agent].append(sat)
 
