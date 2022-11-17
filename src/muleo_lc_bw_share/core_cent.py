@@ -100,7 +100,7 @@ class Environment:
 
         if ho == 1:
             if sat_id == self.cur_sat_id[agent]:
-                # Only one visible satellite
+                # print("Can't do handover. Only one visible satellite")
                 return
 
             self.update_sat_info(sat_id, self.mahimahi_ptr[agent], 1)
@@ -360,7 +360,7 @@ class Environment:
                 best_bw_list = bw_list
 
         if best_sat_id is None:
-            print("Only one satellite is visible")
+            # print("Only one satellite is visible")
             best_sat_id = self.cur_sat_id[agent]
 
         if best_sat_id in other_sat_users:
