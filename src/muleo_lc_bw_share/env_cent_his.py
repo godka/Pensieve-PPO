@@ -93,8 +93,8 @@ class ABREnv():
             = encode_other_sat_info(self.sat_decision_log, self.num_agents, cur_sat_id, next_sat_id, agent, other_sat_users, other_sat_bw_logs)
 
         if self.is_handover:
-            state[agent][8, 0:S_LEN] = np.zeros((1, S_LEN))
-            state[agent][9, 0:S_LEN] = np.zeros((1, S_LEN))
+            state[agent][8, 0:S_LEN] = np.zeros((S_LEN))
+            state[agent][9, 0:S_LEN] = np.zeros((S_LEN))
         state[8:9, -1] = np.array(cur_sat_user_num) / 10
         state[9:10, -1] = np.array(next_sat_user_nums) / 10
 
@@ -214,8 +214,8 @@ class ABREnv():
             = encode_other_sat_info(self.sat_decision_log, self.num_agents, cur_sat_id, next_sat_id, agent, other_sat_users, other_sat_bw_logs)
 
         if self.is_handover:
-            state[agent][8, 0:S_LEN] = np.zeros((1,S_LEN))
-            state[agent][9, 0:S_LEN] = np.zeros((1,S_LEN))
+            state[agent][8, 0:S_LEN] = np.zeros((S_LEN))
+            state[agent][9, 0:S_LEN] = np.zeros((S_LEN))
 
         state[8:9, -1] = np.array(cur_sat_user_num) / 10
         state[9:10, -1] = np.array(next_sat_user_nums) / 10
