@@ -99,7 +99,10 @@ class Environment:
         sat_id = self.next_sat_id[agent]
 
         if ho == 1:
-            assert sat_id != self.cur_sat_id[agent]
+            if sat_id == self.cur_sat_id[agent]:
+                # Only one visible satellite
+                return
+
             self.update_sat_info(sat_id, self.mahimahi_ptr[agent], 1)
             self.update_sat_info(self.cur_sat_id[agent], self.mahimahi_ptr[agent], -1)
             self.cur_sat_id[agent] = sat_id
@@ -357,10 +360,7 @@ class Environment:
                 best_bw_list = bw_list
 
         if best_sat_id is None:
-            for sat_id, sat_bw in self.cooked_bw.items():
-                print(sat_id)
-                print(sat_bw[mahimahi_ptr-1])
-            print("Never happen")
+            print("Only one satellite is visible")
             best_sat_id = self.cur_sat_id[agent]
 
         if best_sat_id in other_sat_users:
@@ -390,7 +390,6 @@ class Environment:
         # list2 = [ list2[i] for i in range(1)]
 
         return cur_sat_bw_list, list1, next_sat_id, list3, up_time_list, other_sat_users, other_sat_bw_logs
-
 
     def get_best_sat_id(self, agent, mahimahi_ptr=None):
         best_sat_id = None
