@@ -60,10 +60,6 @@ class Environment:
         # self.last_quality = DEFAULT_QUALITY
         self.last_quality = [DEFAULT_QUALITY for _ in range(self.num_agents)]
 
-        self.connection = {}
-        for sat_id, sat_bw in self.cooked_bw.items():
-            self.connection[sat_id] = [-1 for _ in range(len(sat_bw))]
-
         self.mahimahi_start_ptr = 1
         # randomize the start point of the trace
         # note: trace file starts with time 0
@@ -84,7 +80,6 @@ class Environment:
         for agent in range(self.num_agents):
             cur_sat_id = self.get_best_sat_id(agent)
             self.cur_sat_id.append(cur_sat_id)
-            self.connection[cur_sat_id][self.mahimahi_ptr[agent] - 1] = agent
             self.update_sat_info(cur_sat_id, self.mahimahi_ptr[agent], 1)
 
         self.video_chunk_counter = [0 for _ in range(self.num_agents)]
@@ -143,7 +138,7 @@ class Environment:
                 sat_id = self.get_best_sat_id(agent, self.mahimahi_ptr[agent])
                 self.update_sat_info(sat_id, self.mahimahi_ptr[agent], 1)
                 self.update_sat_info(self.cur_sat_id[agent], self.mahimahi_ptr[agent], -1)
-                self.connection[sat_id][self.mahimahi_ptr[agent]] = agent
+
 
                 self.switch_sat(agent, sat_id)
                 delay += HANDOVER_DELAY
@@ -329,16 +324,11 @@ class Environment:
         self.mahimahi_ptr = [1 for _ in range(self.num_agents)]
         self.last_mahimahi_time = [self.cooked_time[self.mahimahi_start_ptr - 1] for _ in range(self.num_agents)]
 
-        self.connection = {}
-        for sat_id, sat_bw in self.cooked_bw.items():
-            self.connection[sat_id] = [-1 for _ in range(len(sat_bw))]
-
         self.cur_sat_id = []
         for agent in range(self.num_agents):
             cur_sat_id = self.get_best_sat_id(agent)
             # self.connection[cur_sat_id] = agent
             self.cur_sat_id.append(cur_sat_id)
-            self.connection[cur_sat_id][self.mahimahi_ptr[agent] - 1] = agent
             self.update_sat_info(cur_sat_id, self.mahimahi_ptr[agent], 1)
 
     def check_end(self):
@@ -409,10 +399,9 @@ class Environment:
             other_sat_bw_logs[sat_id] = bw_list
 
             if best_sat_bw < bw:
-                if self.connection[sat_id][mahimahi_ptr + 1] == -1 or self.connection[sat_id][mahimahi_ptr + 1] == agent:
-                    best_sat_id = sat_id
-                    best_sat_bw = bw
-                    best_bw_list = bw_list
+                best_sat_id = sat_id
+                best_sat_bw = bw
+                best_bw_list = bw_list
 
         if best_sat_id is None:
             best_sat_id = self.cur_sat_id[agent]
@@ -1064,9 +1053,9 @@ class Environment:
             sat_id = self.next_sat_id[agent]
 
         if sat == 1:
-            self.connection[sat_id][self.mahimahi_ptr[agent]] = agent
-
-            assert sat_id != self.cur_sat_id[agent]
+            if sat_id == self.cur_sat_id[agent]:
+                # print("Can't do handover. Only one visible satellite")
+                return
             self.update_sat_info(sat_id, self.mahimahi_ptr[agent], 1)
             self.update_sat_info(self.cur_sat_id[agent], self.mahimahi_ptr[agent], -1)
             self.cur_sat_id[agent] = sat_id

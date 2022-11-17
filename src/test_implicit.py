@@ -7,7 +7,7 @@ from muleo_lc_bw_share import load_trace
 from muleo_lc_bw_share import fixed_env as env
 import ppo_implicit as network
 
-S_INFO = 6 + 1 + 3  # bit_rate, buffer_size, next_chunk_size, bandwidth_measurement(throughput and time), chunk_til_video_end
+S_INFO = 6 + 1 + 4  # bit_rate, buffer_size, next_chunk_size, bandwidth_measurement(throughput and time), chunk_til_video_end
 S_LEN = 8  # take how many frames in the past
 A_DIM = 6
 PAST_LEN = 8
@@ -36,6 +36,8 @@ def main():
     np.random.seed(RANDOM_SEED)
 
     assert len(VIDEO_BIT_RATE) == A_DIM
+
+    is_handover = False
 
     all_cooked_time, all_cooked_bw, all_file_names = load_trace.load_trace(TEST_TRACES)
 
@@ -178,8 +180,12 @@ def main():
 
             state[agent][7, :PAST_LEN] = np.array(cur_sat_bw_logs[:PAST_LEN]) / 10
 
-            state[agent][8, :A_SAT] = [cur_sat_user_num / 10, next_sat_user_num / 10]
-            state[agent][9, :2] = [float(connected_time[0]) / BUFFER_NORM_FACTOR / 10, float(connected_time[1]) / BUFFER_NORM_FACTOR / 10]
+            if is_handover:
+                state[agent][8:9, 0:S_LEN] = np.zeros((1, S_LEN))
+                state[agent][9:10, 0:S_LEN] = np.zeros((1, S_LEN))
+            state[agent][8:9, -1] = np.array(cur_sat_user_num) / 10
+            state[agent][9:10, -1] = np.array(next_sat_user_num) / 10
+            state[agent][10, :2] = [float(connected_time[0]) / BUFFER_NORM_FACTOR / 10, float(connected_time[1]) / BUFFER_NORM_FACTOR / 10]
 
             # if len(next_sat_user_num) < PAST_LEN:
             #     next_sat_user_num = [0] * (PAST_LEN - len(next_sat_user_num)) + next_sat_user_num
@@ -194,6 +200,12 @@ def main():
             bit_rate[agent] = action % A_DIM
 
             changed_sat_id = net_env.set_satellite(agent, sat[agent])
+            if sat[agent] == 1:
+                is_handover = True
+                print("Handover!!")
+            else:
+                is_handover = False
+                print("X Handover")
             s_batch[agent].append(state[agent])
         
             entropy_ = -np.dot(action_prob, np.log(action_prob))
