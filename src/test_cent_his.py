@@ -227,6 +227,7 @@ def main():
                 print("Handover!!")
             else:
                 is_handover = False
+                print("X Handover")
             s_batch[agent].append(state[agent])
 
             entropy_ = -np.dot(action_prob, np.log(action_prob))
