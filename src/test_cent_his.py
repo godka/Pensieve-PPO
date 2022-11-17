@@ -224,6 +224,7 @@ def main():
             changed_sat_id = net_env.set_satellite(agent, sat[agent])
             if sat[agent] == 1:
                 is_handover = True
+                print("Handover!!")
             else:
                 is_handover = False
             s_batch[agent].append(state[agent])
