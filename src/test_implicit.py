@@ -122,7 +122,7 @@ def main():
             delay, sleep_time, buffer_size, rebuf, \
             video_chunk_size, next_video_chunk_sizes, \
             end_of_video, video_chunk_remain, _, _, _, _, \
-            _, next_sat_bw_logs, cur_sat_user_num, next_sat_user_num, cur_sat_bw_logs, connected_time = \
+            _, next_sat_bw_logs, cur_sat_user_num, next_sat_user_num, cur_sat_bw_logs, connected_time, cur_sat_id = \
                 net_env.get_video_chunk(bit_rate[agent], agent, model_type=None)
 
             time_stamp[agent] += delay  # in ms
@@ -143,6 +143,7 @@ def main():
             log_file.write(str(time_stamp[agent] / M_IN_K) + '\t' +
                         str(agent) + '\t' +
                         str(sat[agent]) + '\t' +
+                        str(cur_sat_id) + '\t' +
                         str(VIDEO_BIT_RATE[bit_rate[agent]]) + '\t' +
                         str(buffer_size) + '\t' +
                         str(rebuf) + '\t' +
@@ -193,10 +194,8 @@ def main():
             sat[agent] = action // A_DIM
             bit_rate[agent] = action % A_DIM
 
-            net_env.set_satellite(agent, sat[agent])
-            
+            changed_sat_id = net_env.set_satellite(agent, sat[agent])
             s_batch[agent].append(state[agent])
-
         
             entropy_ = -np.dot(action_prob, np.log(action_prob))
             entropy_record.append(entropy_)

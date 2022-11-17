@@ -92,26 +92,26 @@ class Environment:
                 for line in f:
                     self.video_size[bitrate].append(int(line.split()[0]))
 
-    def set_satellite(self, agent, sat, id_list = None):
+    def set_satellite(self, agent, ho=0):
         """
         if id_list is None:
             id_list = self.next_sat_id[agent]
-        
+
         # Do not do any satellite switch
         sat_id = id_list[sat]
         """
-        if id_list is None:
-            sat_id = self.next_sat_id[agent]
+        sat_id = self.next_sat_id[agent]
 
-        self.connection[sat_id][self.mahimahi_ptr[agent]] = agent
-
-        if sat_id == self.cur_sat_id[agent]:
-            return
-        else:
-            self.update_sat_info(sat_id, self.mahimahi_ptr[agent], 1)
-            self.update_sat_info(self.cur_sat_id[agent], self.mahimahi_ptr[agent], -1)
-            self.cur_sat_id[agent] = sat_id
-            self.delay[agent] = HANDOVER_DELAY
+        if ho == 1:
+            self.connection[sat_id][self.mahimahi_ptr[agent]] = agent
+            if sat_id == self.cur_sat_id[agent]:
+                return
+            else:
+                self.update_sat_info(sat_id, self.mahimahi_ptr[agent], 1)
+                self.update_sat_info(self.cur_sat_id[agent], self.mahimahi_ptr[agent], -1)
+                self.cur_sat_id[agent] = sat_id
+                self.delay[agent] = HANDOVER_DELAY
+                return sat_id
     
     def step_ahead(self, agent):
         self.connection[self.cur_sat_id[agent]][self.mahimahi_ptr[agent]] = agent

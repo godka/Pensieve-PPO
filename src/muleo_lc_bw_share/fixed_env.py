@@ -247,7 +247,6 @@ class Environment:
         self.video_chunk_counter[agent] += 1
         video_chunk_remain = TOTAL_VIDEO_CHUNCK - self.video_chunk_counter[agent]
 
-
         cur_sat_bw_logs, next_sat_bandwidth, next_sat_id, next_sat_bw_logs, connected_time = self.get_next_sat_info(agent, self.mahimahi_ptr[agent])
         if self.video_chunk_counter[agent] >= TOTAL_VIDEO_CHUNCK or end_of_network:
 
@@ -299,7 +298,8 @@ class Environment:
             self.end_of_video[agent], \
             video_chunk_remain, \
             bit_rate, is_handover, new_sat_id, self.get_num_of_user_sat(sat_id="all"), \
-            next_sat_bandwidth, next_sat_bw_logs, cur_sat_user_num, next_sat_user_num, cur_sat_bw_logs, connected_time
+            next_sat_bandwidth, next_sat_bw_logs, cur_sat_user_num, next_sat_user_num, cur_sat_bw_logs, connected_time, \
+            self.cur_sat_id[agent]
             
     def reset(self):
         
@@ -1037,7 +1037,7 @@ class Environment:
 
         return 0
 
-    def set_satellite(self, agent, sat, id_list=None):
+    def set_satellite(self, agent, ho=0):
         """
         if id_list is None:
             id_list = self.next_sat_id[agent]
@@ -1045,15 +1045,15 @@ class Environment:
         # Do not do any satellite switch
         sat_id = id_list[sat]
         """
-        if id_list is None:
-            sat_id = self.next_sat_id[agent]
+        sat_id = self.next_sat_id[agent]
 
-        self.connection[sat_id][self.mahimahi_ptr[agent]] = agent
-
-        if sat_id == self.cur_sat_id[agent]:
-            return
-        else:
-            self.update_sat_info(sat_id, self.mahimahi_ptr[agent], 1)
-            self.update_sat_info(self.cur_sat_id[agent], self.mahimahi_ptr[agent], -1)
-            self.cur_sat_id[agent] = sat_id
-            self.delay[agent] = HANDOVER_DELAY
+        if ho == 1:
+            self.connection[sat_id][self.mahimahi_ptr[agent]] = agent
+            if sat_id == self.cur_sat_id[agent]:
+                return
+            else:
+                self.update_sat_info(sat_id, self.mahimahi_ptr[agent], 1)
+                self.update_sat_info(self.cur_sat_id[agent], self.mahimahi_ptr[agent], -1)
+                self.cur_sat_id[agent] = sat_id
+                self.delay[agent] = HANDOVER_DELAY
+                return sat_id

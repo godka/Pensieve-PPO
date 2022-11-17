@@ -152,6 +152,7 @@ def main():
             log_file.write(str(time_stamp[agent] / M_IN_K) + '\t' +
                         str(agent) + '\t' +
                         str(sat[agent]) + '\t' +
+                        str(cur_sat_id) + '\t' +
                         str(VIDEO_BIT_RATE[bit_rate[agent]]) + '\t' +
                         str(buffer_size) + '\t' +
                         str(rebuf) + '\t' +
