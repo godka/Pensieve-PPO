@@ -41,6 +41,8 @@ class ABREnv():
         # A_SAT = num_agents
         # SAT_DIM = num_agents + 1
 
+        self.is_handover = False
+
         np.random.seed(random_seed)
         all_cooked_time, all_cooked_bw, _ = load_trace.load_trace()
         self.net_env = abrenv.Environment(all_cooked_time=all_cooked_time,
@@ -90,6 +92,9 @@ class ABREnv():
         other_user_sat_decisions, other_sat_num_users, other_sat_bws, cur_user_sat_decisions \
             = encode_other_sat_info(self.sat_decision_log, self.num_agents, cur_sat_id, next_sat_id, agent, other_sat_users, other_sat_bw_logs)
 
+        if self.is_handover:
+            state[agent][8:9, :] = np.zeros(S_LEN)
+            state[agent][9:10, :] = np.zeros(S_LEN)
         state[8:9, -1] = np.array(cur_sat_user_num) / 10
         state[9:10, -1] = np.array(next_sat_user_nums) / 10
 
@@ -153,6 +158,12 @@ class ABREnv():
         return
 
     def set_sat(self, agent, sat):
+        if sat == 0:
+            self.is_handover = False
+        elif sat == 1:
+            self.is_handover = True
+        else:
+            print("Never!")
         changed_sat_id = self.net_env.set_satellite(agent, sat)
 
     def step(self, action, agent):
@@ -201,6 +212,10 @@ class ABREnv():
 
         other_user_sat_decisions, other_sat_num_users, other_sat_bws, cur_user_sat_decisions \
             = encode_other_sat_info(self.sat_decision_log, self.num_agents, cur_sat_id, next_sat_id, agent, other_sat_users, other_sat_bw_logs)
+
+        if self.is_handover:
+            state[agent][8:9, :] = np.zeros(S_LEN)
+            state[agent][9:10, :] = np.zeros(S_LEN)
 
         state[8:9, -1] = np.array(cur_sat_user_num) / 10
         state[9:10, -1] = np.array(next_sat_user_nums) / 10
