@@ -8,7 +8,7 @@ from . import load_trace
 S_INFO = 6 + 1 + 3
 S_LEN = 8  # take how many frames in the past
 A_DIM = 6
-PAST_LEN = 5
+PAST_LEN = 8
 A_SAT = 2
 MAX_SAT = 5
 TRAIN_SEQ_LEN = 100  # take as a train batch
@@ -82,10 +82,9 @@ class ABREnv():
 
         state[7, :PAST_LEN] = np.array(cur_sat_bw_logs[:PAST_LEN])
 
-        # state[8, :A_SAT] = [cur_sat_user_num, next_sat_user_nums]
-        state[8, -1] = cur_sat_user_num
+        state[8, :A_SAT] = [cur_sat_user_num / 10, next_sat_user_nums / 10]
 
-        state[9, :2] = [float(connected_time[0]) / BUFFER_NORM_FACTOR, float(connected_time[1]) / BUFFER_NORM_FACTOR]
+        state[9, :2] = [float(connected_time[0]) / BUFFER_NORM_FACTOR / 10, float(connected_time[1]) / BUFFER_NORM_FACTOR / 10]
         # if len(next_sat_user_nums) < PAST_LEN:
         #     next_sat_user_nums = [0] * (PAST_LEN - len(next_sat_user_nums)) + next_sat_user_nums
 
@@ -185,9 +184,8 @@ class ABREnv():
 
         state[7, :PAST_LEN] = np.array(cur_sat_bw_logs[:PAST_LEN]) / 10
 
-        # state[8, :A_SAT] = [cur_sat_user_num, next_sat_user_nums]
-        state[8, -1] = cur_sat_user_num
-        state[9, :2] = [float(connected_time[0]) / BUFFER_NORM_FACTOR, float(connected_time[1]) / BUFFER_NORM_FACTOR]
+        state[8, :A_SAT] = [cur_sat_user_num / 10, next_sat_user_nums / 10]
+        state[9, :2] = [float(connected_time[0]) / BUFFER_NORM_FACTOR / 10, float(connected_time[1]) / BUFFER_NORM_FACTOR / 10]
 
         # if len(next_sat_user_nums) < PAST_LEN:
         #     next_sat_user_nums = [0] * (PAST_LEN - len(next_sat_user_nums)) + next_sat_user_nums

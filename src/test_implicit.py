@@ -10,7 +10,7 @@ import ppo_implicit as network
 S_INFO = 6 + 1 + 3  # bit_rate, buffer_size, next_chunk_size, bandwidth_measurement(throughput and time), chunk_til_video_end
 S_LEN = 8  # take how many frames in the past
 A_DIM = 6
-PAST_LEN = 5
+PAST_LEN = 8
 A_SAT = 2
 ACTOR_LR_RATE = 1e-4
 # CRITIC_LR_RATE = 0.001
@@ -178,9 +178,8 @@ def main():
 
             state[agent][7, :PAST_LEN] = np.array(cur_sat_bw_logs[:PAST_LEN]) / 10
 
-            # state[agent][8, :A_SAT] = [cur_sat_user_num, next_sat_user_num]
-            state[agent][8, -1] = cur_sat_user_num
-            state[agent][9, :2] = [float(connected_time[0]) / BUFFER_NORM_FACTOR, float(connected_time[1]) / BUFFER_NORM_FACTOR]
+            state[agent][8, :A_SAT] = [cur_sat_user_num / 10, next_sat_user_num / 10]
+            state[agent][9, :2] = [float(connected_time[0]) / BUFFER_NORM_FACTOR / 10, float(connected_time[1]) / BUFFER_NORM_FACTOR / 10]
 
             # if len(next_sat_user_num) < PAST_LEN:
             #     next_sat_user_num = [0] * (PAST_LEN - len(next_sat_user_num)) + next_sat_user_num
