@@ -1112,21 +1112,20 @@ class Environment:
             delay += duration
 
             last_mahimahi_time = self.cooked_time[mahimahi_ptr]
-            # self.mahimahi_ptr[agent] += 1
+            mahimahi_ptr += 1
             # self.step_ahead(agent)
-
             if mahimahi_ptr >= len(self.cooked_bw[cur_sat_id]):
                 # loop back in the beginning
                 # note: trace file starts with time 0
                 mahimahi_ptr = 1
                 last_mahimahi_time = 0
+                end_of_video = True
 
         delay *= MILLISECONDS_IN_SECOND
         delay += LINK_RTT
 
         # rebuffer time
         rebuf = np.maximum(delay - self.buffer_size[agent], 0.0)
-
 
         M_IN_K = 1000.0
         REBUF_PENALTY = 4.3  # 1 sec rebuffering -> 3 Mbps
