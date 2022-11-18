@@ -342,7 +342,7 @@ class Environment:
 
         for sat_id, sat_bw in self.cooked_bw.items():
             bw_list = []
-            if sat_bw[mahimahi_ptr-1] == 0 or sat_id == self.cur_sat_id[agent]:
+            if sat_id == self.cur_sat_id[agent]:
                 continue
             for i in range(5, 0, -1):
                 if mahimahi_ptr - i >= 0 and sat_bw[mahimahi_ptr - i] != 0:
@@ -350,6 +350,8 @@ class Environment:
                         bw_list.append(sat_bw[mahimahi_ptr - i])
                     else:
                         bw_list.append(sat_bw[mahimahi_ptr - i] / (self.get_num_of_user_sat(sat_id) + 1))
+            if len(bw_list) == 0:
+                continue
             bw = sum(bw_list) / len(bw_list)
             other_sat_users[sat_id] = self.get_num_of_user_sat(sat_id)
             other_sat_bw_logs[sat_id] = bw_list
