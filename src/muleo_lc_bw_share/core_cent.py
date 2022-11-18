@@ -4,6 +4,7 @@ MILLISECONDS_IN_SECOND = 1000.0
 B_IN_MB = 1000000.0
 BITS_IN_BYTE = 8.0
 RANDOM_SEED = 42
+VIDEO_BIT_RATE = np.array([300., 750., 1200., 1850., 2850., 4300.])  # Kbps
 VIDEO_CHUNCK_LEN = 4000.0  # millisec, every time add this amount to buffer
 BITRATE_LEVELS = 6
 PAST_LEN = 8
@@ -438,100 +439,86 @@ class Environment:
 
         return 0
 
-    def get_simulated_reward(self, qoe_log, target_last_index, target_ho_index, target_cur_sat_id, target_next_sat_id):
-        combo = qoe_log["combo"]
-        # calculate total rebuffer time for this combination (start with start_buffer and subtract
-        # each download time and add 2 seconds in that order)
-        curr_rebuffer_time = 0
-        curr_buffer = qoe_log["start_buffer"]
-        bitrate_sum = 0
-        smoothness_diffs = 0
-        last_quality = qoe_log["last_quality"]
-        cur_user_num = qoe_log["cur_user_num"]
-        ho_index = qoe_log["ho_index"]
-        harmonic_bw = None
-        for position in range(0, len(combo)):
-            chunk_quality = combo[position]
-            index = qoe_log["last_index"] + position  # e.g., if last chunk is 3, then first iter is 3+0+1=4
-            download_time = 0
-            if ho_index > position:
-                if target_cur_sat_id == qoe_log["cur_sat_id"] and index >= target_last_index + target_ho_index:
-                    # if self.get_num_of_user_sat(target_cur_sat_id) - 1 == 0:
-                    if cur_user_num <= 1:
-                        harmonic_bw = qoe_log["cur_download_bw"]
-                    else:
-                        harmonic_bw = qoe_log["cur_download_bw"] * (cur_user_num / (cur_user_num - 1))
-                        # harmonic_bw = qoe_log["cur_download_bw"] * (cur_user_num / (self.get_num_of_user_sat(target_cur_sat_id) - 1))
-                elif target_next_sat_id == qoe_log["cur_sat_id"] and index >= target_last_index + target_ho_index:
-                    if cur_user_num < 1:
-                        harmonic_bw = qoe_log["cur_download_bw"]
-                    else:
-                        harmonic_bw = qoe_log["cur_download_bw"] * (cur_user_num / (cur_user_num + 1))
+    def get_simulated_reward(self, agent, quality):
+        assert quality >= 0
+        assert quality < BITRATE_LEVELS
 
-                else:
-                    harmonic_bw = qoe_log["cur_download_bw"]
-            elif ho_index == position:
-                next_user_num = qoe_log["next_user_num"]
-                if target_cur_sat_id == qoe_log["next_sat_id"] and index >= target_last_index + target_ho_index:
-                    if next_user_num <= 1:
-                        harmonic_bw = qoe_log["next_download_bw"]
-                    else:
-                        harmonic_bw = qoe_log["next_download_bw"] * (next_user_num / (next_user_num - 1))
-                elif target_next_sat_id == qoe_log["next_sat_id"] and index >= target_last_index + target_ho_index:
-                    if next_user_num < 1:
-                        harmonic_bw = qoe_log["next_download_bw"]
-                    else:
-                        harmonic_bw = qoe_log["next_download_bw"] * (next_user_num / (next_user_num + 1))
-                else:
-                    harmonic_bw = qoe_log["next_download_bw"]
+        video_chunk_size = self.video_size[quality][self.video_chunk_counter[agent]]
+        last_mahimahi_time = self.last_mahimahi_time[agent]
+        mahimahi_ptr = self.mahimahi_ptr[agent]
 
-                # harmonic_bw = qoe_log["next_download_bw"]
-                # Give them a penalty
-                download_time += HANDOVER_DELAY
+        # use the delivery opportunity in mahimahi
+        delay = self.delay[agent]  # in ms
+        # self.delay[agent] = 0
+        video_chunk_counter_sent = 0  # in bytes
+
+        while True:  # download video chunk over mahimahi
+            if self.get_num_of_user_sat(self.cur_sat_id[agent]) == 0:
+                throughput = self.cooked_bw[self.cur_sat_id[agent]][mahimahi_ptr] \
+                             * B_IN_MB / BITS_IN_BYTE
             else:
-                next_user_num = qoe_log["next_user_num"]
-                if target_cur_sat_id == qoe_log["next_sat_id"] and index >= target_last_index + target_ho_index:
-                    if next_user_num <= 1:
-                        harmonic_bw = qoe_log["next_download_bw"]
-                    else:
-                        harmonic_bw = qoe_log["next_download_bw"] * (next_user_num / (next_user_num - 1))
-                elif target_next_sat_id == qoe_log["next_sat_id"] and index >= target_last_index + target_ho_index:
-                    if next_user_num < 1:
-                        harmonic_bw = qoe_log["next_download_bw"]
-                    else:
-                        harmonic_bw = qoe_log["next_download_bw"] * (next_user_num / (next_user_num + 1))
-                else:
-                    harmonic_bw = qoe_log["next_download_bw"]
-                # harmonic_bw = qoe_log["next_download_bw"]
-            download_time += (self.video_size[chunk_quality][index] / B_IN_MB) \
-                             / harmonic_bw * BITS_IN_BYTE  # this is MB/MB/s --> seconds
+                throughput = self.cooked_bw[self.cur_sat_id[agent]][mahimahi_ptr] \
+                             * B_IN_MB / BITS_IN_BYTE / self.get_num_of_user_sat(self.cur_sat_id[agent])
 
-            if curr_buffer < download_time:
-                curr_rebuffer_time += (download_time -
-                                       curr_buffer)
-                curr_buffer = 0.0
-            else:
-                curr_buffer -= download_time
-            curr_buffer += VIDEO_CHUNCK_LEN / MILLISECONDS_IN_SECOND
+            if throughput == 0.0:
+                # Do the forced handover
+                # Connect the satellite that has the best serving time
+                cur_sat_id = self.get_best_sat_id(agent, mahimahi_ptr)
+                # self.update_sat_info(cur_sat_id, self.mahimahi_ptr[agent], 1)
+                # self.update_sat_info(self.cur_sat_id[agent], self.mahimahi_ptr[agent], -1)
 
-            # bitrate_sum += VIDEO_BIT_RATE[chunk_quality]
-            # smoothness_diffs += abs(VIDEO_BIT_RATE[chunk_quality] - VIDEO_BIT_RATE[last_quality])
-            bitrate_sum += VIDEO_BIT_RATE[chunk_quality]
-            smoothness_diffs += abs(
-                VIDEO_BIT_RATE[chunk_quality] - VIDEO_BIT_RATE[last_quality])
-            last_quality = chunk_quality
-        # compute reward for this combination (one reward per 5-chunk combo)
+                # self.cur_sat_id[agent] = cur_sat_id
+                delay += HANDOVER_DELAY
 
-        # bitrates are in Mbits/s, rebuffer in seconds, and smoothness_diffs in Mbits/s
+            duration = self.cooked_time[mahimahi_ptr] \
+                       - last_mahimahi_time
 
-        # 10~140 - 0~100 - 0~130
-        reward = bitrate_sum * QUALITY_FACTOR / M_IN_K - (REBUF_PENALTY * curr_rebuffer_time) \
-                 - SMOOTH_PENALTY * smoothness_diffs / M_IN_K
+            packet_payload = throughput * duration * PACKET_PAYLOAD_PORTION
+
+            if video_chunk_counter_sent + packet_payload > video_chunk_size:
+                fractional_time = (video_chunk_size - video_chunk_counter_sent) / \
+                                  throughput / PACKET_PAYLOAD_PORTION
+                delay += fractional_time
+                last_mahimahi_time += fractional_time
+                break
+
+            video_chunk_counter_sent += packet_payload
+            delay += duration
+
+            last_mahimahi_time = self.cooked_time[mahimahi_ptr]
+            # self.mahimahi_ptr[agent] += 1
+            # self.step_ahead(agent)
+
+            if mahimahi_ptr >= len(self.cooked_bw[self.cur_sat_id[agent]]):
+                # loop back in the beginning
+                # note: trace file starts with time 0
+                mahimahi_ptr = 1
+                last_mahimahi_time = 0
+
+        delay *= MILLISECONDS_IN_SECOND
+        delay += LINK_RTT
+
+        # add a multiplicative noise to the delay
+        delay *= np.random.uniform(NOISE_LOW, NOISE_HIGH)
+
+        # rebuffer time
+        rebuf = np.maximum(delay - self.buffer_size[agent], 0.0)
+
+
+        M_IN_K = 1000.0
+        REBUF_PENALTY = 4.3  # 1 sec rebuffering -> 3 Mbps
+        SMOOTH_PENALTY = 1
+        DEFAULT_QUALITY = 1  # default video quality without agent
+
+        reward = - REBUF_PENALTY * rebuf
 
         return reward
 
-
-    def get_others_reward(self, agent):
+    def get_others_reward(self, agent, last_bit_rate):
         reward = 0
+        for i in range(self.num_agents):
+            if i == agent:
+                continue
+            reward += self.get_simulated_reward(i, last_bit_rate[i])
 
         return reward
