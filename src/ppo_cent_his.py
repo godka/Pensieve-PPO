@@ -34,6 +34,7 @@ class Network():
             split_8 = tflearn.conv_1d(inputs[:, 8:9, :], FEATURE_NUM, DIM_SIZE, activation='relu')
             split_8_1 = tflearn.conv_1d(inputs[:, 9:10, :], FEATURE_NUM, DIM_SIZE, activation='relu')
             split_9 = tflearn.conv_1d(inputs[:, 10:11, :A_SAT], FEATURE_NUM, DIM_SIZE, activation='relu')
+            split_9_1 = tflearn.conv_1d(inputs[:, 11:12, :self.num_agents-1], FEATURE_NUM, DIM_SIZE, activation='relu')
             split_10 = tflearn.conv_1d(inputs[:, 11:12, :PAST_LEN], FEATURE_NUM, DIM_SIZE, activation='relu')
             split_11 = tflearn.conv_1d(inputs[:, 12:13, :PAST_LEN], FEATURE_NUM, DIM_SIZE, activation='relu')
             split_12 = tflearn.conv_1d(inputs[:, 13:14, :PAST_LEN], FEATURE_NUM, DIM_SIZE, activation='relu')
@@ -56,6 +57,7 @@ class Network():
             split_8_flat = tflearn.flatten(split_8)
             split_8_1_flat = tflearn.flatten(split_8_1)
             split_9_flat = tflearn.flatten(split_9)
+            split_9_1_flat = tflearn.flatten(split_9_1)
             split_10_flat = tflearn.flatten(split_10)
             split_11_flat = tflearn.flatten(split_11)
             split_12_flat = tflearn.flatten(split_12)
@@ -64,7 +66,7 @@ class Network():
             split_15_flat = tflearn.flatten(split_15)
 
             merged_list = [split_0, split_1, split_2_flat, split_3_flat, split_4_flat, split_5, split_6_flat,
-                 split_7_flat, split_8_flat, split_8_1_flat, split_9_flat, split_10_flat, split_11_flat, split_12_flat,
+                 split_7_flat, split_8_flat, split_8_1_flat, split_9_flat, split_9_1_flat, split_10_flat, split_11_flat, split_12_flat,
                  split_13_flat, split_14_flat, split_15_flat]
             merged_list.extend(split_list)
             merge_net = tflearn.merge(merged_list, 'concat')
@@ -84,6 +86,8 @@ class Network():
             split_8 = tflearn.conv_1d(inputs[:, 8:9, :], FEATURE_NUM, DIM_SIZE, activation='relu')
             split_8_1 = tflearn.conv_1d(inputs[:, 9:10, :], FEATURE_NUM, DIM_SIZE, activation='relu')
             split_9 = tflearn.conv_1d(inputs[:, 10:11, :A_SAT], FEATURE_NUM, DIM_SIZE, activation='relu')
+            split_9_1 = tflearn.conv_1d(inputs[:, 11:12, :self.num_agents - 1], FEATURE_NUM, DIM_SIZE,
+                                        activation='relu')
             split_10 = tflearn.conv_1d(inputs[:, 11:12, :PAST_LEN], FEATURE_NUM, DIM_SIZE, activation='relu')
             split_11 = tflearn.conv_1d(inputs[:, 12:13, :PAST_LEN], FEATURE_NUM, DIM_SIZE, activation='relu')
             split_12 = tflearn.conv_1d(inputs[:, 13:14, :PAST_LEN], FEATURE_NUM, DIM_SIZE, activation='relu')
@@ -106,6 +110,7 @@ class Network():
             split_8_flat = tflearn.flatten(split_8)
             split_8_1_flat = tflearn.flatten(split_8_1)
             split_9_flat = tflearn.flatten(split_9)
+            split_9_1_flat = tflearn.flatten(split_9_1)
             split_10_flat = tflearn.flatten(split_10)
             split_11_flat = tflearn.flatten(split_11)
             split_12_flat = tflearn.flatten(split_12)
@@ -114,8 +119,9 @@ class Network():
             split_15_flat = tflearn.flatten(split_15)
 
             merged_list = [split_0, split_1, split_2_flat, split_3_flat, split_4_flat, split_5, split_6_flat,
-                 split_7_flat, split_8_flat, split_8_1_flat, split_9_flat, split_10_flat, split_11_flat, split_12_flat,
-                 split_13_flat, split_14_flat, split_15_flat]
+                           split_7_flat, split_8_flat, split_8_1_flat, split_9_flat, split_9_1_flat, split_10_flat,
+                           split_11_flat, split_12_flat,
+                           split_13_flat, split_14_flat, split_15_flat]
             merged_list.extend(split_list)
             merge_net = tflearn.merge(merged_list, 'concat')
 

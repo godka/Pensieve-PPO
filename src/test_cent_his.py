@@ -30,7 +30,7 @@ RANDOM_SEED = 42
 TEST_TRACES = './test/'
 NN_MODEL = sys.argv[1]
 NUM_AGENTS = int(sys.argv[2])
-S_INFO = 11 + MAX_SAT - A_SAT + NUM_AGENTS * PAST_SAT_LOG_LEN
+S_INFO = 12 + MAX_SAT - A_SAT + NUM_AGENTS * PAST_SAT_LOG_LEN
 
 LOG_FILE = './test_results_cent_his' + str(NUM_AGENTS) + '/log_sim_ppo'
 
@@ -133,7 +133,7 @@ def main():
             video_chunk_size, next_video_chunk_sizes, \
             end_of_video, video_chunk_remain, _, _, _, _, \
             _, next_sat_bw_logs, cur_sat_user_num, next_sat_user_num, cur_sat_bw_logs, connected_time, \
-                cur_sat_id, next_sat_id, other_sat_users, other_sat_bw_logs = \
+                cur_sat_id, next_sat_id, other_sat_users, other_sat_bw_logs, other_buffer_sizes = \
                 net_env.get_video_chunk(bit_rate[agent], agent, model_type=None)
 
             time_stamp[agent] += delay  # in ms
@@ -200,13 +200,14 @@ def main():
                                         other_sat_users, other_sat_bw_logs)
 
             # state[agent][11:11+MAX_SAT - A_SAT, -1] = np.reshape(np.array(other_sat_num_users), (MAX_SAT - A_SAT, 1)) / 10
+            state[agent][11:12, 0:NUM_AGENTS - 1] = np.array(
+                other_buffer_sizes[:agent - 1] + other_buffer_sizes[agent:]) / BUFFER_NORM_FACTOR
+            state[agent][12:(12 + MAX_SAT - A_SAT), 0:PAST_LEN] = np.array(other_sat_bws) / 10
 
-            state[agent][11:(11 + MAX_SAT - A_SAT), 0:PAST_LEN] = np.array(other_sat_bws) / 10
-
-            state[agent][(11 + MAX_SAT - A_SAT):(11 + MAX_SAT - A_SAT + PAST_SAT_LOG_LEN),
+            state[agent][(12 + MAX_SAT - A_SAT):(12 + MAX_SAT - A_SAT + PAST_SAT_LOG_LEN),
             0:3] = np.reshape(cur_user_sat_decisions, (-1, 3))
 
-            state[agent][(11 + MAX_SAT - A_SAT + PAST_SAT_LOG_LEN):(11 + MAX_SAT - A_SAT + PAST_SAT_LOG_LEN
+            state[agent][(12 + MAX_SAT - A_SAT + PAST_SAT_LOG_LEN):(12 + MAX_SAT - A_SAT + PAST_SAT_LOG_LEN
                                                                     + (NUM_AGENTS-1) * PAST_SAT_LOG_LEN),
             0:3] = np.reshape(other_user_sat_decisions, (-1, 3))
             # if len(next_sat_user_num) < PAST_LEN:
