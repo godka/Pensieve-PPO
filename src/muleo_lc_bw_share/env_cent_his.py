@@ -65,6 +65,7 @@ class ABREnv():
             next_sat_bw, next_sat_bw_logs, cur_sat_user_num, next_sat_user_nums, cur_sat_bw_logs, connected_time, \
             cur_sat_id, next_sat_id, other_sat_users, other_sat_bw_logs, other_buffer_sizes\
             = self.net_env.get_video_chunk(bit_rate, agent)
+        print(other_buffer_sizes)
         self.sat_decision_log[agent].append(cur_sat_id)
         state = np.roll(self.state[agent], -1, axis=1)
 
