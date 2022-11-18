@@ -103,8 +103,7 @@ class ABREnv():
 
         # state[11:11 + MAX_SAT - A_SAT, -1] = np.reshape(np.array(other_sat_num_users), (MAX_SAT - A_SAT, 1)) / 10
 
-        state[11:12, 0:self.num_agents - 1] = np.array(
-            other_buffer_sizes[:agent - 1] + other_buffer_sizes[agent:]) / BUFFER_NORM_FACTOR
+        state[11:12, 0:self.num_agents - 1] = np.array(other_buffer_sizes) / BUFFER_NORM_FACTOR
         state[12:(12 + MAX_SAT - A_SAT), 0:PAST_LEN] = np.array(other_sat_bws) / 10
 
         state[(12 + MAX_SAT - A_SAT):(12 + MAX_SAT - A_SAT + PAST_SAT_LOG_LEN),
@@ -228,7 +227,7 @@ class ABREnv():
                                    float(connected_time[1]) / BUFFER_NORM_FACTOR / 10]
 
         # state[11:11 + MAX_SAT - A_SAT, -1] = np.reshape(np.array(other_sat_num_users), (MAX_SAT - A_SAT, 1)) / 10
-        state[11:12, 0:self.num_agents-1] = np.array(other_buffer_sizes[:agent-1] + other_buffer_sizes[agent:]) / BUFFER_NORM_FACTOR
+        state[11:12, 0:self.num_agents-1] = np.array(other_buffer_sizes) / BUFFER_NORM_FACTOR
         state[12:(12 + MAX_SAT - A_SAT), 0:PAST_LEN] = np.array(other_sat_bws) / 10
 
         state[(12 + MAX_SAT - A_SAT):(12 + MAX_SAT - A_SAT + PAST_SAT_LOG_LEN),
