@@ -518,5 +518,6 @@ class Environment:
             if i == agent:
                 continue
             reward += self.get_simulated_reward(i, last_bit_rate[i])
+            print(i)
 
         return reward

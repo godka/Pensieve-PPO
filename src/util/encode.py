@@ -56,7 +56,7 @@ def encode_other_sat_info(sat_decision_log, num_agents, cur_sat_id, next_sat_id,
             elif log_data == -1:
                 encoded_logs = [0, 0, 0]
             else:
-                print("Warning: More than 8 visible satellites?!")
+                # print("Warning: More than 8 visible satellites?!")
                 # encoded_logs = [0, 0, 0, 0, 0, 0, 0, 0]
                 encoded_logs = [0, 0, 0]
             # encoded_logs = encoded_logs + [0] * 3
