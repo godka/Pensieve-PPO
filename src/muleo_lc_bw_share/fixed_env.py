@@ -617,7 +617,7 @@ class Environment:
 
                             if centralized:
                                 for qoe_log in self.user_qoe_log:
-                                    reward += self.get_mpc_qoe(qoe_log, last_index, ho_index, self.cur_sat_id[agent], next_sat_id)
+                                    reward += self.get_simulated_reward(qoe_log, last_index, ho_index, self.cur_sat_id[agent], next_sat_id)
                                     # reward += qoe_log["reward"]
 
                             next_user_num = self.get_num_of_user_sat(next_sat_id)
@@ -927,7 +927,7 @@ class Environment:
 
         return harmonic_bw
 
-    def get_mpc_qoe(self, qoe_log, target_last_index, target_ho_index, target_cur_sat_id, target_next_sat_id):
+    def get_simulated_reward(self, qoe_log, target_last_index, target_ho_index, target_cur_sat_id, target_next_sat_id):
         combo = qoe_log["combo"]
         # calculate total rebuffer time for this combination (start with start_buffer and subtract
         # each download time and add 2 seconds in that order)

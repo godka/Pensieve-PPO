@@ -54,9 +54,11 @@ def encode_other_sat_info(sat_decision_log, num_agents, cur_sat_id, next_sat_id,
                 # tmp_array[other_index_ids[log_data] + 2] = 1
                 encoded_logs = tmp_array
             else:
-                # print("Cannot happen")
+                print("Cannot happen: more than 8 visible satellites?")
+                print(other_index_ids.keys())
+                print(log_data)
                 # encoded_logs = [0, 0, 0, 0, 0, 0, 0, 0]
-                encoded_logs = [0, 0, 1]
+                encoded_logs = [0, 0, 0]
             # encoded_logs = encoded_logs + [0] * 3
             tmp_logs.append(encoded_logs)
         if i_agent == agent:

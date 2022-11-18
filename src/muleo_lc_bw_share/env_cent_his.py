@@ -186,6 +186,8 @@ class ABREnv():
             - SMOOTH_PENALTY * np.abs(VIDEO_BIT_RATE[bit_rate] -
                                       VIDEO_BIT_RATE[self.last_bit_rate]) / M_IN_K
 
+        reward += self.net_env.get_others_reward(agent)
+
         self.last_bit_rate = bit_rate
         state = np.roll(self.state[agent], -1, axis=1)
 

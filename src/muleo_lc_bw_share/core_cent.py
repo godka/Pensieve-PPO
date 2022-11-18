@@ -255,7 +255,7 @@ class Environment:
             video_chunk_remain, \
             next_sat_bandwidth, next_sat_bw_logs, cur_sat_user_num, next_sat_user_num, cur_sat_bw_logs, \
             connected_time, self.cur_sat_id[agent], next_sat_id, other_sat_users, other_sat_bw_logs
-            
+
     def reset(self):
         
         self.video_chunk_counter = [0 for _ in range(self.num_agents)]
@@ -435,3 +435,100 @@ class Environment:
             return self.num_of_user_sat[sat_id]
 
         return 0
+
+    def get_simulated_reward(self, qoe_log, target_last_index, target_ho_index, target_cur_sat_id, target_next_sat_id):
+        combo = qoe_log["combo"]
+        # calculate total rebuffer time for this combination (start with start_buffer and subtract
+        # each download time and add 2 seconds in that order)
+        curr_rebuffer_time = 0
+        curr_buffer = qoe_log["start_buffer"]
+        bitrate_sum = 0
+        smoothness_diffs = 0
+        last_quality = qoe_log["last_quality"]
+        cur_user_num = qoe_log["cur_user_num"]
+        ho_index = qoe_log["ho_index"]
+        harmonic_bw = None
+        for position in range(0, len(combo)):
+            chunk_quality = combo[position]
+            index = qoe_log["last_index"] + position  # e.g., if last chunk is 3, then first iter is 3+0+1=4
+            download_time = 0
+            if ho_index > position:
+                if target_cur_sat_id == qoe_log["cur_sat_id"] and index >= target_last_index + target_ho_index:
+                    # if self.get_num_of_user_sat(target_cur_sat_id) - 1 == 0:
+                    if cur_user_num <= 1:
+                        harmonic_bw = qoe_log["cur_download_bw"]
+                    else:
+                        harmonic_bw = qoe_log["cur_download_bw"] * (cur_user_num / (cur_user_num - 1))
+                        # harmonic_bw = qoe_log["cur_download_bw"] * (cur_user_num / (self.get_num_of_user_sat(target_cur_sat_id) - 1))
+                elif target_next_sat_id == qoe_log["cur_sat_id"] and index >= target_last_index + target_ho_index:
+                    if cur_user_num < 1:
+                        harmonic_bw = qoe_log["cur_download_bw"]
+                    else:
+                        harmonic_bw = qoe_log["cur_download_bw"] * (cur_user_num / (cur_user_num + 1))
+
+                else:
+                    harmonic_bw = qoe_log["cur_download_bw"]
+            elif ho_index == position:
+                next_user_num = qoe_log["next_user_num"]
+                if target_cur_sat_id == qoe_log["next_sat_id"] and index >= target_last_index + target_ho_index:
+                    if next_user_num <= 1:
+                        harmonic_bw = qoe_log["next_download_bw"]
+                    else:
+                        harmonic_bw = qoe_log["next_download_bw"] * (next_user_num / (next_user_num - 1))
+                elif target_next_sat_id == qoe_log["next_sat_id"] and index >= target_last_index + target_ho_index:
+                    if next_user_num < 1:
+                        harmonic_bw = qoe_log["next_download_bw"]
+                    else:
+                        harmonic_bw = qoe_log["next_download_bw"] * (next_user_num / (next_user_num + 1))
+                else:
+                    harmonic_bw = qoe_log["next_download_bw"]
+
+                # harmonic_bw = qoe_log["next_download_bw"]
+                # Give them a penalty
+                download_time += HANDOVER_DELAY
+            else:
+                next_user_num = qoe_log["next_user_num"]
+                if target_cur_sat_id == qoe_log["next_sat_id"] and index >= target_last_index + target_ho_index:
+                    if next_user_num <= 1:
+                        harmonic_bw = qoe_log["next_download_bw"]
+                    else:
+                        harmonic_bw = qoe_log["next_download_bw"] * (next_user_num / (next_user_num - 1))
+                elif target_next_sat_id == qoe_log["next_sat_id"] and index >= target_last_index + target_ho_index:
+                    if next_user_num < 1:
+                        harmonic_bw = qoe_log["next_download_bw"]
+                    else:
+                        harmonic_bw = qoe_log["next_download_bw"] * (next_user_num / (next_user_num + 1))
+                else:
+                    harmonic_bw = qoe_log["next_download_bw"]
+                # harmonic_bw = qoe_log["next_download_bw"]
+            download_time += (self.video_size[chunk_quality][index] / B_IN_MB) \
+                             / harmonic_bw * BITS_IN_BYTE  # this is MB/MB/s --> seconds
+
+            if curr_buffer < download_time:
+                curr_rebuffer_time += (download_time -
+                                       curr_buffer)
+                curr_buffer = 0.0
+            else:
+                curr_buffer -= download_time
+            curr_buffer += VIDEO_CHUNCK_LEN / MILLISECONDS_IN_SECOND
+
+            # bitrate_sum += VIDEO_BIT_RATE[chunk_quality]
+            # smoothness_diffs += abs(VIDEO_BIT_RATE[chunk_quality] - VIDEO_BIT_RATE[last_quality])
+            bitrate_sum += VIDEO_BIT_RATE[chunk_quality]
+            smoothness_diffs += abs(
+                VIDEO_BIT_RATE[chunk_quality] - VIDEO_BIT_RATE[last_quality])
+            last_quality = chunk_quality
+        # compute reward for this combination (one reward per 5-chunk combo)
+
+        # bitrates are in Mbits/s, rebuffer in seconds, and smoothness_diffs in Mbits/s
+
+        # 10~140 - 0~100 - 0~130
+        reward = bitrate_sum * QUALITY_FACTOR / M_IN_K - (REBUF_PENALTY * curr_rebuffer_time) \
+                 - SMOOTH_PENALTY * smoothness_diffs / M_IN_K
+
+        return reward
+
+    def get_others_reward(self, agent):
+        reward = 0
+
+        return reward
