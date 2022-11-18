@@ -388,7 +388,7 @@ class Environment:
             bw_list = []
             if sat_id == self.cur_sat_id[agent]:
                 continue
-            for i in range(10, 0, -1):
+            for i in range(5, -5, -1):
                 if mahimahi_ptr - i >= 0 and sat_bw[mahimahi_ptr - i] != 0:
                     if self.get_num_of_user_sat(sat_id) == 0:
                         bw_list.append(sat_bw[mahimahi_ptr - i])
