@@ -386,7 +386,7 @@ class Environment:
 
         for sat_id, sat_bw in self.cooked_bw.items():
             bw_list = []
-            if sat_bw[mahimahi_ptr-1] == 0 or sat_id == self.cur_sat_id[agent]:
+            if sat_bw[mahimahi_ptr] == 0 or sat_id == self.cur_sat_id[agent]:
                 continue
             for i in range(5, 0, -1):
                 if mahimahi_ptr - i >= 0 and sat_bw[mahimahi_ptr - i] != 0:
@@ -433,7 +433,6 @@ class Environment:
         # list2 = [ list2[i] for i in range(1)]
 
         return cur_sat_bw_list, list1, next_sat_id, list3, up_time_list, other_sat_users, other_sat_bw_logs
-
 
     def get_best_sat_id(self, agent, mahimahi_ptr=None):
         best_sat_id = None
