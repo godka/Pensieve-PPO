@@ -1071,6 +1071,7 @@ class Environment:
         video_chunk_size = self.video_size[quality][self.video_chunk_counter[agent]]
         last_mahimahi_time = self.last_mahimahi_time[agent]
         mahimahi_ptr = self.mahimahi_ptr[agent]
+        cur_sat_id = self.cur_sat_id[agent]
 
         # use the delivery opportunity in mahimahi
         delay = self.delay[agent]  # in ms
@@ -1078,12 +1079,12 @@ class Environment:
         video_chunk_counter_sent = 0  # in bytes
 
         while True:  # download video chunk over mahimahi
-            if self.get_num_of_user_sat(self.cur_sat_id[agent]) == 0:
-                throughput = self.cooked_bw[self.cur_sat_id[agent]][mahimahi_ptr] \
+            if self.get_num_of_user_sat(cur_sat_id) == 0:
+                throughput = self.cooked_bw[cur_sat_id][mahimahi_ptr] \
                              * B_IN_MB / BITS_IN_BYTE
             else:
-                throughput = self.cooked_bw[self.cur_sat_id[agent]][mahimahi_ptr] \
-                             * B_IN_MB / BITS_IN_BYTE / self.get_num_of_user_sat(self.cur_sat_id[agent])
+                throughput = self.cooked_bw[cur_sat_id][mahimahi_ptr] \
+                             * B_IN_MB / BITS_IN_BYTE / self.get_num_of_user_sat(cur_sat_id)
 
             if throughput == 0.0:
                 # Do the forced handover
@@ -1114,7 +1115,7 @@ class Environment:
             # self.mahimahi_ptr[agent] += 1
             # self.step_ahead(agent)
 
-            if mahimahi_ptr >= len(self.cooked_bw[self.cur_sat_id[agent]]):
+            if mahimahi_ptr >= len(self.cooked_bw[cur_sat_id]):
                 # loop back in the beginning
                 # note: trace file starts with time 0
                 mahimahi_ptr = 1
