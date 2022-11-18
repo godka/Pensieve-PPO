@@ -298,7 +298,7 @@ class Environment:
             video_chunk_remain, \
             bit_rate, is_handover, new_sat_id, self.get_num_of_user_sat(sat_id="all"), \
             next_sat_bandwidth, next_sat_bw_logs, cur_sat_user_num, next_sat_user_num, cur_sat_bw_logs, connected_time, \
-            self.cur_sat_id[agent], next_sat_id, other_sat_users, other_sat_bw_logs, self
+            self.cur_sat_id[agent], next_sat_id, other_sat_users, other_sat_bw_logs, np.delete(self.buffer_size, agent)
 
     def reset(self):
 

@@ -256,7 +256,7 @@ class Environment:
             video_chunk_remain, \
             next_sat_bandwidth, next_sat_bw_logs, cur_sat_user_num, next_sat_user_num, cur_sat_bw_logs, \
             connected_time, self.cur_sat_id[agent], next_sat_id, other_sat_users, other_sat_bw_logs, \
-            self.buffer_size[:agent-1] + self.buffer_size[agent:]
+            np.delete(self.buffer_size, agent)
 
     def reset(self):
         
