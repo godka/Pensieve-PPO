@@ -488,14 +488,8 @@ class Environment:
             delay += duration
 
             last_mahimahi_time = self.cooked_time[mahimahi_ptr]
-            # self.mahimahi_ptr[agent] += 1
+            mahimahi_ptr += 1
             # self.step_ahead(agent)
-
-            if mahimahi_ptr >= len(self.cooked_bw[cur_sat_id]):
-                # loop back in the beginning
-                # note: trace file starts with time 0
-                mahimahi_ptr = 1
-                last_mahimahi_time = 0
 
         delay *= MILLISECONDS_IN_SECOND
         delay += LINK_RTT
@@ -518,6 +512,5 @@ class Environment:
             if i == agent:
                 continue
             reward += self.get_simulated_reward(i, last_bit_rate[i])
-            print(i)
 
         return reward
