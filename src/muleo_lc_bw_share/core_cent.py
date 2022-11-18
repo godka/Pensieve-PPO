@@ -511,7 +511,7 @@ class Environment:
         SMOOTH_PENALTY = 1
         DEFAULT_QUALITY = 1  # default video quality without agent
 
-        reward = - REBUF_PENALTY * rebuf
+        reward = -REBUF_PENALTY * rebuf
 
         return reward
 

@@ -1063,3 +1063,84 @@ class Environment:
             self.delay[agent] = HANDOVER_DELAY
             # self.sat_decision_log[agent].append(sat_id)
             return sat_id
+
+    def get_simulated_reward(self, agent, quality):
+        assert quality >= 0
+        assert quality < BITRATE_LEVELS
+
+        video_chunk_size = self.video_size[quality][self.video_chunk_counter[agent]]
+        last_mahimahi_time = self.last_mahimahi_time[agent]
+        mahimahi_ptr = self.mahimahi_ptr[agent]
+
+        # use the delivery opportunity in mahimahi
+        delay = self.delay[agent]  # in ms
+        # self.delay[agent] = 0
+        video_chunk_counter_sent = 0  # in bytes
+
+        while True:  # download video chunk over mahimahi
+            if self.get_num_of_user_sat(self.cur_sat_id[agent]) == 0:
+                throughput = self.cooked_bw[self.cur_sat_id[agent]][mahimahi_ptr] \
+                             * B_IN_MB / BITS_IN_BYTE
+            else:
+                throughput = self.cooked_bw[self.cur_sat_id[agent]][mahimahi_ptr] \
+                             * B_IN_MB / BITS_IN_BYTE / self.get_num_of_user_sat(self.cur_sat_id[agent])
+
+            if throughput == 0.0:
+                # Do the forced handover
+                # Connect the satellite that has the best serving time
+                cur_sat_id = self.get_best_sat_id(agent, mahimahi_ptr)
+                # self.update_sat_info(cur_sat_id, self.mahimahi_ptr[agent], 1)
+                # self.update_sat_info(self.cur_sat_id[agent], self.mahimahi_ptr[agent], -1)
+
+                # self.cur_sat_id[agent] = cur_sat_id
+                delay += HANDOVER_DELAY
+
+            duration = self.cooked_time[mahimahi_ptr] \
+                       - last_mahimahi_time
+
+            packet_payload = throughput * duration * PACKET_PAYLOAD_PORTION
+
+            if video_chunk_counter_sent + packet_payload > video_chunk_size:
+                fractional_time = (video_chunk_size - video_chunk_counter_sent) / \
+                                  throughput / PACKET_PAYLOAD_PORTION
+                delay += fractional_time
+                last_mahimahi_time += fractional_time
+                break
+
+            video_chunk_counter_sent += packet_payload
+            delay += duration
+
+            last_mahimahi_time = self.cooked_time[mahimahi_ptr]
+            # self.mahimahi_ptr[agent] += 1
+            # self.step_ahead(agent)
+
+            if mahimahi_ptr >= len(self.cooked_bw[self.cur_sat_id[agent]]):
+                # loop back in the beginning
+                # note: trace file starts with time 0
+                mahimahi_ptr = 1
+                last_mahimahi_time = 0
+
+        delay *= MILLISECONDS_IN_SECOND
+        delay += LINK_RTT
+
+        # rebuffer time
+        rebuf = np.maximum(delay - self.buffer_size[agent], 0.0)
+
+
+        M_IN_K = 1000.0
+        REBUF_PENALTY = 4.3  # 1 sec rebuffering -> 3 Mbps
+        SMOOTH_PENALTY = 1
+        DEFAULT_QUALITY = 1  # default video quality without agent
+
+        reward = -REBUF_PENALTY * rebuf
+
+        return reward
+
+    def get_others_reward(self, agent, last_bit_rate):
+        reward = 0
+        for i in range(self.num_agents):
+            if i == agent:
+                continue
+            reward += self.get_simulated_reward(i, last_bit_rate[i])
+
+        return reward

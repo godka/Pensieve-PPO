@@ -145,6 +145,8 @@ def main():
                     - SMOOTH_PENALTY * np.abs(VIDEO_BIT_RATE[bit_rate[agent]] -
                                             VIDEO_BIT_RATE[last_bit_rate[agent]]) / M_IN_K
 
+            reward += net_env.get_others_reward(agent, last_bit_rate)
+
             r_batch[agent].append(reward)
             results.append(reward)
             
