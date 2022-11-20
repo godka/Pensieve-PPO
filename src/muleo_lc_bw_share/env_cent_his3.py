@@ -95,7 +95,7 @@ class ABREnv():
 
         other_user_sat_decisions, other_sat_num_users, other_sat_bws, cur_user_sat_decisions \
             = encode_other_sat_info(self.sat_decision_log, self.num_agents, cur_sat_id, next_sat_id, agent, other_sat_users, other_sat_bw_logs)
-
+        print(other_user_sat_decisions)
         if self.is_handover:
             state[8:9, 0:S_LEN] = np.zeros((1, S_LEN))
             state[9:10, 0:S_LEN] = np.zeros((1, S_LEN))
