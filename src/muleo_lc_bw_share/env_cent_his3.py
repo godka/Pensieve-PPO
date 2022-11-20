@@ -37,7 +37,7 @@ class ABREnv():
     def __init__(self, random_seed=RANDOM_SEED, num_agents=NUM_AGENTS):
         self.num_agents = num_agents
         global S_INFO
-        S_INFO = 12 + MAX_SAT - A_SAT + (self.num_agents-1)
+        S_INFO = 12 + MAX_SAT - A_SAT + (self.num_agents-1) * 2
         # SAT_DIM = num_agents
         # A_SAT = num_agents
         # SAT_DIM = num_agents + 1
