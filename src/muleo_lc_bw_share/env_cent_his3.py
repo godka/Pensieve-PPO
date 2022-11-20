@@ -55,8 +55,9 @@ class ABREnv():
         self.last_bit_rate = [DEFAULT_QUALITY for _ in range(self.num_agents)]
         self.last_penalty = [0 for _ in range(self.num_agents)]
         self.state = [np.zeros((S_INFO, S_LEN))for _ in range(self.num_agents)]
-        self.sat_decision_log = [-1 for _ in range(self.num_agents)]
-        
+        # self.sat_decision_log = [-1 for _ in range(self.num_agents)]
+        self.sat_decision_log = [[-1, -1, -1, -1, -1] for _ in range(self.num_agents)]
+
     def seed(self, num):
         np.random.seed(num)
 
@@ -69,7 +70,8 @@ class ABREnv():
             cur_sat_id, next_sat_id, other_sat_users, other_sat_bw_logs, other_buffer_sizes\
             = self.net_env.get_video_chunk(bit_rate, agent)
 
-        self.sat_decision_log[agent] = cur_sat_id
+        # self.sat_decision_log[agent] = cur_sat_id
+        self.sat_decision_log[agent].append(cur_sat_id)
         state = np.roll(self.state[agent], -1, axis=1)
 
         # this should be S_INFO number of terms`
@@ -189,7 +191,7 @@ class ABREnv():
             next_sat_bw, next_sat_bw_logs, cur_sat_user_num, next_sat_user_nums, cur_sat_bw_logs, connected_time, \
             cur_sat_id, next_sat_id, other_sat_users, other_sat_bw_logs, other_buffer_sizes\
             = self.net_env.get_video_chunk(bit_rate, agent)
-        self.sat_decision_log[agent] = cur_sat_id
+        self.sat_decision_log[agent].append(cur_sat_id)
         self.time_stamp += delay  # in ms
         self.time_stamp += sleep_time  # in ms
 
