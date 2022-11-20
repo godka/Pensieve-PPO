@@ -1064,6 +1064,7 @@ class Environment:
             self.delay[agent] = HANDOVER_DELAY
             # self.sat_decision_log[agent].append(sat_id)
             return prev_sat_id, sat_id
+        return self.cur_sat_id[agent], self.cur_sat_id[agent]
 
     def get_simulated_penalty(self, agent, quality, prev_sat_id, next_sat_id):
         assert quality >= 0

@@ -109,6 +109,7 @@ class Environment:
             self.cur_sat_id[agent] = sat_id
             self.delay[agent] = HANDOVER_DELAY
             return prev_sat_id, sat_id
+        return self.cur_sat_id[agent], self.cur_sat_id[agent]
     
     def step_ahead(self, agent):
           self.mahimahi_ptr[agent] += 1
