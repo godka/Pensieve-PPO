@@ -114,11 +114,11 @@ class ABREnv():
                                                          (self.num_agents - 1) * PAST_SAT_LOG_LEN),
         0:3] = np.reshape(other_user_sat_decisions, (-1, 3))
         others_last_bit_rate = self.last_bit_rate[:agent-1] + self.last_bit_rate[agent:]
+        encoded_others_last_bit_rate = one_hot_encode(others_last_bit_rate, len(VIDEO_BIT_RATE))
+        print(encoded_others_last_bit_rate)
         state[(12 + MAX_SAT - A_SAT + PAST_SAT_LOG_LEN + (self.num_agents - 1) * PAST_SAT_LOG_LEN):
                      (12 + MAX_SAT - A_SAT + PAST_SAT_LOG_LEN + (self.num_agents - 1) * PAST_SAT_LOG_LEN + (
                                  self.num_agents - 1) * len(VIDEO_BIT_RATE)),
-        encoded_others_last_bit_rate = one_hot_encode(others_last_bit_rate, len(VIDEO_BIT_RATE))
-        print(encoded_others_last_bit_rate)
         0:len(VIDEO_BIT_RATE)] = encoded_others_last_bit_rate
 
         self.state[agent] = state
