@@ -457,18 +457,18 @@ class Environment:
             return 0
 
         if cur_sat_id == prev_sat_id:
-            reward1 = self.calculate_reward(cur_sat_id, video_chunk_size, last_mahimahi_time, mahimahi_ptr, self.delay[agent], self.get_num_of_user_sat(cur_sat_id))
+            reward1 = self.calculate_reward(cur_sat_id, video_chunk_size, last_mahimahi_time, mahimahi_ptr, self.delay[agent], self.buffer_size[agent], self.get_num_of_user_sat(cur_sat_id))
             reward2 = self.calculate_reward(cur_sat_id, video_chunk_size, last_mahimahi_time, mahimahi_ptr,
                                             self.delay[agent], self.get_num_of_user_sat(cur_sat_id)-1)
         elif cur_sat_id == next_sat_id:
-            reward1 = self.calculate_reward(cur_sat_id, video_chunk_size, last_mahimahi_time, mahimahi_ptr, self.delay[agent], self.get_num_of_user_sat(cur_sat_id)+1)
+            reward1 = self.calculate_reward(cur_sat_id, video_chunk_size, last_mahimahi_time, mahimahi_ptr, self.delay[agent], self.buffer_size[agent], self.get_num_of_user_sat(cur_sat_id)+1)
             reward2 = self.calculate_reward(cur_sat_id, video_chunk_size, last_mahimahi_time, mahimahi_ptr,
                                             self.delay[agent], self.get_num_of_user_sat(cur_sat_id))
         else:
             print("Cannot Happen")
         return reward1 - reward2
 
-    def calculate_reward(self, cur_sat_id, video_chunk_size, last_mahimahi_time, mahimahi_ptr, delay, num_of_user):
+    def calculate_reward(self, cur_sat_id, video_chunk_size, last_mahimahi_time, mahimahi_ptr, delay, buffer_size, num_of_user):
         video_chunk_counter_sent = 0  # in bytes
         while True:  # download video chunk over mahimahi
             if self.get_num_of_user_sat(cur_sat_id) == 0:
@@ -517,7 +517,7 @@ class Environment:
         delay += LINK_RTT
 
         # rebuffer time
-        rebuf = np.maximum(delay - self.buffer_size[agent], 0.0)
+        rebuf = np.maximum(delay - buffer_size, 0.0)
 
         M_IN_K = 1000.0
         REBUF_PENALTY = 4.3  # 1 sec rebuffering -> 3 Mbps
