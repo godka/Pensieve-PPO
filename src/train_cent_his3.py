@@ -3,8 +3,8 @@ import numpy as np
 import logging
 import os
 import sys
-from muleo_lc_bw_share.env_cent_his2 import ABREnv
-import ppo_cent_his2 as network
+from muleo_lc_bw_share.env_cent_his3 import ABREnv
+import ppo_cent_his3 as network
 import tensorflow.compat.v1 as tf
 
 os.environ['CUDA_VISIBLE_DEVICES'] = '-1'
@@ -25,7 +25,7 @@ RANDOM_SEED = 42
 SUMMARY_DIR = './ppo_cent'
 MODEL_DIR = './models'
 TRAIN_TRACES = './train/'
-TEST_LOG_FOLDER = './test_results_cent_his'
+TEST_LOG_FOLDER = './test_results_cent_his_merge'
 PPO_TRAINING_EPO = 5
 
 import argparse
