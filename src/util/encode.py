@@ -74,9 +74,10 @@ def encode_other_sat_info(sat_decision_log, num_agents, cur_sat_id, next_sat_id,
 def one_hot_encode(input_list, size):
     input_list = np.array(input_list)
     input_list = input_list.reshape(len(input_list), 1)
+    print(input_list)
 
     onehot_encoded = []
     for tmp_list in input_list:
         onehot_encoded.append([0] * tmp_list[0] + [1] + [0] * (size -tmp_list[0] - 1))
-
+    print(onehot_encoded)
     return onehot_encoded
