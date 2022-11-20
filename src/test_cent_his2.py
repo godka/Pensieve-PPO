@@ -77,7 +77,8 @@ def main():
         last_penalty = [0 for _ in range(NUM_AGENTS)]
         bit_rate = [DEFAULT_QUALITY for _ in range(NUM_AGENTS)]
         sat = [0 for _ in range(NUM_AGENTS)]
-
+        prev_sat_id = None
+        next_sat_id = None
         action_vec = [np.zeros(A_DIM * A_SAT) for _ in range(NUM_AGENTS)]
         for i in range(NUM_AGENTS):
             action_vec[i][bit_rate] = 1
@@ -162,7 +163,7 @@ def main():
                         str(reward) + '\n')
             log_file.flush()
 
-            reward += net_env.get_others_reward(agent, last_bit_rate, last_penalty)
+            reward += net_env.get_others_reward(agent, last_bit_rate, prev_sat_id, next_sat_id)
 
             r_batch[agent].append(reward)
             last_bit_rate[agent] = bit_rate[agent]
@@ -232,7 +233,7 @@ def main():
             sat[agent] = action // A_DIM
             bit_rate[agent] = action % A_DIM
 
-            changed_sat_id = net_env.set_satellite(agent, sat[agent])
+            prev_sat_id, next_sat_id = net_env.set_satellite(agent, sat[agent])
             if sat[agent] == 1:
                 is_handover = True
                 # print("Handover!!")
