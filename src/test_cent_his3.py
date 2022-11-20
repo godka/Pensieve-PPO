@@ -77,7 +77,8 @@ def main():
         last_penalty = [0 for _ in range(NUM_AGENTS)]
         bit_rate = [DEFAULT_QUALITY for _ in range(NUM_AGENTS)]
         sat = [0 for _ in range(NUM_AGENTS)]
-
+        prev_sat_id = None
+        cur_sat_id = None
         action_vec = [np.zeros(A_DIM * A_SAT) for _ in range(NUM_AGENTS)]
         for i in range(NUM_AGENTS):
             action_vec[i][bit_rate] = 1
