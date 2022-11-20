@@ -162,7 +162,7 @@ def main():
                         str(reward) + '\n')
             log_file.flush()
 
-            reward += net_env.get_others_reward(agent, last_bit_rate, last_penalty)
+            # reward += net_env.get_others_reward(agent, last_bit_rate, last_penalty)
 
             r_batch[agent].append(reward)
             last_bit_rate[agent] = bit_rate[agent]
