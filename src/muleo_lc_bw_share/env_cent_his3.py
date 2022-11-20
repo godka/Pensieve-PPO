@@ -175,7 +175,7 @@ class ABREnv():
             self.is_handover = True
         else:
             print("Never!")
-        self.prev_sat_id, self.cur_sat_id = net_env.set_satellite(agent, sat[agent])
+        self.prev_sat_id, self.cur_sat_id = self.net_env.set_satellite(agent, sat[agent])
 
     def step(self, action, agent):
         bit_rate = int(action) % A_DIM
