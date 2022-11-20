@@ -15,7 +15,7 @@ A_DIM = 6
 A_SAT = 2
 PAST_LEN = 8
 MAX_SAT = 8
-PAST_SAT_LOG_LEN = 1
+PAST_SAT_LOG_LEN = 3
 ACTOR_LR_RATE = 1e-4
 NUM_AGENTS = 16
 TRAIN_SEQ_LEN = 1000  # take as a train batch
@@ -36,7 +36,7 @@ parser.add_argument('--user', type=int, default=6)
 args = parser.parse_args()
 USERS = args.user
 # A_SAT = USERS + 1
-S_DIM = [12 + MAX_SAT - A_SAT + (USERS-1) * 2, 8]
+S_DIM = [12 + MAX_SAT - A_SAT + (USERS-1) * PAST_SAT_LOG_LEN + (USERS-1), 8]
 
 TEST_LOG_FOLDER += str(USERS) + '/'
 SUMMARY_DIR += str(USERS)

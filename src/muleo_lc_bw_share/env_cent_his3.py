@@ -12,7 +12,7 @@ S_LEN = 8  # take how many frames in the past
 A_DIM = 6
 PAST_LEN = 8
 A_SAT = 2
-PAST_SAT_LOG_LEN = 1
+PAST_SAT_LOG_LEN = 3
 MAX_SAT = 8
 TRAIN_SEQ_LEN = 1000  # take as a train batch
 MODEL_SAVE_INTERVAL = 1000
@@ -94,7 +94,8 @@ class ABREnv():
         state[7, :PAST_LEN] = np.array(cur_sat_bw_logs[:PAST_LEN]) / 10
 
         other_user_sat_decisions, other_sat_num_users, other_sat_bws, cur_user_sat_decisions \
-            = encode_other_sat_info(self.sat_decision_log, self.num_agents, cur_sat_id, next_sat_id, agent, other_sat_users, other_sat_bw_logs)
+            = encode_other_sat_info(self.sat_decision_log, self.num_agents, cur_sat_id, next_sat_id, agent,
+                                    other_sat_users, other_sat_bw_logs, PAST_SAT_LOG_LEN)
 
         if self.is_handover:
             state[8:9, 0:S_LEN] = np.zeros((1, S_LEN))
@@ -226,7 +227,8 @@ class ABREnv():
         state[7, :PAST_LEN] = np.array(cur_sat_bw_logs[:PAST_LEN]) / 10
 
         other_user_sat_decisions, other_sat_num_users, other_sat_bws, cur_user_sat_decisions \
-            = encode_other_sat_info(self.sat_decision_log, self.num_agents, cur_sat_id, next_sat_id, agent, other_sat_users, other_sat_bw_logs)
+            = encode_other_sat_info(self.sat_decision_log, self.num_agents, cur_sat_id, next_sat_id,
+                                    agent, other_sat_users, other_sat_bw_logs, PAST_SAT_LOG_LEN)
 
         if self.is_handover:
             state[8:9, 0:S_LEN] = np.zeros((1, S_LEN))

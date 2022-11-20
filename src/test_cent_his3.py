@@ -13,7 +13,7 @@ import ppo_cent_his3 as network
 # S_INFO = 10 + 1 + 3 + 6 * 5  # Original + nums of sat + bw of sats + decisions of users
 S_LEN = 8  # take how many frames in the past
 A_DIM = 6
-PAST_SAT_LOG_LEN = 1
+PAST_SAT_LOG_LEN = 3
 PAST_LEN = 8
 A_SAT = 2
 MAX_SAT = 8
@@ -30,7 +30,7 @@ RANDOM_SEED = 42
 TEST_TRACES = './test/'
 NN_MODEL = sys.argv[1]
 NUM_AGENTS = int(sys.argv[2])
-S_INFO = 12 + MAX_SAT - A_SAT + (NUM_AGENTS-1) * 2
+S_INFO = 12 + MAX_SAT - A_SAT + (NUM_AGENTS-1) * PAST_SAT_LOG_LEN + (NUM_AGENTS-1)
 
 LOG_FILE = './test_results_cent_his_test2' + str(NUM_AGENTS) + '/log_sim_ppo'
 
@@ -201,7 +201,7 @@ def main():
 
             other_user_sat_decisions, other_sat_num_users, other_sat_bws, cur_user_sat_decisions \
                 = encode_other_sat_info(net_env.sat_decision_log, NUM_AGENTS, cur_sat_id, next_sat_id, agent,
-                                        other_sat_users, other_sat_bw_logs)
+                                        other_sat_users, other_sat_bw_logs, PAST_SAT_LOG_LEN)
 
             # state[agent][11:11+MAX_SAT - A_SAT, -1] = np.reshape(np.array(other_sat_num_users), (MAX_SAT - A_SAT, 1)) / 10
             state[agent][11:12, 0:NUM_AGENTS - 1] = np.array(other_buffer_sizes) / BUFFER_NORM_FACTOR
