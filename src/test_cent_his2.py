@@ -225,10 +225,10 @@ def main():
             changed_sat_id = net_env.set_satellite(agent, sat[agent])
             if sat[agent] == 1:
                 is_handover = True
-                print("Handover!!")
+                # print("Handover!!")
             else:
                 is_handover = False
-                print("X Handover")
+                # print("X Handover")
             s_batch[agent].append(state[agent])
 
             entropy_ = -np.dot(action_prob, np.log(action_prob))
