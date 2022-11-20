@@ -145,12 +145,7 @@ def main():
                     - SMOOTH_PENALTY * np.abs(VIDEO_BIT_RATE[bit_rate[agent]] -
                                             VIDEO_BIT_RATE[last_bit_rate[agent]]) / M_IN_K
 
-            reward += net_env.get_others_reward(agent, last_bit_rate)
-
-            r_batch[agent].append(reward)
             results.append(reward)
-            
-            last_bit_rate[agent] = bit_rate[agent]
 
             # log time_stamp, bit_rate, buffer_size, reward
             log_file.write(str(time_stamp[agent] / M_IN_K) + '\t' +
@@ -165,6 +160,10 @@ def main():
                         str(reward) + '\n')
             log_file.flush()
 
+            reward += net_env.get_others_reward(agent, last_bit_rate)
+
+            r_batch[agent].append(reward)
+            last_bit_rate[agent] = bit_rate[agent]
             # retrieve previous state
             if len(s_batch[agent]) == 0:
                 state[agent] = [np.zeros((S_INFO, S_LEN))]
