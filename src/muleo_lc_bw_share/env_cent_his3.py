@@ -43,7 +43,8 @@ class ABREnv():
         # SAT_DIM = num_agents + 1
 
         self.is_handover = False
-
+        self.prev_sat_id = None
+        self.cur_sat_id = None
         np.random.seed(random_seed)
         all_cooked_time, all_cooked_bw, _ = load_trace.load_trace()
         self.net_env = abrenv.Environment(all_cooked_time=all_cooked_time,
@@ -174,7 +175,7 @@ class ABREnv():
             self.is_handover = True
         else:
             print("Never!")
-        changed_sat_id = self.net_env.set_satellite(agent, sat)
+        self.prev_sat_id, self.cur_sat_id = net_env.set_satellite(agent, sat[agent])
 
     def step(self, action, agent):
         bit_rate = int(action) % A_DIM
