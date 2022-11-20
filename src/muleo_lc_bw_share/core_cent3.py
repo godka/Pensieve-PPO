@@ -102,7 +102,7 @@ class Environment:
         if ho == 1:
             if sat_id == self.cur_sat_id[agent]:
                 # print("Can't do handover. Only one visible satellite")
-                return
+                return self.cur_sat_id[agent], self.cur_sat_id[agent]
             prev_sat_id = self.cur_sat_id[agent]
             self.update_sat_info(sat_id, self.mahimahi_ptr[agent], 1)
             self.update_sat_info(self.cur_sat_id[agent], self.mahimahi_ptr[agent], -1)
