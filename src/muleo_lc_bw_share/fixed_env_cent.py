@@ -1064,7 +1064,7 @@ class Environment:
             # self.sat_decision_log[agent].append(sat_id)
             return sat_id
 
-    def get_simulated_reward(self, agent, quality):
+    def get_simulated_penalty(self, agent, quality):
         assert quality >= 0
         assert quality < BITRATE_LEVELS
 
@@ -1132,16 +1132,16 @@ class Environment:
         SMOOTH_PENALTY = 1
         DEFAULT_QUALITY = 1  # default video quality without agent
 
-        reward = -REBUF_PENALTY * rebuf / MILLISECONDS_IN_SECOND
+        reward = REBUF_PENALTY * rebuf / MILLISECONDS_IN_SECOND
 
         return reward
 
-    def get_others_reward(self, agent, last_bit_rate):
+    def get_others_reward(self, agent, last_bit_rate, last_penalty):
         reward = 0
         for i in range(self.num_agents):
             if i == agent:
                 continue
-            reward += self.get_simulated_reward(i, last_bit_rate[i])
+            reward += last_penalty[i] - self.get_simulated_penalty(i, last_bit_rate[i])
 
         return reward
 

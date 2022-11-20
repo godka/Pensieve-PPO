@@ -515,11 +515,11 @@ class Environment:
 
         return reward
 
-    def get_others_reward(self, agent, last_bit_rate):
+    def get_others_reward(self, agent, last_bit_rate, last_penalty):
         reward = 0
         for i in range(self.num_agents):
             if i == agent:
                 continue
-            reward += self.get_simulated_reward(i, last_bit_rate[i])
+            reward += last_penalty[i] - self.get_simulated_penalty(i, last_bit_rate[i])
 
         return reward
