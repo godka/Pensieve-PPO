@@ -210,7 +210,7 @@ def main():
             state[agent][(12 + MAX_SAT - A_SAT + PAST_SAT_LOG_LEN):(12 + MAX_SAT - A_SAT + PAST_SAT_LOG_LEN
                                                                     + (NUM_AGENTS-1) * PAST_SAT_LOG_LEN),
             0:3] = np.reshape(other_user_sat_decisions, (-1, 3))
-            others_last_bit_rate = np.delete(np.array(self.last_bit_rate), agent)
+            others_last_bit_rate = np.delete(np.array(last_bit_rate), agent)
             state[agent][(12 + MAX_SAT - A_SAT + PAST_SAT_LOG_LEN + (NUM_AGENTS-1) * PAST_SAT_LOG_LEN):
                          (12 + MAX_SAT - A_SAT + PAST_SAT_LOG_LEN + (NUM_AGENTS-1) * PAST_SAT_LOG_LEN + (NUM_AGENTS-1) * len(VIDEO_BIT_RATE)),
             0:len(VIDEO_BIT_RATE)] = np.reshape(one_hot_encode(others_last_bit_rate, len(VIDEO_BIT_RATE)), (-1, len(VIDEO_BIT_RATE)))
