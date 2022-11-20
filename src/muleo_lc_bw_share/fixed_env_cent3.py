@@ -91,8 +91,8 @@ class Environment:
         # self.next_sat_bandwidth = [[] for _ in range(self.num_agents)]
         self.next_sat_id = [[] for _ in range(self.num_agents)]
         self.delay = [0 for _ in range(self.num_agents)]
-        self.sat_decision_log = [-1 for _ in range(self.num_agents)]
-
+        # self.sat_decision_log = [-1 for _ in range(self.num_agents)]
+        self.sat_decision_log = [[-1,-1,-1,-1,-1] for _ in range(self.num_agents)]
         self.bit_rate = None
         self.download_bw = [[] for _ in range(self.num_agents)]
         self.past_download_ests = [[] for _ in range(self.num_agents)]
@@ -286,8 +286,8 @@ class Environment:
         else:
             is_handover, new_sat_id, bit_rate = False, None, 1
 
-        self.sat_decision_log[agent] = self.cur_sat_id[agent]
-
+        # self.sat_decision_log[agent] = self.cur_sat_id[agent]
+        self.sat_decision_log[agent].append(self.cur_sat_id[agent])
         return delay, \
             sleep_time, \
             return_buffer_size / MILLISECONDS_IN_SECOND, \
@@ -312,7 +312,8 @@ class Environment:
         self.next_sat_id = [[] for _ in range(self.num_agents)]
         self.delay = [0 for _ in range(self.num_agents)]
         self.num_of_user_sat = {}
-        self.sat_decision_log = [-1 for _ in range(self.num_agents)]
+        # self.sat_decision_log = [-1 for _ in range(self.num_agents)]
+        self.sat_decision_log = [[-1,-1,-1,-1,-1] for _ in range(self.num_agents)]
 
         self.trace_idx += 1
         if self.trace_idx >= len(self.all_cooked_time):
