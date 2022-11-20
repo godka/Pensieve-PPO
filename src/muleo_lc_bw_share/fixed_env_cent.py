@@ -372,7 +372,10 @@ class Environment:
                     bw_list.append(sat_bw[mahimahi_ptr - i])
                 else:
                     bw_list.append(sat_bw[mahimahi_ptr - i] / self.get_num_of_user_sat(self.cur_sat_id[agent]))
-        bw = sum(bw_list) / len(bw_list)
+        if len(bw_list) == 0:
+            bw = 0
+        else:
+            bw = sum(bw_list) / len(bw_list)
         up_time = 0
         tmp_index = mahimahi_ptr - 1
         tmp_sat_bw = sat_bw[tmp_index]
