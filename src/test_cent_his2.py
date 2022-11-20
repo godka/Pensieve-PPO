@@ -30,7 +30,7 @@ RANDOM_SEED = 42
 TEST_TRACES = './test/'
 NN_MODEL = sys.argv[1]
 NUM_AGENTS = int(sys.argv[2])
-S_INFO = 12 + MAX_SAT - A_SAT + (NUM_AGENTS-1)
+S_INFO = 12 + MAX_SAT - A_SAT + (NUM_AGENTS-1) * PAST_SAT_LOG_LEN + (NUM_AGENTS-1)
 
 LOG_FILE = './test_results_cent_his2' + str(NUM_AGENTS) + '/log_sim_ppo'
 
