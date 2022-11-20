@@ -13,7 +13,7 @@ import ppo_cent_his3 as network
 # S_INFO = 10 + 1 + 3 + 6 * 5  # Original + nums of sat + bw of sats + decisions of users
 S_LEN = 8  # take how many frames in the past
 A_DIM = 6
-PAST_SAT_LOG_LEN = 3
+PAST_SAT_LOG_LEN = 1
 PAST_LEN = 8
 A_SAT = 2
 MAX_SAT = 8
@@ -210,13 +210,13 @@ def main():
             # state[agent][(12 + MAX_SAT - A_SAT):(12 + MAX_SAT - A_SAT + PAST_SAT_LOG_LEN),
             # 0:3] = np.reshape(cur_user_sat_decisions, (-1, 3))
 
-            # state[agent][(12 + MAX_SAT - A_SAT + PAST_SAT_LOG_LEN):(12 + MAX_SAT - A_SAT + PAST_SAT_LOG_LEN
-            #                                                         + (NUM_AGENTS-1) * PAST_SAT_LOG_LEN),
-            # 0:3] = np.reshape(other_user_sat_decisions, (-1, 3))
+            state[agent][(12 + MAX_SAT - A_SAT):(12 + MAX_SAT - A_SAT
+                                                                    + (NUM_AGENTS-1) * PAST_SAT_LOG_LEN),
+            0:3] = np.reshape(other_user_sat_decisions, (-1, 3))
 
             others_last_bit_rate = np.delete(np.array(last_bit_rate), agent)
-            state[agent][(12 + MAX_SAT - A_SAT):
-                         (12 + MAX_SAT - A_SAT + (NUM_AGENTS-1)),
+            state[agent][(12 + MAX_SAT - A_SAT + (NUM_AGENTS-1) * PAST_SAT_LOG_LEN):
+                         (12 + MAX_SAT - A_SAT + (NUM_AGENTS-1) * PAST_SAT_LOG_LEN + (NUM_AGENTS-1)),
             0:len(VIDEO_BIT_RATE)] = np.reshape(one_hot_encode(others_last_bit_rate, len(VIDEO_BIT_RATE)), (-1, len(VIDEO_BIT_RATE)))
             # if len(next_sat_user_num) < PAST_LEN:
             #     next_sat_user_num = [0] * (PAST_LEN - len(next_sat_user_num)) + next_sat_user_num
