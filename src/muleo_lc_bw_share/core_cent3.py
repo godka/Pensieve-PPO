@@ -535,7 +535,7 @@ class Environment:
             if i == agent:
                 continue
             if prev_sat_id != cur_sat_id:
-                reward += self.get_simulated_penalty(i, last_bit_rate[i], prev_sat_id, cur_sat_id) # / NUM_AGENTS
+                reward += self.get_simulated_penalty(i, last_bit_rate[i], prev_sat_id, cur_sat_id) / NUM_AGENTS
 
         return reward
 
