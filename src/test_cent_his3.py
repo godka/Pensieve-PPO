@@ -7,7 +7,7 @@ os.environ['CUDA_VISIBLE_DEVICES']='-1'
 import numpy as np
 import tensorflow.compat.v1 as tf
 from muleo_lc_bw_share import load_trace
-from muleo_lc_bw_share import fixed_env_cent as env
+from muleo_lc_bw_share import fixed_env_cent3 as env
 import ppo_cent_his3 as network
 
 # S_INFO = 10 + 1 + 3 + 6 * 5  # Original + nums of sat + bw of sats + decisions of users
@@ -162,7 +162,7 @@ def main():
                         str(reward) + '\n')
             log_file.flush()
 
-            reward += net_env.get_others_reward(agent, last_bit_rate, last_penalty)
+            reward += net_env.get_others_reward(agent, last_bit_rate, prev_sat_id, cur_sat_id)
 
             r_batch[agent].append(reward)
             last_bit_rate[agent] = bit_rate[agent]
@@ -229,7 +229,7 @@ def main():
             sat[agent] = action // A_DIM
             bit_rate[agent] = action % A_DIM
 
-            changed_sat_id = net_env.set_satellite(agent, sat[agent])
+            prev_sat_id, cur_sat_id = net_env.set_satellite(agent, sat[agent])
             if sat[agent] == 1:
                 is_handover = True
                 # print("Handover!!")
