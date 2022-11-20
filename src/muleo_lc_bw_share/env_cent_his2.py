@@ -37,7 +37,7 @@ class ABREnv():
     def __init__(self, random_seed=RANDOM_SEED, num_agents=NUM_AGENTS):
         self.num_agents = num_agents
         global S_INFO
-        S_INFO = 12 + MAX_SAT - A_SAT + NUM_AGENTS * PAST_SAT_LOG_LEN + (NUM_AGENTS-1) * len(VIDEO_BIT_RATE)
+        S_INFO = 12 + MAX_SAT - A_SAT + self.num_agents * PAST_SAT_LOG_LEN + (self.num_agents-1) * len(VIDEO_BIT_RATE)
         # SAT_DIM = num_agents
         # A_SAT = num_agents
         # SAT_DIM = num_agents + 1
