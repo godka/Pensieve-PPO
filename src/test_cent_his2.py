@@ -203,7 +203,7 @@ def main():
 
             other_user_sat_decisions, other_sat_num_users, other_sat_bws, cur_user_sat_decisions \
                 = encode_other_sat_info(net_env.sat_decision_log, NUM_AGENTS, cur_sat_id, next_sat_id, agent,
-                                        other_sat_users, other_sat_bw_logs)
+                                        other_sat_users, other_sat_bw_logs, PAST_SAT_LOG_LEN)
 
             state[agent][11:12, 0:NUM_AGENTS - 1] = np.array(other_buffer_sizes) / BUFFER_NORM_FACTOR
             state[agent][12:(12 + MAX_SAT - A_SAT), 0:PAST_LEN] = np.array(other_sat_bws) / 10
