@@ -43,13 +43,8 @@ class Network():
             split_15 = tflearn.conv_1d(inputs[:, 16:17, :PAST_LEN], FEATURE_NUM, DIM_SIZE, activation='relu')
 
             split_list = []
-            for i in range(self.num_agents * PAST_SAT_LOG_LEN + self.num_agents-1):
-                if i < self.num_agents * PAST_SAT_LOG_LEN:
-                    split_tmp = tflearn.conv_1d(inputs[:, 17 + i:18 + i, :3], FEATURE_NUM, DIM_SIZE,
-                                                activation='relu')
-                else:
-                    split_tmp = tflearn.conv_1d(inputs[:, 17 + i:18 + i, :6], FEATURE_NUM, DIM_SIZE,
-                                                activation='relu')
+            for i in range(self.num_agents-1):
+                split_tmp = tflearn.conv_1d(inputs[:, 17 + i:18 + i, :6], FEATURE_NUM, DIM_SIZE, activation='relu')
                 split_tmp_flat = tflearn.flatten(split_tmp)
                 split_list.append(split_tmp_flat)
 
@@ -100,15 +95,11 @@ class Network():
             split_15 = tflearn.conv_1d(inputs[:, 16:17, :PAST_LEN], FEATURE_NUM, DIM_SIZE, activation='relu')
 
             split_list = []
-            for i in range(self.num_agents * PAST_SAT_LOG_LEN + self.num_agents-1):
-                if i < self.num_agents * PAST_SAT_LOG_LEN:
-                    split_tmp = tflearn.conv_1d(inputs[:, 17 + i:18 + i, :3], FEATURE_NUM, DIM_SIZE,
-                                                activation='relu')
-                else:
-                    split_tmp = tflearn.conv_1d(inputs[:, 17 + i:18 + i, :6], FEATURE_NUM, DIM_SIZE,
-                                                activation='relu')
+            for i in range(self.num_agents-1):
+                split_tmp = tflearn.conv_1d(inputs[:, 17 + i:18 + i, :6], FEATURE_NUM, DIM_SIZE, activation='relu')
                 split_tmp_flat = tflearn.flatten(split_tmp)
                 split_list.append(split_tmp_flat)
+
             split_2_flat = tflearn.flatten(split_2)
             split_3_flat = tflearn.flatten(split_3)
             split_4_flat = tflearn.flatten(split_4)
