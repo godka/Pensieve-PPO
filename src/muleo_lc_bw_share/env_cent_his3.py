@@ -37,7 +37,7 @@ class ABREnv():
     def __init__(self, random_seed=RANDOM_SEED, num_agents=NUM_AGENTS):
         self.num_agents = num_agents
         global S_INFO
-        S_INFO = 12 + MAX_SAT - A_SAT + self.num_agents * PAST_SAT_LOG_LEN + (self.num_agents-1)
+        S_INFO = 12 + MAX_SAT - A_SAT + (self.num_agents-1)
         # SAT_DIM = num_agents
         # A_SAT = num_agents
         # SAT_DIM = num_agents + 1
@@ -240,15 +240,15 @@ class ABREnv():
         state[11:12, 0:self.num_agents-1] = np.array(other_buffer_sizes) / BUFFER_NORM_FACTOR
         state[12:(12 + MAX_SAT - A_SAT), 0:PAST_LEN] = np.array(other_sat_bws) / 10
 
-        state[(12 + MAX_SAT - A_SAT):(12 + MAX_SAT - A_SAT + PAST_SAT_LOG_LEN),
-        0:3] = np.reshape(cur_user_sat_decisions, (-1, 3))
-        state[(12 + MAX_SAT - A_SAT + PAST_SAT_LOG_LEN):(12 + MAX_SAT - A_SAT + PAST_SAT_LOG_LEN +
-                                                         (self.num_agents-1) * PAST_SAT_LOG_LEN),
-        0:3] = np.reshape(other_user_sat_decisions, (-1, 3))
+        # state[(12 + MAX_SAT - A_SAT):(12 + MAX_SAT - A_SAT + PAST_SAT_LOG_LEN),
+        # 0:3] = np.reshape(cur_user_sat_decisions, (-1, 3))
+        # state[(12 + MAX_SAT - A_SAT + PAST_SAT_LOG_LEN):(12 + MAX_SAT - A_SAT + PAST_SAT_LOG_LEN +
+        #                                                  (self.num_agents-1) * PAST_SAT_LOG_LEN),
+        # 0:3] = np.reshape(other_user_sat_decisions, (-1, 3))
 
         others_last_bit_rate = np.delete(np.array(self.last_bit_rate), agent)
-        state[(12 + MAX_SAT - A_SAT + PAST_SAT_LOG_LEN + (self.num_agents - 1) * PAST_SAT_LOG_LEN):
-                     (12 + MAX_SAT - A_SAT + PAST_SAT_LOG_LEN + (self.num_agents - 1) * PAST_SAT_LOG_LEN +
+        state[(12 + MAX_SAT - A_SAT):
+                     (12 + MAX_SAT - A_SAT +
                                  self.num_agents - 1),
         0:len(VIDEO_BIT_RATE)] = np.reshape(one_hot_encode(others_last_bit_rate, len(VIDEO_BIT_RATE)), (-1, len(VIDEO_BIT_RATE)))
         # if len(next_sat_user_nums) < PAST_LEN:

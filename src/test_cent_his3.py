@@ -30,7 +30,7 @@ RANDOM_SEED = 42
 TEST_TRACES = './test/'
 NN_MODEL = sys.argv[1]
 NUM_AGENTS = int(sys.argv[2])
-S_INFO = 12 + MAX_SAT - A_SAT + NUM_AGENTS * PAST_SAT_LOG_LEN + (NUM_AGENTS-1)
+S_INFO = 12 + MAX_SAT - A_SAT + (NUM_AGENTS-1)
 
 LOG_FILE = './test_results_cent_his' + str(NUM_AGENTS) + '/log_sim_ppo'
 
@@ -215,7 +215,7 @@ def main():
 
             others_last_bit_rate = np.delete(np.array(last_bit_rate), agent)
             state[agent][(12 + MAX_SAT - A_SAT):
-                         (12 + MAX_SAT - A_SAT + PAST_SAT_LOG_LEN + (NUM_AGENTS-1) * PAST_SAT_LOG_LEN + (NUM_AGENTS-1) * len(VIDEO_BIT_RATE)),
+                         (12 + MAX_SAT - A_SAT + (NUM_AGENTS-1)),
             0:len(VIDEO_BIT_RATE)] = np.reshape(one_hot_encode(others_last_bit_rate, len(VIDEO_BIT_RATE)), (-1, len(VIDEO_BIT_RATE)))
             # if len(next_sat_user_num) < PAST_LEN:
             #     next_sat_user_num = [0] * (PAST_LEN - len(next_sat_user_num)) + next_sat_user_num
