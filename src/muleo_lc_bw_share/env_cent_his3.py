@@ -198,7 +198,7 @@ class ABREnv():
                                       VIDEO_BIT_RATE[self.last_bit_rate[agent]]) / M_IN_K
         self.last_penalty[agent] = REBUF_PENALTY * rebuf
         # Future reward expectation
-        reward += self.net_env.get_others_reward(agent, last_bit_rate, prev_sat_id, cur_sat_id)
+        reward += self.net_env.get_others_reward(agent, self.last_penalty[agent], prev_sat_id, cur_sat_id)
 
         self.last_bit_rate[agent] = bit_rate
         state = np.roll(self.state[agent], -1, axis=1)
