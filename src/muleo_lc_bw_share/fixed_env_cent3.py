@@ -1079,12 +1079,12 @@ class Environment:
             return 0
 
         if cur_sat_id == prev_sat_id:
-            reward1 = self.calculate_reward(cur_sat_id, video_chunk_size, last_mahimahi_time, mahimahi_ptr, self.delay[agent], self.buffer_size[agent], self.get_num_of_user_sat(cur_sat_id))
-            reward2 = self.calculate_reward(cur_sat_id, video_chunk_size, last_mahimahi_time, mahimahi_ptr,
+            reward1 = self.calculate_reward(agent, cur_sat_id, video_chunk_size, last_mahimahi_time, mahimahi_ptr, self.delay[agent], self.buffer_size[agent], self.get_num_of_user_sat(cur_sat_id))
+            reward2 = self.calculate_reward(agent, cur_sat_id, video_chunk_size, last_mahimahi_time, mahimahi_ptr,
                                             self.delay[agent], self.buffer_size[agent], self.get_num_of_user_sat(cur_sat_id)-1)
         elif cur_sat_id == next_sat_id:
-            reward1 = self.calculate_reward(cur_sat_id, video_chunk_size, last_mahimahi_time, mahimahi_ptr, self.delay[agent], self.buffer_size[agent], self.get_num_of_user_sat(cur_sat_id)+1)
-            reward2 = self.calculate_reward(cur_sat_id, video_chunk_size, last_mahimahi_time, mahimahi_ptr,
+            reward1 = self.calculate_reward(agent, cur_sat_id, video_chunk_size, last_mahimahi_time, mahimahi_ptr, self.delay[agent], self.buffer_size[agent], self.get_num_of_user_sat(cur_sat_id)+1)
+            reward2 = self.calculate_reward(agent, cur_sat_id, video_chunk_size, last_mahimahi_time, mahimahi_ptr,
                                             self.delay[agent], self.buffer_size[agent], self.get_num_of_user_sat(cur_sat_id))
         else:
             print("Cannot Happen")
