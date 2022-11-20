@@ -37,7 +37,7 @@ class ABREnv():
     def __init__(self, random_seed=RANDOM_SEED, num_agents=NUM_AGENTS):
         self.num_agents = num_agents
         global S_INFO
-        S_INFO = 12 + MAX_SAT - A_SAT + self.num_agents * PAST_SAT_LOG_LEN + (self.num_agents-1) * len(VIDEO_BIT_RATE)
+        S_INFO = 12 + MAX_SAT - A_SAT + self.num_agents * PAST_SAT_LOG_LEN + (self.num_agents-1)
         # SAT_DIM = num_agents
         # A_SAT = num_agents
         # SAT_DIM = num_agents + 1
@@ -118,7 +118,7 @@ class ABREnv():
 
         state[(12 + MAX_SAT - A_SAT + PAST_SAT_LOG_LEN + (self.num_agents - 1) * PAST_SAT_LOG_LEN):
                      (12 + MAX_SAT - A_SAT + PAST_SAT_LOG_LEN + (self.num_agents - 1) * PAST_SAT_LOG_LEN + (
-                                 self.num_agents - 1) * len(VIDEO_BIT_RATE)),
+                                 self.num_agents - 1)),
         0:len(VIDEO_BIT_RATE)] = encoded_others_last_bit_rate
 
         self.state[agent] = state

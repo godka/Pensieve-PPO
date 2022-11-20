@@ -8,7 +8,7 @@ import numpy as np
 import tensorflow.compat.v1 as tf
 from muleo_lc_bw_share import load_trace
 from muleo_lc_bw_share import fixed_env_cent as env
-import ppo_cent_his as network
+import ppo_cent_his2 as network
 
 # S_INFO = 10 + 1 + 3 + 6 * 5  # Original + nums of sat + bw of sats + decisions of users
 S_LEN = 8  # take how many frames in the past
@@ -30,7 +30,7 @@ RANDOM_SEED = 42
 TEST_TRACES = './test/'
 NN_MODEL = sys.argv[1]
 NUM_AGENTS = int(sys.argv[2])
-S_INFO = 12 + MAX_SAT - A_SAT + NUM_AGENTS * PAST_SAT_LOG_LEN + (NUM_AGENTS-1) * len(VIDEO_BIT_RATE)
+S_INFO = 12 + MAX_SAT - A_SAT + NUM_AGENTS * PAST_SAT_LOG_LEN + (NUM_AGENTS-1)
 
 LOG_FILE = './test_results_cent_his' + str(NUM_AGENTS) + '/log_sim_ppo'
 
