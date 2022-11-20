@@ -452,18 +452,19 @@ class Environment:
         last_mahimahi_time = self.last_mahimahi_time[agent]
         mahimahi_ptr = self.mahimahi_ptr[agent]
         cur_sat_id = self.cur_sat_id[agent]
-
+        delay = self.delay[agent]
+        buffer_size = self.buffer_size[agent]
         if cur_sat_id not in [prev_sat_id, next_sat_id]:
             return 0
 
         if cur_sat_id == prev_sat_id:
-            reward1 = self.calculate_reward(agent, cur_sat_id, video_chunk_size, last_mahimahi_time, mahimahi_ptr, self.delay[agent], self.buffer_size[agent], self.get_num_of_user_sat(cur_sat_id))
+            reward1 = self.calculate_reward(agent, cur_sat_id, video_chunk_size, last_mahimahi_time, mahimahi_ptr, delay, buffer_size, self.get_num_of_user_sat(cur_sat_id)+1)
             reward2 = self.calculate_reward(agent, cur_sat_id, video_chunk_size, last_mahimahi_time, mahimahi_ptr,
-                                            self.delay[agent], self.buffer_size[agent], self.get_num_of_user_sat(cur_sat_id)-1)
+                                            delay, buffer_size, self.get_num_of_user_sat(cur_sat_id))
         elif cur_sat_id == next_sat_id:
-            reward1 = self.calculate_reward(agent, cur_sat_id, video_chunk_size, last_mahimahi_time, mahimahi_ptr, self.delay[agent], self.buffer_size[agent], self.get_num_of_user_sat(cur_sat_id)+1)
+            reward1 = self.calculate_reward(agent, cur_sat_id, video_chunk_size, last_mahimahi_time, mahimahi_ptr, delay, buffer_size, self.get_num_of_user_sat(cur_sat_id)-1)
             reward2 = self.calculate_reward(agent, cur_sat_id, video_chunk_size, last_mahimahi_time, mahimahi_ptr,
-                                            self.delay[agent], self.buffer_size[agent], self.get_num_of_user_sat(cur_sat_id))
+                                            delay, buffer_size, self.get_num_of_user_sat(cur_sat_id))
         else:
             print("Cannot Happen")
         return reward1 - reward2
@@ -534,7 +535,7 @@ class Environment:
             if i == agent:
                 continue
             if prev_sat_id != cur_sat_id:
-                reward += self.get_simulated_penalty(i, last_bit_rate[i], prev_sat_id, cur_sat_id)
+                reward += self.get_simulated_penalty(i, last_bit_rate[i], prev_sat_id, cur_sat_id) / NUM_AGENTS
 
         return reward
 
