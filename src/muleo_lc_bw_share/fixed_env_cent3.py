@@ -1090,7 +1090,7 @@ class Environment:
             print("Cannot Happen")
         return reward1 - reward2
 
-    def calculate_reward(self, cur_sat_id, video_chunk_size, last_mahimahi_time, mahimahi_ptr, delay, buffer_size, num_of_user):
+    def calculate_reward(self, agent, cur_sat_id, video_chunk_size, last_mahimahi_time, mahimahi_ptr, delay, buffer_size, num_of_user):
         video_chunk_counter_sent = 0  # in bytes
         while True:  # download video chunk over mahimahi
             if num_of_user == 0:
