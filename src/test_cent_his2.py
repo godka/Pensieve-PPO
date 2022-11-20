@@ -213,7 +213,7 @@ def main():
             others_last_bit_rate = last_bit_rate[:agent-1] + last_bit_rate[agent:]
             state[agent][(12 + MAX_SAT - A_SAT + PAST_SAT_LOG_LEN + (NUM_AGENTS-1) * PAST_SAT_LOG_LEN):
                          (12 + MAX_SAT - A_SAT + PAST_SAT_LOG_LEN + (NUM_AGENTS-1) * PAST_SAT_LOG_LEN + (NUM_AGENTS-1) * len(VIDEO_BIT_RATE)),
-            0:len(VIDEO_BIT_RATE)] = np.reshape(one_hot_encode(others_last_bit_rate, len(VIDEO_BIT_RATE)), (-1, 5))
+            0:len(VIDEO_BIT_RATE)] = np.reshape(one_hot_encode(others_last_bit_rate, len(VIDEO_BIT_RATE)), (-1, len(VIDEO_BIT_RATE)))
             # if len(next_sat_user_num) < PAST_LEN:
             #     next_sat_user_num = [0] * (PAST_LEN - len(next_sat_user_num)) + next_sat_user_num
 

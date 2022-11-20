@@ -117,7 +117,7 @@ class ABREnv():
         state[(12 + MAX_SAT - A_SAT + PAST_SAT_LOG_LEN + (self.num_agents - 1) * PAST_SAT_LOG_LEN):
                      (12 + MAX_SAT - A_SAT + PAST_SAT_LOG_LEN + (self.num_agents - 1) * PAST_SAT_LOG_LEN + (
                                  self.num_agents - 1) * len(VIDEO_BIT_RATE)),
-        0:len(VIDEO_BIT_RATE)] = np.reshape(one_hot_encode(others_last_bit_rate, len(VIDEO_BIT_RATE)), (-1, 5))
+        0:len(VIDEO_BIT_RATE)] = np.reshape(one_hot_encode(others_last_bit_rate, len(VIDEO_BIT_RATE)), (-1, len(VIDEO_BIT_RATE)))
 
         self.state[agent] = state
         
