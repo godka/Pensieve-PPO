@@ -1,7 +1,7 @@
 # add queuing delay into halo
 import os
 import numpy as np
-from . import core_cent as abrenv
+from . import core_cent3 as abrenv
 from . import load_trace
 
 from util.encode import encode_other_sat_info, one_hot_encode
@@ -43,6 +43,8 @@ class ABREnv():
         # SAT_DIM = num_agents + 1
 
         self.is_handover = False
+        self.prev_sat_id = None
+        self.cur_sat_id = None
 
         np.random.seed(random_seed)
         all_cooked_time, all_cooked_bw, _ = load_trace.load_trace()
@@ -174,7 +176,7 @@ class ABREnv():
             self.is_handover = True
         else:
             print("Never!")
-        changed_sat_id = self.net_env.set_satellite(agent, sat)
+        self.prev_sat_id, self.cur_sat_id = self.net_env.set_satellite(agent, sat)
 
     def step(self, action, agent):
         bit_rate = int(action) % A_DIM
@@ -198,7 +200,7 @@ class ABREnv():
                                       VIDEO_BIT_RATE[self.last_bit_rate[agent]]) / M_IN_K
         self.last_penalty[agent] = REBUF_PENALTY * rebuf
         # Future reward expectation
-        reward += self.net_env.get_others_reward(agent, self.last_bit_rate, self.last_penalty)
+        reward += self.net_env.get_others_reward(agent, self.last_bit_rate, self.prev_sat_id, self.cur_sat_id)
 
         self.last_bit_rate[agent] = bit_rate
         state = np.roll(self.state[agent], -1, axis=1)
