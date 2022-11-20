@@ -1,3 +1,6 @@
+from sklearn.preprocessing import LabelEncoder
+from sklearn.preprocessing import OneHotEncoder
+
 MAX_SAT = 8
 PAST_LEN = 8
 PAST_SAT_LOG_LEN = 3
@@ -67,3 +70,10 @@ def encode_other_sat_info(sat_decision_log, num_agents, cur_sat_id, next_sat_id,
             other_user_sat_decisions.append(tmp_logs)
 
     return other_user_sat_decisions, other_sat_num_users, other_sat_bws, cur_user_sat_decisions
+
+
+def one_hot_encode(input_list, size):
+    onehot_encoder = OneHotEncoder(sparse=False, max_categories=size)
+    onehot_encoded = onehot_encoder.fit_transform(input_list)
+
+    return onehot_encoded

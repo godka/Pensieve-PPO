@@ -1144,3 +1144,6 @@ class Environment:
             reward += self.get_simulated_reward(i, last_bit_rate[i])
 
         return reward
+
+    # def get _others_choice(self, agent):
+
