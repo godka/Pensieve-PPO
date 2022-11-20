@@ -471,7 +471,7 @@ class Environment:
     def calculate_reward(self, agent, cur_sat_id, video_chunk_size, last_mahimahi_time, mahimahi_ptr, delay, buffer_size, num_of_user):
         video_chunk_counter_sent = 0  # in bytes
         while True:  # download video chunk over mahimahi
-            if self.get_num_of_user_sat(cur_sat_id) == 0:
+            if num_of_user == 0:
                 throughput = self.cooked_bw[cur_sat_id][mahimahi_ptr] \
                              * B_IN_MB / BITS_IN_BYTE
             else:
