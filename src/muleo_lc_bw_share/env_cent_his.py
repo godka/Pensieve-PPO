@@ -123,6 +123,7 @@ class ABREnv():
         self.net_env.reset()
         self.time_stamp = 0
         self.last_bit_rate = [DEFAULT_QUALITY for _ in range(self.num_agents)]
+        self.last_penalty = [0 for _ in range(self.num_agents)]
         self.state = [np.zeros((S_INFO, S_LEN)) for _ in range(self.num_agents)]
 
         # for agent in range(self.num_agents):

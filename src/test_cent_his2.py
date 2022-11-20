@@ -74,6 +74,7 @@ def main():
         time_stamp = [0 for _ in range(NUM_AGENTS)]
 
         last_bit_rate = [DEFAULT_QUALITY for _ in range(NUM_AGENTS)]
+        last_penalty = [0 for _ in range(NUM_AGENTS)]
         bit_rate = [DEFAULT_QUALITY for _ in range(NUM_AGENTS)]
         sat = [0 for _ in range(NUM_AGENTS)]
 
@@ -144,6 +145,7 @@ def main():
                     - REBUF_PENALTY * rebuf \
                     - SMOOTH_PENALTY * np.abs(VIDEO_BIT_RATE[bit_rate[agent]] -
                                             VIDEO_BIT_RATE[last_bit_rate[agent]]) / M_IN_K
+            last_penalty[agent] = REBUF_PENALTY * rebuf
 
             results.append(reward)
 
@@ -160,7 +162,7 @@ def main():
                         str(reward) + '\n')
             log_file.flush()
 
-            reward += net_env.get_others_reward(agent, last_bit_rate)
+            reward += net_env.get_others_reward(agent, last_bit_rate, last_penalty)
 
             r_batch[agent].append(reward)
             last_bit_rate[agent] = bit_rate[agent]

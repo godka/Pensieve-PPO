@@ -52,6 +52,7 @@ class ABREnv():
                                           num_agents=self.num_agents)
 
         self.last_bit_rate = [DEFAULT_QUALITY for _ in range(self.num_agents)]
+        self.last_penalty = [0 for _ in range(self.num_agents)]
         self.state = [np.zeros((S_INFO, S_LEN))for _ in range(self.num_agents)]
         self.sat_decision_log = [[-1,-1,-1,-1,-1] for _ in range(self.num_agents)]
         
@@ -129,6 +130,7 @@ class ABREnv():
         self.net_env.reset()
         self.time_stamp = 0
         self.last_bit_rate = [DEFAULT_QUALITY for _ in range(self.num_agents)]
+        self.last_penalty = [0 for _ in range(self.num_agents)]
         self.state = [np.zeros((S_INFO, S_LEN)) for _ in range(self.num_agents)]
 
         # for agent in range(self.num_agents):
@@ -194,9 +196,9 @@ class ABREnv():
             - REBUF_PENALTY * rebuf \
             - SMOOTH_PENALTY * np.abs(VIDEO_BIT_RATE[bit_rate] -
                                       VIDEO_BIT_RATE[self.last_bit_rate[agent]]) / M_IN_K
-
+        self.last_penalty[agent] = REBUF_PENALTY * rebuf
         # Future reward expectation
-        reward += self.net_env.get_others_reward(agent, self.last_bit_rate)
+        reward += self.net_env.get_others_reward(agent, self.last_bit_rate, self.last_penalty)
 
         self.last_bit_rate[agent] = bit_rate
         state = np.roll(self.state[agent], -1, axis=1)
