@@ -443,7 +443,7 @@ class Environment:
 
         return 0
 
-    def get_simulated_reward(self, agent, quality):
+    def get_simulated_penalty(self, agent, quality):
         assert quality >= 0
         assert quality < BITRATE_LEVELS
 
