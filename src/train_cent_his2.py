@@ -3,8 +3,8 @@ import numpy as np
 import logging
 import os
 import sys
-from muleo_lc_bw_share.env_cent_his3 import ABREnv
-import ppo_cent_his3 as network
+from muleo_lc_bw_share.env_cent_his2 import ABREnv
+import ppo_cent_his2 as network
 import tensorflow.compat.v1 as tf
 
 os.environ['CUDA_VISIBLE_DEVICES'] = '-1'
