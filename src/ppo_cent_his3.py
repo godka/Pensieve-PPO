@@ -47,8 +47,8 @@ class Network():
             split_15 = tflearn.conv_1d(inputs[:, 17:18, :PAST_LEN], FEATURE_NUM, DIM_SIZE, activation='relu')
 
             split_list = []
-            for i in range((self.num_agents-1) * 2):
-                if i < self.num_agents-1:
+            for i in range((self.num_agents-1) * PAST_SAT_LOG_LEN + self.num_agents-1):
+                if i < (self.num_agents-1) * PAST_SAT_LOG_LEN:
                     split_tmp = tflearn.conv_1d(inputs[:, 18 + i:19 + i, :3], FEATURE_NUM, DIM_SIZE, activation='relu')
                 else:
                     split_tmp = tflearn.conv_1d(inputs[:, 18 + i:19 + i, :6], FEATURE_NUM, DIM_SIZE, activation='relu')
@@ -107,8 +107,8 @@ class Network():
             split_15 = tflearn.conv_1d(inputs[:, 17:18, :PAST_LEN], FEATURE_NUM, DIM_SIZE, activation='relu')
 
             split_list = []
-            for i in range((self.num_agents - 1) * 2):
-                if i < self.num_agents - 1:
+            for i in range((self.num_agents - 1) * PAST_SAT_LOG_LEN + self.num_agents - 1):
+                if i < (self.num_agents - 1) * PAST_SAT_LOG_LEN:
                     split_tmp = tflearn.conv_1d(inputs[:, 18 + i:19 + i, :3], FEATURE_NUM, DIM_SIZE, activation='relu')
                 else:
                     split_tmp = tflearn.conv_1d(inputs[:, 18 + i:19 + i, :6], FEATURE_NUM, DIM_SIZE, activation='relu')
