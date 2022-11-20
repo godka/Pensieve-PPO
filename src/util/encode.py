@@ -1,5 +1,4 @@
-from sklearn.preprocessing import LabelEncoder
-from sklearn.preprocessing import OneHotEncoder
+
 import numpy as np
 MAX_SAT = 8
 PAST_LEN = 8
@@ -76,7 +75,8 @@ def one_hot_encode(input_list, size):
     input_list = np.array(input_list)
     input_list = input_list.reshape(len(input_list), 1)
     print(input_list)
-    onehot_encoder = OneHotEncoder(sparse=False, max_categories=size)
-    onehot_encoded = onehot_encoder.fit_transform(input_list)
+    onehot_encoded = []
+    for tmp_list in input_list:
+        onehot_encoded.append([0] * tmp_list[0] + [1] + [0] * (size -tmp_list[0] - 1))
     print(onehot_encoded)
     return onehot_encoded
