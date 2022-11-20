@@ -8,7 +8,7 @@ import numpy as np
 import tensorflow.compat.v1 as tf
 from muleo_lc_bw_share import load_trace
 from muleo_lc_bw_share import fixed_env_cent3 as env
-import ppo_cent_his3 as network
+import ppo_cent_his2 as network
 
 # S_INFO = 10 + 1 + 3 + 6 * 5  # Original + nums of sat + bw of sats + decisions of users
 S_LEN = 8  # take how many frames in the past
@@ -205,20 +205,19 @@ def main():
                 = encode_other_sat_info(net_env.sat_decision_log, NUM_AGENTS, cur_sat_id, next_sat_id, agent,
                                         other_sat_users, other_sat_bw_logs)
 
-            # state[agent][11:11+MAX_SAT - A_SAT, -1] = np.reshape(np.array(other_sat_num_users), (MAX_SAT - A_SAT, 1)) / 10
             state[agent][11:12, 0:NUM_AGENTS - 1] = np.array(other_buffer_sizes) / BUFFER_NORM_FACTOR
             state[agent][12:(12 + MAX_SAT - A_SAT), 0:PAST_LEN] = np.array(other_sat_bws) / 10
 
             # state[agent][(12 + MAX_SAT - A_SAT):(12 + MAX_SAT - A_SAT + PAST_SAT_LOG_LEN),
             # 0:3] = np.reshape(cur_user_sat_decisions, (-1, 3))
 
-            # state[agent][(12 + MAX_SAT - A_SAT + PAST_SAT_LOG_LEN):(12 + MAX_SAT - A_SAT + PAST_SAT_LOG_LEN
-            #                                                         + (NUM_AGENTS-1) * PAST_SAT_LOG_LEN),
-            # 0:3] = np.reshape(other_user_sat_decisions, (-1, 3))
+            state[agent][(12 + MAX_SAT - A_SAT):(12 + MAX_SAT - A_SAT
+                                                 + (NUM_AGENTS - 1) * PAST_SAT_LOG_LEN),
+            0:3] = np.reshape(other_user_sat_decisions, (-1, 3))
 
             others_last_bit_rate = np.delete(np.array(last_bit_rate), agent)
-            state[agent][(12 + MAX_SAT - A_SAT):
-                         (12 + MAX_SAT - A_SAT + (NUM_AGENTS - 1)),
+            state[agent][(12 + MAX_SAT - A_SAT + (NUM_AGENTS - 1) * PAST_SAT_LOG_LEN):
+                         (12 + MAX_SAT - A_SAT + (NUM_AGENTS - 1) * PAST_SAT_LOG_LEN + (NUM_AGENTS - 1)),
             0:len(VIDEO_BIT_RATE)] = np.reshape(one_hot_encode(others_last_bit_rate, len(VIDEO_BIT_RATE)),
                                                 (-1, len(VIDEO_BIT_RATE)))
             # if len(next_sat_user_num) < PAST_LEN:

@@ -31,10 +31,14 @@ class Network():
             split_5 = tflearn.fully_connected(inputs[:, 5:6, -1], FEATURE_NUM, activation='relu')
             split_6 = tflearn.conv_1d(inputs[:, 6:7, :PAST_LEN], FEATURE_NUM, DIM_SIZE, activation='relu')
             split_7 = tflearn.conv_1d(inputs[:, 7:8, :PAST_LEN], FEATURE_NUM, DIM_SIZE, activation='relu')
+
             split_8 = tflearn.conv_1d(inputs[:, 8:9, :], FEATURE_NUM, DIM_SIZE, activation='relu')
             split_8_1 = tflearn.conv_1d(inputs[:, 9:10, :], FEATURE_NUM, DIM_SIZE, activation='relu')
+
             split_9 = tflearn.conv_1d(inputs[:, 10:11, :A_SAT], FEATURE_NUM, DIM_SIZE, activation='relu')
+
             split_9_1 = tflearn.conv_1d(inputs[:, 11:12, :self.num_agents-1], FEATURE_NUM, DIM_SIZE, activation='relu')
+
             split_10 = tflearn.conv_1d(inputs[:, 12:13, :PAST_LEN], FEATURE_NUM, DIM_SIZE, activation='relu')
             split_11 = tflearn.conv_1d(inputs[:, 13:14, :PAST_LEN], FEATURE_NUM, DIM_SIZE, activation='relu')
             split_12 = tflearn.conv_1d(inputs[:, 14:15, :PAST_LEN], FEATURE_NUM, DIM_SIZE, activation='relu')
@@ -43,13 +47,12 @@ class Network():
             split_15 = tflearn.conv_1d(inputs[:, 17:18, :PAST_LEN], FEATURE_NUM, DIM_SIZE, activation='relu')
 
             split_list = []
-            for i in range(self.num_agents * PAST_SAT_LOG_LEN + self.num_agents-1):
-                if i < self.num_agents * PAST_SAT_LOG_LEN:
-                    split_tmp = tflearn.conv_1d(inputs[:, 18 + i:19 + i, :3], FEATURE_NUM, DIM_SIZE,
-                                                activation='relu')
+            for i in range((self.num_agents-1) * 2):
+                if i < self.num_agents-1:
+                    split_tmp = tflearn.conv_1d(inputs[:, 18 + i:19 + i, :3], FEATURE_NUM, DIM_SIZE, activation='relu')
                 else:
-                    split_tmp = tflearn.conv_1d(inputs[:, 18 + i:19 + i, :6], FEATURE_NUM, DIM_SIZE,
-                                                activation='relu')
+                    split_tmp = tflearn.conv_1d(inputs[:, 18 + i:19 + i, :6], FEATURE_NUM, DIM_SIZE, activation='relu')
+
                 split_tmp_flat = tflearn.flatten(split_tmp)
                 split_list.append(split_tmp_flat)
 
@@ -87,11 +90,15 @@ class Network():
             split_5 = tflearn.fully_connected(inputs[:, 5:6, -1], FEATURE_NUM, activation='relu')
             split_6 = tflearn.conv_1d(inputs[:, 6:7, :PAST_LEN], FEATURE_NUM, DIM_SIZE, activation='relu')
             split_7 = tflearn.conv_1d(inputs[:, 7:8, :PAST_LEN], FEATURE_NUM, DIM_SIZE, activation='relu')
+
             split_8 = tflearn.conv_1d(inputs[:, 8:9, :], FEATURE_NUM, DIM_SIZE, activation='relu')
             split_8_1 = tflearn.conv_1d(inputs[:, 9:10, :], FEATURE_NUM, DIM_SIZE, activation='relu')
+
             split_9 = tflearn.conv_1d(inputs[:, 10:11, :A_SAT], FEATURE_NUM, DIM_SIZE, activation='relu')
+
             split_9_1 = tflearn.conv_1d(inputs[:, 11:12, :self.num_agents - 1], FEATURE_NUM, DIM_SIZE,
                                         activation='relu')
+
             split_10 = tflearn.conv_1d(inputs[:, 12:13, :PAST_LEN], FEATURE_NUM, DIM_SIZE, activation='relu')
             split_11 = tflearn.conv_1d(inputs[:, 13:14, :PAST_LEN], FEATURE_NUM, DIM_SIZE, activation='relu')
             split_12 = tflearn.conv_1d(inputs[:, 14:15, :PAST_LEN], FEATURE_NUM, DIM_SIZE, activation='relu')
@@ -100,13 +107,12 @@ class Network():
             split_15 = tflearn.conv_1d(inputs[:, 17:18, :PAST_LEN], FEATURE_NUM, DIM_SIZE, activation='relu')
 
             split_list = []
-            for i in range(self.num_agents * PAST_SAT_LOG_LEN + self.num_agents - 1):
-                if i < self.num_agents * PAST_SAT_LOG_LEN:
-                    split_tmp = tflearn.conv_1d(inputs[:, 18 + i:19 + i, :3], FEATURE_NUM, DIM_SIZE,
-                                                activation='relu')
+            for i in range((self.num_agents - 1) * 2):
+                if i < self.num_agents - 1:
+                    split_tmp = tflearn.conv_1d(inputs[:, 18 + i:19 + i, :3], FEATURE_NUM, DIM_SIZE, activation='relu')
                 else:
-                    split_tmp = tflearn.conv_1d(inputs[:, 18 + i:19 + i, :6], FEATURE_NUM, DIM_SIZE,
-                                                activation='relu')
+                    split_tmp = tflearn.conv_1d(inputs[:, 18 + i:19 + i, :6], FEATURE_NUM, DIM_SIZE, activation='relu')
+
                 split_tmp_flat = tflearn.flatten(split_tmp)
                 split_list.append(split_tmp_flat)
 
