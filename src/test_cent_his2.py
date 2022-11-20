@@ -8,7 +8,7 @@ import numpy as np
 import tensorflow.compat.v1 as tf
 from muleo_lc_bw_share import load_trace
 from muleo_lc_bw_share import fixed_env_cent3 as env
-import ppo_cent_his2 as network
+import ppo_cent_his3 as network
 
 # S_INFO = 10 + 1 + 3 + 6 * 5  # Original + nums of sat + bw of sats + decisions of users
 S_LEN = 8  # take how many frames in the past
@@ -30,7 +30,7 @@ RANDOM_SEED = 42
 TEST_TRACES = './test/'
 NN_MODEL = sys.argv[1]
 NUM_AGENTS = int(sys.argv[2])
-S_INFO = 12 + MAX_SAT - A_SAT + NUM_AGENTS * PAST_SAT_LOG_LEN + (NUM_AGENTS-1)
+S_INFO = 12 + MAX_SAT - A_SAT + (NUM_AGENTS-1)
 
 LOG_FILE = './test_results_cent_his' + str(NUM_AGENTS) + '/log_sim_ppo'
 
@@ -181,7 +181,8 @@ def main():
             state[agent][2, -1] = float(video_chunk_size) / float(delay) / M_IN_K  # kilo byte / ms
             state[agent][3, -1] = float(delay) / M_IN_K / BUFFER_NORM_FACTOR  # 10 sec
             state[agent][4, :A_DIM] = np.array(next_video_chunk_sizes) / M_IN_K / M_IN_K  # mega byte
-            state[agent][5, -1] = np.minimum(video_chunk_remain, CHUNK_TIL_VIDEO_END_CAP) / float(CHUNK_TIL_VIDEO_END_CAP)
+            state[agent][5, -1] = np.minimum(video_chunk_remain, CHUNK_TIL_VIDEO_END_CAP) / float(
+                CHUNK_TIL_VIDEO_END_CAP)
             if len(next_sat_bw_logs) < PAST_LEN:
                 next_sat_bw_logs = [0] * (PAST_LEN - len(next_sat_bw_logs)) + next_sat_bw_logs
 
@@ -196,7 +197,8 @@ def main():
                 state[agent][9:10, 0:S_LEN] = np.zeros((1, S_LEN))
             state[agent][8:9, -1] = np.array(cur_sat_user_num) / 10
             state[agent][9:10, -1] = np.array(next_sat_user_num) / 10
-            state[agent][10, :A_SAT] = [float(connected_time[0]) / BUFFER_NORM_FACTOR / 10, float(connected_time[1]) / BUFFER_NORM_FACTOR / 10]
+            state[agent][10, :A_SAT] = [float(connected_time[0]) / BUFFER_NORM_FACTOR / 10,
+                                        float(connected_time[1]) / BUFFER_NORM_FACTOR / 10]
 
             other_user_sat_decisions, other_sat_num_users, other_sat_bws, cur_user_sat_decisions \
                 = encode_other_sat_info(net_env.sat_decision_log, NUM_AGENTS, cur_sat_id, next_sat_id, agent,
@@ -206,16 +208,18 @@ def main():
             state[agent][11:12, 0:NUM_AGENTS - 1] = np.array(other_buffer_sizes) / BUFFER_NORM_FACTOR
             state[agent][12:(12 + MAX_SAT - A_SAT), 0:PAST_LEN] = np.array(other_sat_bws) / 10
 
-            state[agent][(12 + MAX_SAT - A_SAT):(12 + MAX_SAT - A_SAT + PAST_SAT_LOG_LEN),
-            0:3] = np.reshape(cur_user_sat_decisions, (-1, 3))
+            # state[agent][(12 + MAX_SAT - A_SAT):(12 + MAX_SAT - A_SAT + PAST_SAT_LOG_LEN),
+            # 0:3] = np.reshape(cur_user_sat_decisions, (-1, 3))
 
-            state[agent][(12 + MAX_SAT - A_SAT + PAST_SAT_LOG_LEN):(12 + MAX_SAT - A_SAT + PAST_SAT_LOG_LEN
-                                                                    + (NUM_AGENTS-1) * PAST_SAT_LOG_LEN),
-            0:3] = np.reshape(other_user_sat_decisions, (-1, 3))
+            # state[agent][(12 + MAX_SAT - A_SAT + PAST_SAT_LOG_LEN):(12 + MAX_SAT - A_SAT + PAST_SAT_LOG_LEN
+            #                                                         + (NUM_AGENTS-1) * PAST_SAT_LOG_LEN),
+            # 0:3] = np.reshape(other_user_sat_decisions, (-1, 3))
+
             others_last_bit_rate = np.delete(np.array(last_bit_rate), agent)
-            state[agent][(12 + MAX_SAT - A_SAT + PAST_SAT_LOG_LEN + (NUM_AGENTS-1) * PAST_SAT_LOG_LEN):
-                         (12 + MAX_SAT - A_SAT + PAST_SAT_LOG_LEN + (NUM_AGENTS-1) * PAST_SAT_LOG_LEN + (NUM_AGENTS-1)),
-            0:len(VIDEO_BIT_RATE)] = np.reshape(one_hot_encode(others_last_bit_rate, len(VIDEO_BIT_RATE)), (-1, len(VIDEO_BIT_RATE)))
+            state[agent][(12 + MAX_SAT - A_SAT):
+                         (12 + MAX_SAT - A_SAT + (NUM_AGENTS - 1)),
+            0:len(VIDEO_BIT_RATE)] = np.reshape(one_hot_encode(others_last_bit_rate, len(VIDEO_BIT_RATE)),
+                                                (-1, len(VIDEO_BIT_RATE)))
             # if len(next_sat_user_num) < PAST_LEN:
             #     next_sat_user_num = [0] * (PAST_LEN - len(next_sat_user_num)) + next_sat_user_num
 

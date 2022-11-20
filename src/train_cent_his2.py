@@ -4,7 +4,7 @@ import logging
 import os
 import sys
 from muleo_lc_bw_share.env_cent_his3 import ABREnv
-import ppo_cent_his2 as network
+import ppo_cent_his3 as network
 import tensorflow.compat.v1 as tf
 
 os.environ['CUDA_VISIBLE_DEVICES'] = '-1'
@@ -36,7 +36,7 @@ parser.add_argument('--user', type=int, default=6)
 args = parser.parse_args()
 USERS = args.user
 # A_SAT = USERS + 1
-S_DIM = [12 + MAX_SAT - A_SAT + USERS * PAST_SAT_LOG_LEN + (USERS-1), 8]
+S_DIM = [12 + MAX_SAT - A_SAT + (USERS-1), 8]
 
 TEST_LOG_FOLDER += str(USERS) + '/'
 SUMMARY_DIR += str(USERS)
