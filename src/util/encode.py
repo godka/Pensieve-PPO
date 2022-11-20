@@ -43,7 +43,7 @@ def encode_other_sat_info(sat_decision_log, num_agents, cur_sat_id, next_sat_id,
 
     for index, i_agent in enumerate(range(num_agents)):
         # Exclude the current user's decision
-        sat_logs = sat_decision_log[i_agent]# [-PAST_SAT_LOG_LEN:]
+        sat_logs = [sat_decision_log[i_agent]]# [-PAST_SAT_LOG_LEN:]
 
         tmp_logs = []
         for log_data in sat_logs:
