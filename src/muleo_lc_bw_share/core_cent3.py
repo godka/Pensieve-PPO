@@ -103,12 +103,12 @@ class Environment:
             if sat_id == self.cur_sat_id[agent]:
                 # print("Can't do handover. Only one visible satellite")
                 return
-
+            prev_sat_id = self.cur_sat_id[agent]
             self.update_sat_info(sat_id, self.mahimahi_ptr[agent], 1)
             self.update_sat_info(self.cur_sat_id[agent], self.mahimahi_ptr[agent], -1)
             self.cur_sat_id[agent] = sat_id
             self.delay[agent] = HANDOVER_DELAY
-            return sat_id
+            return prev_sat_id, sat_id
     
     def step_ahead(self, agent):
           self.mahimahi_ptr[agent] += 1
