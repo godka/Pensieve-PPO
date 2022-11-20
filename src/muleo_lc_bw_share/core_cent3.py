@@ -443,7 +443,7 @@ class Environment:
 
         return 0
 
-    def get_simulated_penalty(self, agent, quality):
+    def get_simulated_penalty(self, agent, quality, prev_sat_id, next_sat_id):
         assert quality >= 0
         assert quality < BITRATE_LEVELS
 
@@ -452,18 +452,30 @@ class Environment:
         mahimahi_ptr = self.mahimahi_ptr[agent]
         cur_sat_id = self.cur_sat_id[agent]
 
-        # use the delivery opportunity in mahimahi
-        delay = self.delay[agent]  # in ms
-        # self.delay[agent] = 0
-        video_chunk_counter_sent = 0  # in bytes
+        if cur_sat_id not in [prev_sat_id, next_sat_id]:
+            return 0
 
+        if cur_sat_id == prev_sat_id:
+            reward1 = self.calculate_reward(cur_sat_id, video_chunk_size, last_mahimahi_time, mahimahi_ptr, self.delay[agent], self.get_num_of_user_sat(cur_sat_id))
+            reward2 = self.calculate_reward(cur_sat_id, video_chunk_size, last_mahimahi_time, mahimahi_ptr,
+                                            self.delay[agent], self.get_num_of_user_sat(cur_sat_id)-1)
+        elif cur_sat_id == next_sat_id:
+            reward1 = self.calculate_reward(cur_sat_id, video_chunk_size, last_mahimahi_time, mahimahi_ptr, self.delay[agent], self.get_num_of_user_sat(cur_sat_id)+1)
+            reward2 = self.calculate_reward(cur_sat_id, video_chunk_size, last_mahimahi_time, mahimahi_ptr,
+                                            self.delay[agent], self.get_num_of_user_sat(cur_sat_id))
+        else:
+            print("Cannot Happen")
+        return reward1 - reward2
+
+    def calculate_reward(self, cur_sat_id, video_chunk_size, last_mahimahi_time, mahimahi_ptr, delay, num_of_user):
+        video_chunk_counter_sent = 0  # in bytes
         while True:  # download video chunk over mahimahi
             if self.get_num_of_user_sat(cur_sat_id) == 0:
                 throughput = self.cooked_bw[cur_sat_id][mahimahi_ptr] \
                              * B_IN_MB / BITS_IN_BYTE
             else:
                 throughput = self.cooked_bw[cur_sat_id][mahimahi_ptr] \
-                             * B_IN_MB / BITS_IN_BYTE / self.get_num_of_user_sat(cur_sat_id)
+                             * B_IN_MB / BITS_IN_BYTE / num_of_user
 
             if throughput == 0.0:
                 # Do the forced handover
@@ -511,15 +523,19 @@ class Environment:
         SMOOTH_PENALTY = 1
         DEFAULT_QUALITY = 1  # default video quality without agent
 
-        reward = -REBUF_PENALTY * rebuf / MILLISECONDS_IN_SECOND
+        reward = REBUF_PENALTY * rebuf / MILLISECONDS_IN_SECOND
 
         return reward
 
-    def get_others_reward(self, agent, last_bit_rate, last_penalty):
+    def get_others_reward(self, agent, last_bit_rate, prev_sat_id, cur_sat_id):
         reward = 0
         for i in range(self.num_agents):
             if i == agent:
                 continue
-            reward += last_penalty[i] - self.get_simulated_penalty(i, last_bit_rate[i])
+            if prev_sat_id != cur_sat_id:
+                reward += self.get_simulated_penalty(i, last_bit_rate[i], prev_sat_id, cur_sat_id)
 
         return reward
+
+    # def get _others_choice(self, agent):
+

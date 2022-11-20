@@ -1,7 +1,7 @@
 # add queuing delay into halo
 import os
 import numpy as np
-from . import core_cent as abrenv
+from . import core_cent3 as abrenv
 from . import load_trace
 
 from util.encode import encode_other_sat_info, one_hot_encode
