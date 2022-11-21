@@ -536,7 +536,8 @@ class Environment:
                 continue
             if prev_sat_id != cur_sat_id:
                 reward += self.get_simulated_penalty(i, last_bit_rate[i], prev_sat_id, cur_sat_id) / NUM_AGENTS
-        print(reward)
+        if reward !=0:
+            print(reward)
         return reward
 
     # def get _others_choice(self, agent):
