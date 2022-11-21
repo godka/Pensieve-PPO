@@ -32,7 +32,7 @@ NN_MODEL = sys.argv[1]
 NUM_AGENTS = int(sys.argv[2])
 S_INFO = 11 + NUM_AGENTS-1 + (NUM_AGENTS-1) * PAST_SAT_LOG_LEN + (NUM_AGENTS-1)
 
-LOG_FILE = './test_results_cent_his_test2' + str(NUM_AGENTS) + '/log_sim_ppo'
+LOG_FILE = './test_results_cent_his33' + str(NUM_AGENTS) + '/log_sim_ppo'
 
 
 # A_SAT = NUM_AGENTS
