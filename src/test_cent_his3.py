@@ -13,7 +13,7 @@ import ppo_cent_his3 as network
 # S_INFO = 10 + 1 + 3 + 6 * 5  # Original + nums of sat + bw of sats + decisions of users
 S_LEN = 8  # take how many frames in the past
 A_DIM = 6
-PAST_SAT_LOG_LEN = 3
+PAST_SAT_LOG_LEN = 0
 PAST_LEN = 8
 A_SAT = 2
 MAX_SAT = 8
