@@ -22,10 +22,10 @@ TRAIN_SEQ_LEN = 1000  # take as a train batch
 TRAIN_EPOCH = 500000
 MODEL_SAVE_INTERVAL = 100
 RANDOM_SEED = 42
-SUMMARY_DIR = './ppo_cent_his2'
+SUMMARY_DIR = './ppo_cent_his22'
 MODEL_DIR = './models'
 TRAIN_TRACES = './train/'
-TEST_LOG_FOLDER = './test_results_cent_his2'
+TEST_LOG_FOLDER = './test_results_cent_his_22'
 PPO_TRAINING_EPO = 5
 
 import argparse
