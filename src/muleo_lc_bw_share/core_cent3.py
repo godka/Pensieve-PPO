@@ -25,11 +25,10 @@ SCALE_VIDEO_SIZE_FOR_TEST = 20
 SCALE_VIDEO_LEN_FOR_TEST = 2
 
 # Multi-user setting
-NUM_AGENTS = 2
 
 
 class Environment:
-    def __init__(self, all_cooked_time, all_cooked_bw, random_seed=RANDOM_SEED, num_agents=NUM_AGENTS):
+    def __init__(self, all_cooked_time, all_cooked_bw, random_seed=RANDOM_SEED, num_agents=None):
         assert len(all_cooked_time) == len(all_cooked_bw)
 
         np.random.seed(random_seed)
@@ -535,7 +534,7 @@ class Environment:
             if i == agent:
                 continue
             if prev_sat_id != cur_sat_id:
-                reward += self.get_simulated_penalty(i, last_bit_rate[i], prev_sat_id, cur_sat_id) / NUM_AGENTS
+                reward += self.get_simulated_penalty(i, last_bit_rate[i], prev_sat_id, cur_sat_id) / self.num_agents
 
         return reward
 

@@ -209,10 +209,6 @@ class ABREnv():
         # Future reward expectation
         tmp_reward = reward
         reward += self.net_env.get_others_reward(agent, self.last_bit_rate, self.prev_sat_id, self.cur_sat_id)
-        if tmp_reward != reward:
-            print(tmp_reward)
-            print(reward)
-            print("==")
         self.last_bit_rate[agent] = bit_rate
         state = np.roll(self.state[agent], -1, axis=1)
 
