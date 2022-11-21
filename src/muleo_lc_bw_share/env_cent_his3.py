@@ -104,7 +104,7 @@ class ABREnv():
             state[8:9, 0:S_LEN] = np.zeros((1, S_LEN))
             state[9:10, 0:S_LEN] = np.zeros((1, S_LEN))
         if self.last_sat_id[agent] != next_sat_id:
-            state[agent][9:10, 0:S_LEN] = np.zeros((1, S_LEN))
+            state[9:10, 0:S_LEN] = np.zeros((1, S_LEN))
 
         state[8:9, -1] = np.array(cur_sat_user_num) / 10
         state[9:10, -1] = np.array(next_sat_user_nums) / 10
@@ -241,7 +241,7 @@ class ABREnv():
             state[8:9, 0:S_LEN] = np.zeros((1, S_LEN))
             state[9:10, 0:S_LEN] = np.zeros((1, S_LEN))
         if self.last_sat_id[agent] != next_sat_id:
-            state[agent][9:10, 0:S_LEN] = np.zeros((1, S_LEN))
+            state[9:10, 0:S_LEN] = np.zeros((1, S_LEN))
 
         state[8:9, -1] = np.array(cur_sat_user_num) / 10
         state[9:10, -1] = np.array(next_sat_user_nums) / 10
