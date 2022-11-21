@@ -213,8 +213,8 @@ def main():
             # state[agent][(12 + MAX_SAT - A_SAT):(12 + MAX_SAT - A_SAT + PAST_SAT_LOG_LEN),
             # 0:3] = np.reshape(cur_user_sat_decisions, (-1, 3))
 
-            state[agent][(11 + NUM_AGENTS-1):(11 + NUM_AGENTS-1 + (NUM_AGENTS-1) * PAST_SAT_LOG_LEN),
-            0:2] = np.reshape(other_user_sat_decisions, (-1, 2))
+            # state[agent][(11 + NUM_AGENTS-1):(11 + NUM_AGENTS-1 + (NUM_AGENTS-1) * PAST_SAT_LOG_LEN),
+            # 0:2] = np.reshape(other_user_sat_decisions, (-1, 2))
 
             others_last_bit_rate = np.delete(np.array(last_bit_rate), agent)
             state[agent][(11 + NUM_AGENTS-1 + (NUM_AGENTS-1) * PAST_SAT_LOG_LEN):

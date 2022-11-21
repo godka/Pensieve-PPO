@@ -119,8 +119,8 @@ class ABREnv():
         # state[agent][(12 + MAX_SAT - A_SAT):(12 + MAX_SAT - A_SAT + PAST_SAT_LOG_LEN),
         # 0:3] = np.reshape(cur_user_sat_decisions, (-1, 3))
 
-        state[(11 + self.num_agents - 1):(11 + self.num_agents - 1 + (self.num_agents - 1) * PAST_SAT_LOG_LEN),
-        0:2] = np.reshape(other_user_sat_decisions, (-1, 2))
+        # state[(11 + self.num_agents - 1):(11 + self.num_agents - 1 + (self.num_agents - 1) * PAST_SAT_LOG_LEN),
+        # 0:2] = np.reshape(other_user_sat_decisions, (-1, 2))
 
         others_last_bit_rate = np.delete(np.array(self.last_bit_rate), agent)
         state[(11 + self.num_agents - 1 + (self.num_agents - 1) * PAST_SAT_LOG_LEN):
@@ -256,8 +256,8 @@ class ABREnv():
         # state[agent][(12 + MAX_SAT - A_SAT):(12 + MAX_SAT - A_SAT + PAST_SAT_LOG_LEN),
         # 0:3] = np.reshape(cur_user_sat_decisions, (-1, 3))
 
-        state[(11 + self.num_agents - 1):(11 + self.num_agents - 1 + (self.num_agents - 1) * PAST_SAT_LOG_LEN),
-        0:2] = np.reshape(other_user_sat_decisions, (-1, 2))
+        # state[(11 + self.num_agents - 1):(11 + self.num_agents - 1 + (self.num_agents - 1) * PAST_SAT_LOG_LEN),
+        # 0:2] = np.reshape(other_user_sat_decisions, (-1, 2))
 
         others_last_bit_rate = np.delete(np.array(self.last_bit_rate), agent)
         state[(11 + self.num_agents - 1 + (self.num_agents - 1) * PAST_SAT_LOG_LEN):
