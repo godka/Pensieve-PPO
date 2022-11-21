@@ -12,7 +12,7 @@ S_LEN = 8  # take how many frames in the past
 A_DIM = 6
 PAST_LEN = 8
 A_SAT = 2
-PAST_SAT_LOG_LEN = 0
+PAST_SAT_LOG_LEN = 1
 MAX_SAT = 8
 TRAIN_SEQ_LEN = 1000  # take as a train batch
 MODEL_SAVE_INTERVAL = 1000
@@ -119,8 +119,8 @@ class ABREnv():
         # state[agent][(12 + MAX_SAT - A_SAT):(12 + MAX_SAT - A_SAT + PAST_SAT_LOG_LEN),
         # 0:3] = np.reshape(cur_user_sat_decisions, (-1, 3))
 
-        # state[(11 + self.num_agents - 1):(11 + self.num_agents - 1 + (self.num_agents - 1) * PAST_SAT_LOG_LEN),
-        # 0:2] = np.reshape(other_user_sat_decisions, (-1, 2))
+        state[(11 + self.num_agents - 1):(11 + self.num_agents - 1 + (self.num_agents - 1) * PAST_SAT_LOG_LEN),
+        0:2] = np.reshape(other_user_sat_decisions, (-1, 2))
 
         others_last_bit_rate = np.delete(np.array(self.last_bit_rate), agent)
         state[(11 + self.num_agents - 1 + (self.num_agents - 1) * PAST_SAT_LOG_LEN):
@@ -256,8 +256,8 @@ class ABREnv():
         # state[agent][(12 + MAX_SAT - A_SAT):(12 + MAX_SAT - A_SAT + PAST_SAT_LOG_LEN),
         # 0:3] = np.reshape(cur_user_sat_decisions, (-1, 3))
 
-        # state[(11 + self.num_agents - 1):(11 + self.num_agents - 1 + (self.num_agents - 1) * PAST_SAT_LOG_LEN),
-        # 0:2] = np.reshape(other_user_sat_decisions, (-1, 2))
+        state[(11 + self.num_agents - 1):(11 + self.num_agents - 1 + (self.num_agents - 1) * PAST_SAT_LOG_LEN),
+        0:2] = np.reshape(other_user_sat_decisions, (-1, 2))
 
         others_last_bit_rate = np.delete(np.array(self.last_bit_rate), agent)
         state[(11 + self.num_agents - 1 + (self.num_agents - 1) * PAST_SAT_LOG_LEN):
