@@ -37,7 +37,7 @@ class ABREnv():
     def __init__(self, random_seed=RANDOM_SEED, num_agents=NUM_AGENTS):
         self.num_agents = num_agents
         global S_INFO
-        S_INFO = 12 + MAX_SAT - A_SAT + (self.num_agents-1) * PAST_SAT_LOG_LEN + (self.num_agents - 1)
+        S_INFO = 11 + self.num_agents - 1 + (self.num_agents - 1) * PAST_SAT_LOG_LEN + (self.num_agents - 1)
         # SAT_DIM = num_agents
         # A_SAT = num_agents
         # SAT_DIM = num_agents + 1
@@ -53,6 +53,7 @@ class ABREnv():
                                           num_agents=self.num_agents)
 
         self.last_bit_rate = [DEFAULT_QUALITY for _ in range(self.num_agents)]
+        self.last_sat_id = [-1 for _ in range(self.num_agents)]
         self.last_penalty = [0 for _ in range(self.num_agents)]
         self.state = [np.zeros((S_INFO, S_LEN))for _ in range(self.num_agents)]
         # self.sat_decision_log = [-1 for _ in range(self.num_agents)]
@@ -96,34 +97,36 @@ class ABREnv():
         state[7, :PAST_LEN] = np.array(cur_sat_bw_logs[:PAST_LEN]) / 10
 
         other_user_sat_decisions, other_sat_num_users, other_sat_bws, cur_user_sat_decisions \
-            = encode_other_sat_info(self.sat_decision_log, self.num_agents, cur_sat_id, next_sat_id, agent,
-                                    other_sat_users, other_sat_bw_logs, PAST_SAT_LOG_LEN)
+            = encode_other_sat_info(self.sat_decision_log, self.num_agents, cur_sat_id, next_sat_id,
+                                    agent, other_sat_users, other_sat_bw_logs, PAST_SAT_LOG_LEN)
 
         if self.is_handover:
             state[8:9, 0:S_LEN] = np.zeros((1, S_LEN))
             state[9:10, 0:S_LEN] = np.zeros((1, S_LEN))
+        if self.last_sat_id[agent] != next_sat_id:
+            state[agent][9:10, 0:S_LEN] = np.zeros((1, S_LEN))
+
         state[8:9, -1] = np.array(cur_sat_user_num) / 10
         state[9:10, -1] = np.array(next_sat_user_nums) / 10
-
         state[10, :A_SAT] = [float(connected_time[0]) / BUFFER_NORM_FACTOR / 10,
-                                   float(connected_time[1]) / BUFFER_NORM_FACTOR / 10]
+                             float(connected_time[1]) / BUFFER_NORM_FACTOR / 10]
 
         # state[11:11 + MAX_SAT - A_SAT, -1] = np.reshape(np.array(other_sat_num_users), (MAX_SAT - A_SAT, 1)) / 10
+        state[11:(11 + self.num_agents - 1), -1] = np.reshape(np.array(other_buffer_sizes) / BUFFER_NORM_FACTOR,
+                                                              (-1, 1))
+        # state[agent][12:(12 + MAX_SAT - A_SAT), 0:PAST_LEN] = np.array(other_sat_bws) / 10
 
-        state[11:12, 0:self.num_agents - 1] = np.array(other_buffer_sizes) / BUFFER_NORM_FACTOR
-        state[12:(12 + MAX_SAT - A_SAT), 0:PAST_LEN] = np.array(other_sat_bws) / 10
-
-        # state[(12 + MAX_SAT - A_SAT):(12 + MAX_SAT - A_SAT + PAST_SAT_LOG_LEN),
+        # state[agent][(12 + MAX_SAT - A_SAT):(12 + MAX_SAT - A_SAT + PAST_SAT_LOG_LEN),
         # 0:3] = np.reshape(cur_user_sat_decisions, (-1, 3))
-        state[(12 + MAX_SAT - A_SAT):(12 + MAX_SAT - A_SAT + (self.num_agents - 1) * PAST_SAT_LOG_LEN),
-        0:3] = np.reshape(other_user_sat_decisions, (-1, 3))
+
+        state[(11 + self.num_agents - 1):(11 + self.num_agents - 1 + (self.num_agents - 1) * PAST_SAT_LOG_LEN),
+        0:2] = np.reshape(other_user_sat_decisions, (-1, 2))
 
         others_last_bit_rate = np.delete(np.array(self.last_bit_rate), agent)
-        encoded_others_last_bit_rate = one_hot_encode(others_last_bit_rate, len(VIDEO_BIT_RATE))
-
-        state[(12 + MAX_SAT - A_SAT + (self.num_agents - 1) * PAST_SAT_LOG_LEN):
-                     ((12 + MAX_SAT - A_SAT + (self.num_agents - 1) * PAST_SAT_LOG_LEN) + self.num_agents - 1),
-        0:len(VIDEO_BIT_RATE)] = encoded_others_last_bit_rate
+        state[(11 + self.num_agents - 1 + (self.num_agents - 1) * PAST_SAT_LOG_LEN):
+              (11 + self.num_agents - 1 + (self.num_agents - 1) * PAST_SAT_LOG_LEN + (self.num_agents - 1)),
+        0:len(VIDEO_BIT_RATE)] = np.reshape(one_hot_encode(others_last_bit_rate, len(VIDEO_BIT_RATE)),
+                                            (-1, len(VIDEO_BIT_RATE)))
 
         self.state[agent] = state
         
@@ -134,6 +137,8 @@ class ABREnv():
         self.net_env.reset()
         self.time_stamp = 0
         self.last_bit_rate = [DEFAULT_QUALITY for _ in range(self.num_agents)]
+        self.last_sat_id = [-1 for _ in range(self.num_agents)]
+
         self.last_penalty = [0 for _ in range(self.num_agents)]
         self.state = [np.zeros((S_INFO, S_LEN)) for _ in range(self.num_agents)]
 
@@ -235,6 +240,8 @@ class ABREnv():
         if self.is_handover:
             state[8:9, 0:S_LEN] = np.zeros((1, S_LEN))
             state[9:10, 0:S_LEN] = np.zeros((1, S_LEN))
+        if self.last_sat_id[agent] != next_sat_id:
+            state[agent][9:10, 0:S_LEN] = np.zeros((1, S_LEN))
 
         state[8:9, -1] = np.array(cur_sat_user_num) / 10
         state[9:10, -1] = np.array(next_sat_user_nums) / 10
@@ -242,20 +249,21 @@ class ABREnv():
                                    float(connected_time[1]) / BUFFER_NORM_FACTOR / 10]
 
         # state[11:11 + MAX_SAT - A_SAT, -1] = np.reshape(np.array(other_sat_num_users), (MAX_SAT - A_SAT, 1)) / 10
-        state[11:12, 0:self.num_agents - 1] = np.array(other_buffer_sizes) / BUFFER_NORM_FACTOR
-        state[12:(12 + MAX_SAT - A_SAT), 0:PAST_LEN] = np.array(other_sat_bws) / 10
+        state[11:(11 + self.num_agents - 1), -1] = np.reshape(np.array(other_buffer_sizes) / BUFFER_NORM_FACTOR,
+                                                                (-1, 1))
+        # state[agent][12:(12 + MAX_SAT - A_SAT), 0:PAST_LEN] = np.array(other_sat_bws) / 10
 
-        # state[(12 + MAX_SAT - A_SAT):(12 + MAX_SAT - A_SAT + PAST_SAT_LOG_LEN),
+        # state[agent][(12 + MAX_SAT - A_SAT):(12 + MAX_SAT - A_SAT + PAST_SAT_LOG_LEN),
         # 0:3] = np.reshape(cur_user_sat_decisions, (-1, 3))
-        state[(12 + MAX_SAT - A_SAT):(12 + MAX_SAT - A_SAT + (self.num_agents - 1) * PAST_SAT_LOG_LEN),
-        0:3] = np.reshape(other_user_sat_decisions, (-1, 3))
+
+        state[(11 + self.num_agents - 1):(11 + self.num_agents - 1 + (self.num_agents - 1) * PAST_SAT_LOG_LEN),
+        0:2] = np.reshape(other_user_sat_decisions, (-1, 2))
 
         others_last_bit_rate = np.delete(np.array(self.last_bit_rate), agent)
-        encoded_others_last_bit_rate = one_hot_encode(others_last_bit_rate, len(VIDEO_BIT_RATE))
-
-        state[(12 + MAX_SAT - A_SAT + (self.num_agents - 1) * PAST_SAT_LOG_LEN):
-              ((12 + MAX_SAT - A_SAT + (self.num_agents - 1) * PAST_SAT_LOG_LEN) + self.num_agents - 1),
-        0:len(VIDEO_BIT_RATE)] = encoded_others_last_bit_rate
+        state[(11 + self.num_agents - 1 + (self.num_agents - 1) * PAST_SAT_LOG_LEN):
+                     (11 + self.num_agents - 1 + (self.num_agents - 1) * PAST_SAT_LOG_LEN + (self.num_agents - 1)),
+        0:len(VIDEO_BIT_RATE)] = np.reshape(one_hot_encode(others_last_bit_rate, len(VIDEO_BIT_RATE)),
+                                            (-1, len(VIDEO_BIT_RATE)))
         # if len(next_sat_user_nums) < PAST_LEN:
         #     next_sat_user_nums = [0] * (PAST_LEN - len(next_sat_user_nums)) + next_sat_user_nums
 
