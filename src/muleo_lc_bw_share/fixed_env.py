@@ -1,3 +1,5 @@
+import time
+
 import numpy as np
 import itertools
 from statsmodels.tsa.api import ExponentialSmoothing, SimpleExpSmoothing, Holt
@@ -490,6 +492,7 @@ class Environment:
     def calculate_mpc_with_handover(self, agent, robustness=True, only_runner_up=True,
                                     method="harmonic-mean", centralized=True):
         # future chunks length (try 4 if that many remaining)
+        start_time = time.time.time()
         video_chunk_remain = self.video_chunk_remain[agent]
         # last_index = self.get_total_video_chunk() - video_chunk_remain
         last_index = int(CHUNK_TIL_VIDEO_END_CAP - video_chunk_remain)

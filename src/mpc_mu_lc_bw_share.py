@@ -52,7 +52,7 @@ size_video5 = [450283, 398865, 350812, 382355, 411561, 318564, 352642, 437162, 3
 size_video6 = [181801, 155580, 139857, 155432, 163442, 126289, 153295, 173849, 150710, 139105, 141840, 156148, 160746, 179801, 140051, 138313, 143509, 150616, 165384, 140881, 157671, 157812, 163927, 137654, 146754, 153938, 181901, 111155, 153605, 149029, 157421, 157488, 143881, 163444, 179328, 159914, 131610, 124011, 144254, 149991, 147968, 161857, 145210, 172312, 167025, 160064, 137507, 118421, 112270]
 
 MPC_TYPE = "DualMPC"
-# MPC_TYPE = "DualMPC-Centralization"
+MPC_TYPE = "DualMPC-Centralization"
 # DualMPC-Centralization
 
 
@@ -147,7 +147,7 @@ def main():
         # this is to make the framework similar to the real
         delay, sleep_time, buffer_size, rebuf, \
         video_chunk_size, next_video_chunk_sizes, \
-        end_of_video, video_chunk_remain, b, is_handover, cur_sat_id, sat_status, _, _, _, _, _, _ = \
+        end_of_video, video_chunk_remain, b, is_handover, cur_sat_id, sat_status, _, _, _, _, _, _, _ = \
             net_env.get_video_chunk(bit_rate[agent], agent, MPC_TYPE)
 
         bit_rate[agent] = b
