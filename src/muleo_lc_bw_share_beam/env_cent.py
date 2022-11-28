@@ -1,17 +1,20 @@
 # add queuing delay into halo
 import os
 import numpy as np
-from . import core_explicit as abrenv
+from . import core_cent as abrenv
 from . import load_trace
 
+from util.encode import encode_other_sat_info
 # bit_rate, buffer_size, next_chunk_size, bandwidth_measurement(throughput and time), chunk_til_video_end
-S_INFO = 6 + 1
+# S_INFO = 10 + 1 + 3 + 6 * 5 # Original + nums of sat + bw of sats + decisions of users
 S_LEN = 8  # take how many frames in the past
 A_DIM = 6
-PAST_LEN = 5
+PAST_LEN = 8
 A_SAT = 2
-TRAIN_SEQ_LEN = 100  # take as a train batch
-MODEL_SAVE_INTERVAL = 100
+PAST_SAT_LOG_LEN = 3
+MAX_SAT = 8
+TRAIN_SEQ_LEN = 1000  # take as a train batch
+MODEL_SAVE_INTERVAL = 1000
 VIDEO_BIT_RATE = np.array([300., 750., 1200., 1850., 2850., 4300.])  # Kbps
 # VIDEO_BIT_RATE = [10000, 20000, 30000, 60000, 90000, 140000]  # Kbps
 BUFFER_NORM_FACTOR = 10.0
@@ -32,6 +35,8 @@ class ABREnv():
 
     def __init__(self, random_seed=RANDOM_SEED, num_agents=NUM_AGENTS):
         self.num_agents = num_agents
+        global S_INFO
+        S_INFO = 10 + MAX_SAT - A_SAT + self.num_agents * PAST_SAT_LOG_LEN
         # SAT_DIM = num_agents
         # A_SAT = num_agents
         # SAT_DIM = num_agents + 1
@@ -43,9 +48,10 @@ class ABREnv():
                                           random_seed=random_seed,
                                           num_agents=self.num_agents)
 
-        self.last_bit_rate = DEFAULT_QUALITY
+        self.last_bit_rate = [DEFAULT_QUALITY for _ in range(self.num_agents)]
         self.buffer_size = [0 for _ in range(self.num_agents)]
         self.state = [np.zeros((S_INFO, S_LEN))for _ in range(self.num_agents)]
+        self.sat_decision_log = [[-1,-1,-1,-1,-1] for _ in range(self.num_agents)]
         
     def seed(self, num):
         np.random.seed(num)
@@ -55,11 +61,12 @@ class ABREnv():
         delay, sleep_time, self.buffer_size[agent], rebuf, \
             video_chunk_size, next_video_chunk_sizes, \
             end_of_video, video_chunk_remain, \
-            next_sat_bw = \
-            self.net_env.get_video_chunk(bit_rate, agent)
+            next_sat_bw, next_sat_bw_logs, cur_sat_user_num, next_sat_user_nums, cur_sat_bw_logs, connected_time, \
+            cur_sat_id, next_sat_id, other_sat_users, other_sat_bw_logs, self.buffer_size = self.net_env.get_video_chunk(bit_rate, agent)
+        self.sat_decision_log[agent].append(cur_sat_id)
         state = np.roll(self.state[agent], -1, axis=1)
 
-        # this should be S_INFO number of terms
+        # this should be S_INFO number of terms`
         state[0, -1] = VIDEO_BIT_RATE[bit_rate] / \
             float(np.max(VIDEO_BIT_RATE))  # last quality
         state[1, -1] = self.buffer_size[agent] / BUFFER_NORM_FACTOR  # 10 sec
@@ -70,7 +77,32 @@ class ABREnv():
             next_video_chunk_sizes) / M_IN_K / M_IN_K  # mega byte
         state[5, -1] = np.minimum(video_chunk_remain,
                                 CHUNK_TIL_VIDEO_END_CAP) / float(CHUNK_TIL_VIDEO_END_CAP)
-        state[6, :SAT_DIM] = np.array(next_sat_bw)
+        if len(next_sat_bw_logs) < PAST_LEN:
+            next_sat_bw_logs = [0] * (PAST_LEN - len(next_sat_bw_logs)) + next_sat_bw_logs
+
+        state[6, :PAST_LEN] = np.array(next_sat_bw_logs[:PAST_LEN]) / 10
+
+        if len(cur_sat_bw_logs) < PAST_LEN:
+            cur_sat_bw_logs = [0] * (PAST_LEN - len(cur_sat_bw_logs)) + cur_sat_bw_logs
+
+        state[7, :PAST_LEN] = np.array(cur_sat_bw_logs[:PAST_LEN]) / 10
+
+        other_user_sat_decisions, other_sat_num_users, other_sat_bws, cur_user_sat_decisions \
+            = encode_other_sat_info(self.sat_decision_log, self.num_agents, cur_sat_id, next_sat_id, agent, other_sat_users, other_sat_bw_logs)
+
+        state[8, :A_SAT] = np.array([cur_sat_user_num, next_sat_user_nums]) / 10
+        state[9, :A_SAT] = [float(connected_time[0]) / BUFFER_NORM_FACTOR / 10,
+                                   float(connected_time[1]) / BUFFER_NORM_FACTOR / 10]
+
+        # state[10, :MAX_SAT - A_SAT] = np.array(other_sat_num_users) / 10
+
+        state[10:(10 + MAX_SAT - A_SAT), 0:PAST_LEN] = np.array(other_sat_bws) / 10
+
+        state[(10 + MAX_SAT - A_SAT):(10 + MAX_SAT - A_SAT + PAST_SAT_LOG_LEN),
+        0:3] = np.reshape(cur_user_sat_decisions, (-1, 3))
+        state[(10 + MAX_SAT - A_SAT + PAST_SAT_LOG_LEN):(10 + MAX_SAT - A_SAT + PAST_SAT_LOG_LEN +
+                                                         (self.num_agents-1) * PAST_SAT_LOG_LEN),
+        0:3] = np.reshape(other_user_sat_decisions, (-1, 3))
 
         self.state[agent] = state
         
@@ -80,7 +112,7 @@ class ABREnv():
         # self.net_env.reset_ptr()
         self.net_env.reset()
         self.time_stamp = 0
-        self.last_bit_rate = DEFAULT_QUALITY
+        self.last_bit_rate = [DEFAULT_QUALITY for _ in range(self.num_agents)]
         self.state = [np.zeros((S_INFO, S_LEN)) for _ in range(self.num_agents)]
         self.buffer_size = [0 for _ in range(self.num_agents)]
 
@@ -119,7 +151,7 @@ class ABREnv():
         return
 
     def set_sat(self, agent, sat):
-        self.net_env.set_satellite(agent, sat)
+        changed_sat_id = self.net_env.set_satellite(agent, sat)
 
     def step(self, action, agent):
         bit_rate = int(action) % A_DIM
@@ -129,9 +161,9 @@ class ABREnv():
         delay, sleep_time, self.buffer_size[agent], rebuf, \
             video_chunk_size, next_video_chunk_sizes, \
             end_of_video, video_chunk_remain, \
-            next_sat_bw = \
-            self.net_env.get_video_chunk(bit_rate, agent)
-
+            next_sat_bw, next_sat_bw_logs, cur_sat_user_num, next_sat_user_nums, cur_sat_bw_logs, connected_time, \
+            cur_sat_id, next_sat_id, other_sat_users, other_sat_bw_logs = self.net_env.get_video_chunk(bit_rate, agent)
+        self.sat_decision_log[agent].append(cur_sat_id)
         self.time_stamp += delay  # in ms
         self.time_stamp += sleep_time  # in ms
 
@@ -139,9 +171,9 @@ class ABREnv():
         reward = VIDEO_BIT_RATE[bit_rate] / M_IN_K \
             - REBUF_PENALTY * rebuf \
             - SMOOTH_PENALTY * np.abs(VIDEO_BIT_RATE[bit_rate] -
-                                      VIDEO_BIT_RATE[self.last_bit_rate]) / M_IN_K
+                                      VIDEO_BIT_RATE[self.last_bit_rate[agent]]) / M_IN_K
 
-        self.last_bit_rate = bit_rate
+        self.last_bit_rate[agent] = bit_rate
         state = np.roll(self.state[agent], -1, axis=1)
 
         # this should be S_INFO number of terms
@@ -155,9 +187,38 @@ class ABREnv():
             next_video_chunk_sizes) / M_IN_K / M_IN_K  # mega byte
         state[5, -1] = np.minimum(video_chunk_remain,
                                   CHUNK_TIL_VIDEO_END_CAP) / float(CHUNK_TIL_VIDEO_END_CAP)
-        state[6, :SAT_DIM] = np.array(next_sat_bw)
+        if len(next_sat_bw_logs) < PAST_LEN:
+            next_sat_bw_logs = [0] * (PAST_LEN - len(next_sat_bw_logs)) + next_sat_bw_logs
 
+        state[6, :PAST_LEN] = np.array(next_sat_bw_logs[:PAST_LEN]) / 10
+
+        if len(cur_sat_bw_logs) < PAST_LEN:
+            cur_sat_bw_logs = [0] * (PAST_LEN - len(cur_sat_bw_logs)) + cur_sat_bw_logs
+
+        state[7, :PAST_LEN] = np.array(cur_sat_bw_logs[:PAST_LEN]) / 10
+
+        other_user_sat_decisions, other_sat_num_users, other_sat_bws, cur_user_sat_decisions \
+            = encode_other_sat_info(self.sat_decision_log, self.num_agents, cur_sat_id, next_sat_id, agent, other_sat_users, other_sat_bw_logs)
+
+        state[8, :A_SAT] = np.array([cur_sat_user_num, next_sat_user_nums]) / 10
+        state[9, :A_SAT] = [float(connected_time[0]) / BUFFER_NORM_FACTOR / 10,
+                                   float(connected_time[1]) / BUFFER_NORM_FACTOR / 10]
+
+        # state[10, :MAX_SAT - A_SAT] = np.array(other_sat_num_users) / 10
+
+        state[10:(10 + MAX_SAT - A_SAT), :PAST_LEN] = np.array(other_sat_bws) / 10
+
+        state[(10 + MAX_SAT - A_SAT):(10 + MAX_SAT - A_SAT + PAST_SAT_LOG_LEN),
+        0:3] = np.reshape(cur_user_sat_decisions, (-1, 3))
+        state[(10 + MAX_SAT - A_SAT + PAST_SAT_LOG_LEN):(10 + MAX_SAT - A_SAT + PAST_SAT_LOG_LEN +
+                                                         (self.num_agents-1) * PAST_SAT_LOG_LEN),
+        0:3] = np.reshape(other_user_sat_decisions, (-1, 3))
+
+        # if len(next_sat_user_nums) < PAST_LEN:
+        #     next_sat_user_nums = [0] * (PAST_LEN - len(next_sat_user_nums)) + next_sat_user_nums
+
+        # state[agent][8, :PAST_LEN] = next_sat_user_nums[:5]
         self.state[agent] = state
-
         #observation, reward, done, info = env.step(action)
         return state, reward, end_of_video, {'bitrate': VIDEO_BIT_RATE[bit_rate], 'rebuffer': rebuf}
+
