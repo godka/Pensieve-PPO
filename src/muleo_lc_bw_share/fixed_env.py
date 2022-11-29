@@ -512,7 +512,7 @@ class Environment:
             chunk_combo_option.append(list(combo))
 
         # make handover combination options
-        for combo in itertools.product(list(range(MPC_FUTURE_CHUNK_COUNT)), repeat=self.num_agents):
+        for combo in itertools.product(list(range(MPC_FUTURE_CHUNK_COUNT+1)), repeat=self.num_agents):
             ho_combo_option.append(list(combo))
 
         future_chunk_length = MPC_FUTURE_CHUNK_COUNT
@@ -556,46 +556,50 @@ class Environment:
         max_rewards = [-10000000 for _ in range(self.num_agents)]
         best_combos = [[self.last_quality[i]] for i in range(self.num_agents)]
         ho_stamps = [MPC_FUTURE_CHUNK_COUNT for _ in range(self.num_agents)]
-        for full_combo in chunk_combo_option:
-            combos = []
-            curr_rebuffer_times = []
-            curr_buffers = start_buffers
-            bitrate_sums = []
-            smoothness_diffs = []
-            last_qualities = self.last_quality
-            sat_user_nums = num_of_sats
+        sat_user_nums = num_of_sats
 
-            # Break at the end of the chunk
-            for agent_id in range(self.num_agents):
-                cur_combo = full_combo[future_chunk_length * agent_id: future_chunk_length * agent_id + future_chunk_length]
-                # if cur_download_bws[agent_id] is None and cur_combo != [DEFAULT_QUALITY] * MPC_FUTURE_CHUNK_COUNT:
-                #     wrong_format = True
-                #     break
-                if cur_download_bws[agent_id] is None:
-                    combos.append([np.nan])
-                else:
-                    combos.append(cur_combo)
-                curr_rebuffer_times.append(0)
-                bitrate_sums.append(0)
-                smoothness_diffs.append(0)
+        for ho_positions in ho_combo_option:
+            future_sat_user_nums = {}
 
-            for ho_positions in ho_combo_option:
-                future_sat_user_nums = {}
-                for sat_id in sat_user_nums.keys():
-                    future_sat_user_nums[sat_id] = np.array([sat_user_nums[sat_id]] * MPC_FUTURE_CHUNK_COUNT)
+            for sat_id in sat_user_nums.keys():
+                future_sat_user_nums[sat_id] = np.array([sat_user_nums[sat_id]] * MPC_FUTURE_CHUNK_COUNT)
 
-                for idx, ho_point in enumerate(ho_positions):
-                    cur_sat_id = cur_sat_ids[idx]
-                    next_sat_id = runner_up_sat_ids[idx]
+            for idx, ho_point in enumerate(ho_positions):
+                cur_sat_id = cur_sat_ids[idx]
+                next_sat_id = runner_up_sat_ids[idx]
 
-                    cur_nums = future_sat_user_nums[cur_sat_id]
-                    next_nums = future_sat_user_nums[next_sat_id]
+                cur_nums = future_sat_user_nums[cur_sat_id]
+                next_nums = future_sat_user_nums[next_sat_id]
 
-                    cur_nums[ho_point:] = cur_nums[ho_point:] - 1
-                    next_nums[ho_point:] = next_nums[ho_point:] + 1
+                cur_nums[ho_point:] = cur_nums[ho_point:] - 1
+                next_nums[ho_point:] = next_nums[ho_point:] + 1
 
-                    future_sat_user_nums[cur_sat_id] = cur_nums
-                    future_sat_user_nums[next_sat_id] = next_nums
+                future_sat_user_nums[cur_sat_id] = cur_nums
+                future_sat_user_nums[next_sat_id] = next_nums
+
+            for full_combo in chunk_combo_option:
+                combos = []
+                curr_rebuffer_times = []
+                curr_buffers = start_buffers
+                bitrate_sums = []
+                smoothness_diffs = []
+                last_qualities = self.last_quality
+
+                # Break at the end of the chunk
+
+                for agent_id in range(self.num_agents):
+                    cur_combo = full_combo[future_chunk_length * agent_id: future_chunk_length * agent_id + future_chunk_length]
+                    # if cur_download_bws[agent_id] is None and cur_combo != [DEFAULT_QUALITY] * MPC_FUTURE_CHUNK_COUNT:
+                    #     wrong_format = True
+                    #     break
+                    if cur_download_bws[agent_id] is None:
+                        combos.append([np.nan])
+                    else:
+                        combos.append(cur_combo)
+                    curr_rebuffer_times.append(0)
+                    bitrate_sums.append(0)
+                    smoothness_diffs.append(0)
+
                 rewards = []
                 for agent_id, combo in enumerate(combos):
                     if combo == [np.nan]:
@@ -656,14 +660,15 @@ class Environment:
                     rewards.append(bitrate_sums[agent_id] * QUALITY_FACTOR / M_IN_K - (REBUF_PENALTY * curr_rebuffer_times[agent_id]) \
                              - SMOOTH_PENALTY * smoothness_diffs[agent_id] / M_IN_K)
 
-                if np.nanmean(rewards) > np.nanmean(max_rewards):
-                    best_combos = combos
-                    max_rewards = rewards
-                    ho_stamps = ho_positions
-                elif np.nanmean(rewards) == np.nanmean(max_rewards) and np.nansum(combos, axis=0)[0] >= np.nansum(best_combos, axis=0)[0]:
-                    best_combos = combos
-                    max_rewards = rewards
-                    ho_stamps = ho_positions
+                    if np.nanmean(rewards) > np.nanmean(max_rewards):
+                        best_combos = combos
+                        max_rewards = rewards
+                        ho_stamps = ho_positions
+                    elif np.nanmean(rewards) == np.nanmean(max_rewards) and np.nansum(combos, axis=0)[0] >= np.nansum(best_combos, axis=0)[0]:
+                        best_combos = combos
+                        max_rewards = rewards
+                        ho_stamps = ho_positions
+
         return runner_up_sat_ids[agent], ho_stamps[agent], best_combos[agent], max_rewards[agent]
 
     def calculate_mpc_with_handover(self, agent, robustness=True, only_runner_up=True,
@@ -829,6 +834,7 @@ class Environment:
                                              "cur_sat_id": self.cur_sat_id[agent]}
 
         self.user_qoe_log[agent] = best_case
+
         return ho_sat_id, ho_stamp, best_combo, max_reward
 
     """
