@@ -488,9 +488,9 @@ class Environment:
     def qoe_v3(self, agent):
         is_handover = False
         best_sat_id = self.cur_sat_id[agent]
-        start_time = time.time()
+        # start_time = time.time()
         ho_sat_id, ho_stamp, best_combo, max_reward = self.calculate_mpc_with_handover_exhaustive(agent)
-        print(time.time() - start_time)
+        # print(time.time() - start_time)
         if ho_stamp == 0:
             is_handover = True
             best_sat_id = ho_sat_id
@@ -664,7 +664,7 @@ class Environment:
                         best_combos = combos
                         max_rewards = rewards
                         ho_stamps = ho_positions
-                    elif np.nanmean(rewards) == np.nanmean(max_rewards) and combos[agent][0] >= best_combos[agent][0]:
+                    elif np.nanmean(rewards) == np.nanmean(max_rewards) and (combos[agent][0] >= best_combos[agent][0] or ho_positions[agent] > 0):
                         best_combos = combos
                         max_rewards = rewards
                         ho_stamps = ho_positions
