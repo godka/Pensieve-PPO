@@ -29,7 +29,7 @@ BITRATE_WEIGHT = 2
 CHUNK_TIL_VIDEO_END_CAP = 48.0
 
 MPC_FUTURE_CHUNK_COUNT = 2
-MPC_PAST_CHUNK_COUNT = 5
+MPC_PAST_CHUNK_COUNT = 2
 
 # LEO SETTINGS
 HANDOVER_DELAY = 0.2  # sec
@@ -510,7 +510,7 @@ class Environment:
         ho_combo_option = []
         # make chunk combination options
         for combo in itertools.product(list(range(int(BITRATE_LEVELS/BITRATE_WEIGHT))), repeat=MPC_FUTURE_CHUNK_COUNT * self.num_agents):
-            chunk_combo_option.append(list(combo * BITRATE_WEIGHT))
+            chunk_combo_option.append(list([BITRATE_WEIGHT*x for x in combo]))
 
         # make handover combination options
         for combo in itertools.product(list(range(MPC_FUTURE_CHUNK_COUNT+1)), repeat=self.num_agents):
@@ -528,7 +528,6 @@ class Environment:
             return ho_sat_id, ho_stamp, best_combo, max_reward
 
         cur_download_bws = [self.predict_download_bw(i, True) for i in range(self.num_agents)]
-
         cur_sat_ids = [self.cur_sat_id[i] for i in range(self.num_agents)]
         runner_up_sat_ids = [self.get_runner_up_sat_id(i, method="harmonic-mean")[0] for i in range(self.num_agents)]
 
@@ -543,7 +542,7 @@ class Environment:
         for agent_id in range(self.num_agents):
             for i in range(MPC_PAST_CHUNK_COUNT, 0, -1):
                 self.predict_bw(runner_up_sat_ids[agent_id], agent_id, True, mahimahi_ptr=self.mahimahi_ptr[agent_id] - i,
-                                plus=False)
+                                plus=True)
                 self.predict_bw(cur_sat_ids[agent_id], agent_id, True, mahimahi_ptr=self.mahimahi_ptr[agent_id] - i,
                                 plus=False)
 
@@ -579,12 +578,6 @@ class Environment:
                 future_sat_user_nums[next_sat_id] = next_nums
             for full_combo in chunk_combo_option:
                 combos = []
-                curr_rebuffer_times = []
-                curr_buffers = start_buffers
-                bitrate_sums = []
-                smoothness_diffs = []
-                last_qualities = self.last_quality
-
                 # Break at the end of the chunk
 
                 for agent_id in range(self.num_agents):
@@ -596,15 +589,17 @@ class Environment:
                         combos.append([np.nan])
                     else:
                         combos.append(cur_combo)
-                    curr_rebuffer_times.append(0)
-                    bitrate_sums.append(0)
-                    smoothness_diffs.append(0)
 
                 rewards = []
                 for agent_id, combo in enumerate(combos):
                     if combo == [np.nan]:
                         rewards.append(np.nan)
                         continue
+                    curr_rebuffer_time = 0
+                    curr_buffer = start_buffers[agent_id]
+                    bitrate_sum = 0
+                    smoothness_diff = 0
+                    last_quality = self.last_quality[agent_id]
                     for position in range(0, len(combo)):
                         # 0, 1, 2 -> 0, 2, 4
                         chunk_quality = combo[position]
@@ -625,49 +620,48 @@ class Environment:
                         next_future_sat_user_num = future_sat_user_nums[next_sat_id][position]
 
                         if ho_positions[agent_id] > position:
-                            harmonic_bw = cur_download_bws[agent_id] * cur_sat_user_num \
-                                          / cur_future_sat_user_num
+                            harmonic_bw = cur_download_bws[agent_id] # * cur_sat_user_num / cur_future_sat_user_num
                         elif ho_positions[agent_id] == position:
-                            harmonic_bw = next_download_bws[agent_id] * next_sat_user_num \
-                                          / next_future_sat_user_num
+                            harmonic_bw = next_download_bws[agent_id] # * next_sat_user_num / next_future_sat_user_num
                             # Give them a penalty
                             download_time += HANDOVER_DELAY
                         else:
-                            harmonic_bw = next_download_bws[agent_id] * next_sat_user_num \
-                                          / next_future_sat_user_num
-
+                            harmonic_bw = next_download_bws[agent_id] # * next_sat_user_num / next_future_sat_user_num
                         download_time += (self.video_size[chunk_quality][index] / B_IN_MB) \
                                          / harmonic_bw * BITS_IN_BYTE  # this is MB/MB/s --> seconds
 
-                        if curr_buffers[agent_id] < download_time:
-                            curr_rebuffer_times[agent_id] += (download_time - curr_buffers[agent_id])
-                            curr_buffers[agent_id] = 0.0
+                        if curr_buffer < download_time:
+                            curr_rebuffer_time += (download_time - curr_buffer)
+                            curr_buffer = 0.0
                         else:
-                            curr_buffers[agent_id] -= download_time
-                        curr_buffers[agent_id] += VIDEO_CHUNCK_LEN / MILLISECONDS_IN_SECOND
+                            curr_buffer -= download_time
+                        curr_buffer += VIDEO_CHUNCK_LEN / MILLISECONDS_IN_SECOND
 
                         # bitrate_sum += VIDEO_BIT_RATE[chunk_quality]
                         # smoothness_diffs += abs(VIDEO_BIT_RATE[chunk_quality] - VIDEO_BIT_RATE[last_quality])
-                        bitrate_sums[agent_id] += VIDEO_BIT_RATE[chunk_quality]
-                        smoothness_diffs[agent_id] += abs(
-                            VIDEO_BIT_RATE[chunk_quality] - VIDEO_BIT_RATE[last_qualities[agent_id]])
-                        last_qualities[agent_id] = chunk_quality
+                        bitrate_sum += VIDEO_BIT_RATE[chunk_quality]
+                        smoothness_diff += abs(
+                            VIDEO_BIT_RATE[chunk_quality] - VIDEO_BIT_RATE[last_quality])
+                        last_quality = chunk_quality
                     # compute reward for this combination (one reward per 5-chunk combo)
 
                     # bitrates are in Mbits/s, rebuffer in seconds, and smoothness_diffs in Mbits/s
 
                     # 10~140 - 0~100 - 0~130
-                    rewards.append(bitrate_sums[agent_id] * QUALITY_FACTOR / M_IN_K - (REBUF_PENALTY * curr_rebuffer_times[agent_id]) \
-                             - SMOOTH_PENALTY * smoothness_diffs[agent_id] / M_IN_K)
+                    rewards.append(bitrate_sum * QUALITY_FACTOR / M_IN_K - (REBUF_PENALTY * curr_rebuffer_time) \
+                             - SMOOTH_PENALTY * smoothness_diff / M_IN_K)
+
                 if np.nanmean(rewards) > np.nanmean(max_rewards):
                     best_combos = combos
                     max_rewards = rewards
                     ho_stamps = ho_positions
-                elif np.nanmean(rewards) == np.nanmean(max_rewards) \
-                        and (rewards[agent] >= max_rewards[agent] or combos[agent][0] >= best_combos[agent][0]):
+                elif np.nanmean(rewards) == np.nanmean(max_rewards) and np.nansum(combos) >= np.nansum(best_combos):
+                # elif np.nanmean(rewards) == np.nanmean(max_rewards) \
+                #         and (rewards[agent] >= max_rewards[agent] or combos[agent][0] >= best_combos[agent][0]):
                     best_combos = combos
                     max_rewards = rewards
                     ho_stamps = ho_positions
+
         # print(ho_stamps)
         # print(best_combos)
         return runner_up_sat_ids[agent], ho_stamps[agent], best_combos[agent], max_rewards[agent]
@@ -682,7 +676,7 @@ class Environment:
         chunk_combo_option = []
         # make chunk combination options
         for combo in itertools.product(list(range(int(BITRATE_LEVELS/BITRATE_WEIGHT))), repeat=MPC_FUTURE_CHUNK_COUNT):
-            chunk_combo_option.append(combo * BITRATE_WEIGHT)
+            chunk_combo_option.append(list([BITRATE_WEIGHT*x for x in combo]))
 
         future_chunk_length = MPC_FUTURE_CHUNK_COUNT
         if video_chunk_remain < MPC_FUTURE_CHUNK_COUNT:
@@ -775,6 +769,7 @@ class Environment:
                                     download_time += HANDOVER_DELAY
                                 else:
                                     harmonic_bw = next_download_bw
+
                                 download_time += (self.video_size[chunk_quality][index] / B_IN_MB) \
                                     / harmonic_bw * BITS_IN_BYTE  # this is MB/MB/s --> seconds
 
@@ -1105,7 +1100,7 @@ class Environment:
 
         # make chunk combination options
         for combo in itertools.product(list(range(int(BITRATE_LEVELS/BITRATE_WEIGHT))), repeat=MPC_FUTURE_CHUNK_COUNT):
-            chunk_combo_option.append(combo)
+            chunk_combo_option.append(list([BITRATE_WEIGHT*x for x in combo]))
         cur_user_num = self.get_num_of_user_sat(self.cur_sat_id[agent])
         future_chunk_length = MPC_FUTURE_CHUNK_COUNT
         if video_chunk_remain < MPC_FUTURE_CHUNK_COUNT:
