@@ -53,6 +53,7 @@ size_video6 = [181801, 155580, 139857, 155432, 163442, 126289, 153295, 173849, 1
 
 MPC_TYPE = "DualMPC"
 MPC_TYPE = "DualMPC-Centralization-Exhaustive"
+
 # DualMPC-Centralization
 
 
