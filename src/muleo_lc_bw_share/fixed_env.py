@@ -556,6 +556,10 @@ class Environment:
             else:
                 next_download_bws.append(cur_download_bws[agent_id] * tmp_next_bw / tmp_cur_bw)
 
+        max_rewards = [-10000000 for _ in range(self.num_agents)]
+        best_combos = [[self.last_quality[i]] for i in range(self.num_agents)]
+        ho_stamps = [MPC_FUTURE_CHUNK_COUNT for _ in range(self.num_agents)]
+
         for full_combo in chunk_combo_option:
             combos = []
             curr_rebuffer_times = []
@@ -571,9 +575,6 @@ class Environment:
                 # if cur_download_bws[agent_id] is None and cur_combo != [DEFAULT_QUALITY] * MPC_FUTURE_CHUNK_COUNT:
                 #     wrong_format = True
                 #     break
-                max_rewards = [-10000000 for _ in range(self.num_agents)]
-                best_combos = [[self.last_quality[i]] for i in range(self.num_agents)]
-                ho_stamps = [MPC_FUTURE_CHUNK_COUNT for _ in range(self.num_agents)]
                 if cur_download_bws[agent_id] is None:
                     combos.append([np.nan])
                 else:
