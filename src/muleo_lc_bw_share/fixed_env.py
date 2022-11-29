@@ -490,11 +490,7 @@ class Environment:
         is_handover = False
         best_sat_id = self.cur_sat_id[agent]
         start_time = time.time()
-        for agent_id in range(self.num_agents):
-            if agent_id == agent:
-                ho_sat_id, ho_stamp, best_combo, max_reward = self.calculate_mpc_with_handover_exhaustive(agent_id)
-            else:
-                self.calculate_mpc_with_handover_exhaustive(agent_id)
+        ho_sat_id, ho_stamp, best_combo, max_reward = self.calculate_mpc_with_handover_exhaustive(agent)
         print(time.time() - start_time)
         if ho_stamp == 0:
             is_handover = True
