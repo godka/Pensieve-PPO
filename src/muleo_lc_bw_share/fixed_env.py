@@ -664,7 +664,9 @@ class Environment:
                         best_combos = combos
                         max_rewards = rewards
                         ho_stamps = ho_positions
-                    elif np.nanmean(rewards) == np.nanmean(max_rewards) and (combos[agent][0] >= best_combos[agent][0] or ho_positions[agent] > 0):
+                    elif np.nanmean(rewards) == np.nanmean(max_rewards) \
+                            and (np.sum(rewards[agent]) > np.sum(max_rewards[agent])
+                                 or combos[agent][0] >= best_combos[agent][0]):
                         best_combos = combos
                         max_rewards = rewards
                         ho_stamps = ho_positions
@@ -819,7 +821,7 @@ class Environment:
                                              "ho_index": ho_index, "next_sat_id": next_sat_id, "reward": reward,
                                              "cur_user_num": cur_user_num, "next_user_num": next_user_num,
                                              "cur_sat_id": self.cur_sat_id[agent]}
-                            elif reward == max_reward and (combo[0] >= best_combo[0] or ho_index >= 0):
+                            elif reward == max_reward and (combo[0] >= best_combo[0]):
                                 best_combo = combo
                                 max_reward = reward
                                 ho_sat_id = next_sat_id
