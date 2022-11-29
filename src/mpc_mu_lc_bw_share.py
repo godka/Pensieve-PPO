@@ -41,6 +41,7 @@ args = parser.parse_args()
 NUM_AGENTS = args.user
 
 # past errors in bandwidth
+
 past_errors = [[]for _ in range(NUM_AGENTS)]
 past_bandwidth_ests = [[]for _ in range(NUM_AGENTS)]
 
