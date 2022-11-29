@@ -474,13 +474,14 @@ class Environment:
     def qoe_v2(self, agent, only_runner_up=True, centralized=False):
         is_handover = False
         best_sat_id = self.cur_sat_id[agent]
+        start_time = time.time()
         ho_sat_id, ho_stamp, best_combo, max_reward = self.calculate_mpc_with_handover(
             agent, only_runner_up=only_runner_up, centralized=centralized)
 
         if ho_stamp == 0:
             is_handover = True
             best_sat_id = ho_sat_id
-
+        print(time.time() - start_time)
         bit_rate = best_combo[0]
 
         return is_handover, best_sat_id, bit_rate
@@ -512,7 +513,7 @@ class Environment:
         chunk_combo_option = []
         ho_combo_option = []
         # make chunk combination options
-        for combo in itertools.product(list(range(BITRATE_LEVELS)), repeat=MPC_FUTURE_CHUNK_COUNT * self.num_agents):
+        for combo in itertools.product(list(range(int(BITRATE_LEVELS/2))), repeat=MPC_FUTURE_CHUNK_COUNT * self.num_agents):
             chunk_combo_option.append(list(combo))
 
         # make handover combination options
@@ -611,7 +612,8 @@ class Environment:
                 rewards = []
                 for agent_id, combo in enumerate(combos):
                     for position in range(0, len(combo)):
-                        chunk_quality = combo[position]
+                        # 0, 1, 2 -> 0, 2, 4
+                        chunk_quality = combo[position] * 2
                         index = last_index + position  # e.g., if last chunk is 3, then first iter is 3+0+1=4
                         download_time = 0
                         if ho_positions[agent_id] > position:
@@ -666,7 +668,7 @@ class Environment:
 
         chunk_combo_option = []
         # make chunk combination options
-        for combo in itertools.product(list(range(BITRATE_LEVELS)), repeat=MPC_FUTURE_CHUNK_COUNT):
+        for combo in itertools.product(list(range(int(BITRATE_LEVELS/2))), repeat=MPC_FUTURE_CHUNK_COUNT):
             chunk_combo_option.append(combo)
 
         future_chunk_length = MPC_FUTURE_CHUNK_COUNT
@@ -749,7 +751,7 @@ class Environment:
                             last_quality = self.last_quality[agent]
 
                             for position in range(0, len(combo)):
-                                chunk_quality = combo[position]
+                                chunk_quality = combo[position] * 2
                                 index = last_index + position  # e.g., if last chunk is 3, then first iter is 3+0+1=4
                                 download_time = 0
                                 if ho_index > position:
