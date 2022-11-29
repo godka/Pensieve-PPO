@@ -664,11 +664,10 @@ class Environment:
                         best_combos = combos
                         max_rewards = rewards
                         ho_stamps = ho_positions
-                    elif np.nanmean(rewards) == np.nanmean(max_rewards) and np.nansum(combos, axis=0)[0] >= np.nansum(best_combos, axis=0)[0]:
+                    elif np.nanmean(rewards) == np.nanmean(max_rewards) and combos[agent][0] >= best_combos[agent][0]:
                         best_combos = combos
                         max_rewards = rewards
                         ho_stamps = ho_positions
-
         return runner_up_sat_ids[agent], ho_stamps[agent], best_combos[agent], max_rewards[agent]
 
     def calculate_mpc_with_handover(self, agent, robustness=True, only_runner_up=True,
