@@ -24,10 +24,11 @@ LINK_RTT = 80  # millisec
 PACKET_SIZE = 1500  # bytes
 VIDEO_SIZE_FILE = './envivio/video_size_'
 DEFAULT_QUALITY = 2  # default video quality without agent
+BITRATE_WEIGHT = 1
 
 CHUNK_TIL_VIDEO_END_CAP = 48.0
 
-MPC_FUTURE_CHUNK_COUNT = 3
+MPC_FUTURE_CHUNK_COUNT = 6
 
 # LEO SETTINGS
 HANDOVER_DELAY = 0.2  # sec
@@ -69,7 +70,7 @@ class Environment:
         self.last_mahimahi_time = [self.cooked_time[self.mahimahi_start_ptr - 1] for _ in range(self.num_agents)]
 
         # Centralization
-        self.user_qoe_log = []
+        self.user_qoe_log = [{} for _ in range(self.num_agents)]
         self.num_of_user_sat = {}
         self.num_sat_info = {}
         for sat_id, sat_bw in self.cooked_bw.items():
@@ -346,8 +347,6 @@ class Environment:
                     if self.last_mahimahi_time[agent] < self.last_mahimahi_time[user]:
                         user = agent
 
-        if user == 0:
-            self.user_qoe_log = []
         return user
 
     def get_next_sat_info(self, agent, mahimahi_ptr=None):
@@ -509,7 +508,7 @@ class Environment:
         chunk_combo_option = []
         ho_combo_option = []
         # make chunk combination options
-        for combo in itertools.product(list(range(int(BITRATE_LEVELS/2))), repeat=MPC_FUTURE_CHUNK_COUNT * self.num_agents):
+        for combo in itertools.product(list(range(int(BITRATE_LEVELS/BITRATE_WEIGHT))), repeat=MPC_FUTURE_CHUNK_COUNT * self.num_agents):
             chunk_combo_option.append(list(combo))
 
         # make handover combination options
@@ -609,7 +608,7 @@ class Environment:
                 for agent_id, combo in enumerate(combos):
                     for position in range(0, len(combo)):
                         # 0, 1, 2 -> 0, 2, 4
-                        chunk_quality = combo[position] * 2
+                        chunk_quality = combo[position] * BITRATE_WEIGHT
                         index = last_index + position  # e.g., if last chunk is 3, then first iter is 3+0+1=4
                         download_time = 0
                         if ho_positions[agent_id] > position:
@@ -664,7 +663,7 @@ class Environment:
 
         chunk_combo_option = []
         # make chunk combination options
-        for combo in itertools.product(list(range(int(BITRATE_LEVELS/2))), repeat=MPC_FUTURE_CHUNK_COUNT):
+        for combo in itertools.product(list(range(int(BITRATE_LEVELS/BITRATE_WEIGHT))), repeat=MPC_FUTURE_CHUNK_COUNT):
             chunk_combo_option.append(combo)
 
         future_chunk_length = MPC_FUTURE_CHUNK_COUNT
@@ -747,7 +746,7 @@ class Environment:
                             last_quality = self.last_quality[agent]
 
                             for position in range(0, len(combo)):
-                                chunk_quality = combo[position] * 2
+                                chunk_quality = combo[position] * BITRATE_WEIGHT
                                 index = last_index + position  # e.g., if last chunk is 3, then first iter is 3+0+1=4
                                 download_time = 0
                                 if ho_index > position:
@@ -784,7 +783,10 @@ class Environment:
                                 - SMOOTH_PENALTY * smoothness_diffs / M_IN_K
 
                             if centralized:
-                                for qoe_log in self.user_qoe_log:
+                                for agent_id in range(self.num_agents):
+                                    if agent_id == agent:
+                                        continue
+                                    qoe_log = self.user_qoe_log[agent_id]
                                     reward += self.get_simulated_reward(qoe_log, last_index, ho_index, self.cur_sat_id[agent], next_sat_id)
                                     # reward += qoe_log["reward"]
 
@@ -814,7 +816,7 @@ class Environment:
                                              "cur_user_num": cur_user_num, "next_user_num": next_user_num,
                                              "cur_sat_id": self.cur_sat_id[agent]}
 
-        self.user_qoe_log.append(best_case)
+        self.user_qoe_log[agent] = best_case
         return ho_sat_id, ho_stamp, best_combo, max_reward
 
     def calculate_cent_mpc(self, robustness=True, only_runner_up=True,
@@ -951,7 +953,10 @@ class Environment:
                                      - SMOOTH_PENALTY * smoothness_diffs / M_IN_K
 
                             if centralized:
-                                for qoe_log in self.user_qoe_log:
+                                for agent_id in range(self.num_agents):
+                                    if agent_id == agent:
+                                        continue
+                                    qoe_log = self.user_qoe_log[agent_id]
                                     reward += self.get_simulated_reward(qoe_log, last_index, ho_index,
                                                                         self.cur_sat_id[agent], next_sat_id)
                                     # reward += qoe_log["reward"]
@@ -983,7 +988,7 @@ class Environment:
                                              "cur_user_num": cur_user_num, "next_user_num": next_user_num,
                                              "cur_sat_id": self.cur_sat_id[agent]}
 
-        self.user_qoe_log.append(best_case)
+        self.user_qoe_log[agent] = best_case
         return ho_sat_id, ho_stamp, best_combo, max_reward
 
     def predict_download_bw_holt_winter(self, agent, m=172):
@@ -1195,6 +1200,78 @@ class Environment:
         return harmonic_bw
 
     def predict_bw(self, sat_id, agent, robustness=True, plus=False, mahimahi_ptr=None):
+        curr_error = 0
+        if mahimahi_ptr is None:
+            mahimahi_ptr = self.mahimahi_ptr[agent]
+
+        if plus:
+            num_of_user_sat = self.get_num_of_user_sat(sat_id) + 1
+        else:
+            num_of_user_sat = self.get_num_of_user_sat(sat_id)
+
+        # past_bw = self.cooked_bw[self.cur_sat_id][self.mahimahi_ptr - 1]
+        if num_of_user_sat == 0:
+            past_bw = self.cooked_bw[sat_id][mahimahi_ptr - 1]
+        else:
+            past_bw = self.cooked_bw[sat_id][mahimahi_ptr - 1] / num_of_user_sat
+        if past_bw == 0:
+            return 0
+
+        if sat_id in self.past_bw_ests[agent].keys() and len(self.past_bw_ests[agent][sat_id]) > 0 \
+                and mahimahi_ptr - 1 in self.past_bw_ests[agent][sat_id].keys():
+            curr_error = abs(self.past_bw_ests[agent][sat_id][mahimahi_ptr - 1] - past_bw) / float(past_bw)
+        if sat_id not in self.past_bw_errors[agent].keys():
+            self.past_bw_errors[agent][sat_id] = []
+        self.past_bw_errors[agent][sat_id].append(curr_error)
+
+        # pick bitrate according to MPC
+        # first get harmonic mean of last 5 bandwidths
+        start_index = mahimahi_ptr - MPC_FUTURE_CHUNK_COUNT
+        if start_index < 0:
+            start_index = 0
+
+        past_bws = []
+        for index in range(start_index, mahimahi_ptr):
+            if num_of_user_sat == 0:
+                past_bws.append(self.cooked_bw[sat_id][index])
+            else:
+                past_bws.append(self.cooked_bw[sat_id][index] / num_of_user_sat)
+
+        # Newly possible satellite case
+        if all(v == 0.0 for v in past_bws):
+            if num_of_user_sat == 0:
+                return self.cooked_bw[sat_id][mahimahi_ptr]
+            else:
+                return self.cooked_bw[sat_id][mahimahi_ptr] / num_of_user_sat
+
+        while past_bws[0] == 0.0:
+            past_bws = past_bws[1:]
+
+        bandwidth_sum = 0
+        for past_val in past_bws:
+            bandwidth_sum += (1 / float(past_val))
+
+        harmonic_bw = 1.0 / (bandwidth_sum / len(past_bws))
+
+        if sat_id not in self.past_bw_ests[agent].keys():
+            self.past_bw_ests[agent][sat_id] = {}
+        if self.mahimahi_ptr[agent] not in self.past_bw_ests[agent][sat_id].keys():
+            self.past_bw_ests[agent][sat_id][mahimahi_ptr] = None
+        self.past_bw_ests[agent][sat_id][mahimahi_ptr] = harmonic_bw
+
+        if robustness:
+            # future bandwidth prediction
+            # divide by 1 + max of last 5 (or up to 5) errors
+            error_pos = -MPC_FUTURE_CHUNK_COUNT
+            if sat_id in self.past_bw_errors[agent].keys() and len(
+                    self.past_bw_errors[agent][sat_id]) < MPC_FUTURE_CHUNK_COUNT:
+                error_pos = -len(self.past_bw_errors[agent][sat_id])
+            max_error = float(max(self.past_bw_errors[agent][sat_id][error_pos:]))
+            harmonic_bw = harmonic_bw / (1 + max_error)  # robustMPC here
+
+        return harmonic_bw
+
+    def predict_bw_set(self, sat_id, agent, future_len=1, robustness=True, plus=False, mahimahi_ptr=None):
         curr_error = 0
         if mahimahi_ptr is None:
             mahimahi_ptr = self.mahimahi_ptr[agent]
