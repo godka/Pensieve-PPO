@@ -28,7 +28,7 @@ BITRATE_WEIGHT = 2
 
 CHUNK_TIL_VIDEO_END_CAP = 48.0
 
-MPC_FUTURE_CHUNK_COUNT = 3
+MPC_FUTURE_CHUNK_COUNT = 2
 MPC_PAST_CHUNK_COUNT = 5
 
 # LEO SETTINGS
@@ -111,11 +111,10 @@ class Environment:
                 for line in f:
                     self.video_size[bitrate].append(int(line.split()[0]))
 
-    def get_video_chunk(self, quality, agent, model_type):
+    def get_video_chunk(self, quality, agent, model_type, runner_up_sat_id, ho_stamp, do_mpc=False):
 
         assert quality >= 0
         assert quality < BITRATE_LEVELS
-
         video_chunk_size = self.video_size[quality][self.video_chunk_counter[agent]]
 
         # use the delivery opportunity in mahimahi
@@ -125,6 +124,19 @@ class Environment:
         video_chunk_counter_sent = 0  # in bytes
         end_of_network = False
         is_handover = False
+
+        if ho_stamp == 0:
+            is_handover = True
+            delay += HANDOVER_DELAY
+            # self.connection[self.cur_sat_id[agent]] = -1
+            # self.connection[new_sat_id] = agent
+            # update sat info
+            runner_up_sat_id, _ = self.get_runner_up_sat_id(agent, method="harmonic-mean")
+            self.update_sat_info(self.cur_sat_id[agent], self.mahimahi_ptr[agent], -1)
+            self.update_sat_info(runner_up_sat_id, self.mahimahi_ptr[agent], 1)
+            self.prev_sat_id[agent] = self.cur_sat_id[agent]
+            self.cur_sat_id[agent] = runner_up_sat_id
+            self.download_bw[agent] = []
 
         self.last_quality[agent] = quality
 
@@ -270,23 +282,11 @@ class Environment:
         self.next_sat_id[agent] = next_sat_id
         next_sat_user_num = self.get_num_of_user_sat(next_sat_id)
 
-        if not self.end_of_video[agent] and model_type is not None and agent == 0:
-            is_handover, new_sat_id, bit_rate = self.run_mpc(agent, model_type)
-            if is_handover:
-                delay += HANDOVER_DELAY * MILLISECONDS_IN_SECOND
-                # self.connection[self.cur_sat_id[agent]] = -1
-                # self.connection[new_sat_id] = agent
-                # update sat info
-                self.update_sat_info(self.cur_sat_id[agent], self.mahimahi_ptr[agent], -1)
-                self.update_sat_info(new_sat_id, self.mahimahi_ptr[agent], 1)
-                self.prev_sat_id[agent] = self.cur_sat_id[agent]
-                self.cur_sat_id[agent] = new_sat_id
-                self.download_bw[agent] = []
-                # self.past_download_bw_errors[agent] = []
-                # self.past_download_ests[agent] = []
+        if model_type is not None and (agent == 0 or do_mpc):
+            runner_up_sat_ids, ho_stamps, best_combos = self.run_mpc(agent, model_type)
         else:
-            is_handover, new_sat_id, bit_rate = False, None, 1
-        
+            runner_up_sat_ids, ho_stamps, best_combos = None, None, None
+
         return delay, \
             sleep_time, \
             return_buffer_size / MILLISECONDS_IN_SECOND, \
@@ -295,9 +295,9 @@ class Environment:
             next_video_chunk_sizes, \
             self.end_of_video[agent], \
             video_chunk_remain, \
-            bit_rate, is_handover, new_sat_id, self.get_num_of_user_sat(sat_id="all"), \
+            is_handover, self.get_num_of_user_sat(sat_id="all"), \
             next_sat_bandwidth, next_sat_bw_logs, cur_sat_user_num, next_sat_user_num, cur_sat_bw_logs, connected_time, \
-            self.cur_sat_id[agent]
+            self.cur_sat_id[agent], runner_up_sat_ids, ho_stamps, best_combos
 
     def reset(self):
         
@@ -464,11 +464,11 @@ class Environment:
             is_handover, new_sat_id, bit_rate = self.qoe_v2(
                 agent, centralized=True)
         elif model_type == "DualMPC-Centralization-Exhaustive":
-            is_handover, new_sat_id, bit_rate = self.qoe_v3(agent)
+            runner_up_sat_ids, ho_stamps, best_combos, max_rewards = self.qoe_v3(agent)
         else:
             print("Cannot happen!")
             exit(-1)
-        return is_handover, new_sat_id, bit_rate
+        return runner_up_sat_ids, ho_stamps, best_combos
 
     def qoe_v2(self, agent, only_runner_up=True, centralized=False):
         is_handover = False
@@ -489,15 +489,9 @@ class Environment:
         is_handover = False
         best_sat_id = self.cur_sat_id[agent]
         # start_time = time.time()
-        ho_sat_id, ho_stamp, best_combo, max_reward = self.calculate_mpc_with_handover_exhaustive(agent)
-        # print(time.time() - start_time)
-        if ho_stamp == 0:
-            is_handover = True
-            best_sat_id = ho_sat_id
+        runner_up_sat_ids, ho_stamps, best_combos, max_rewards= self.calculate_mpc_with_handover_exhaustive(agent)
 
-        bit_rate = best_combo[0]
-
-        return is_handover, best_sat_id, bit_rate
+        return runner_up_sat_ids, ho_stamps, best_combos, max_rewards
 
     def calculate_mpc_with_handover_exhaustive(self, agent):
         # future chunks length (try 4 if that many remaining)
@@ -519,14 +513,14 @@ class Environment:
         for i in range(self.num_agents):
             if video_chunk_remain[i] < MPC_FUTURE_CHUNK_COUNT:
                 future_chunk_length[i] = video_chunk_remain[i]
-
+        """
         if future_chunk_length[agent] == 0:
             max_reward = -10000000
             best_combo = (self.last_quality[agent],)
             ho_sat_id = self.cur_sat_id[agent]
             ho_stamp = MPC_FUTURE_CHUNK_COUNT
             return ho_sat_id, ho_stamp, best_combo, max_reward
-
+        """
         cur_download_bws = [self.predict_download_bw(i, True) for i in range(self.num_agents)]
 
         cur_sat_ids = [self.cur_sat_id[i] for i in range(self.num_agents)]
@@ -587,13 +581,13 @@ class Environment:
                     #     wrong_format = True
                     #     break
                     if cur_download_bws[agent_id] is None:
-                        combos.append([np.nan])
+                        combos.append([np.nan] * MPC_FUTURE_CHUNK_COUNT)
                     else:
                         combos.append(cur_combo)
 
                 rewards = []
                 for agent_id, combo in enumerate(combos):
-                    if combo == [np.nan]:
+                    if combo == [np.nan] * MPC_FUTURE_CHUNK_COUNT:
                         rewards.append(np.nan)
                         continue
                     curr_rebuffer_time = 0
@@ -668,8 +662,9 @@ class Environment:
                     max_rewards = rewards
                     ho_stamps = ho_positions
 
-        return runner_up_sat_ids[agent], ho_stamps[agent], best_combos[agent], max_rewards[agent]
-        # return runner_up_sat_ids, ho_stamps, best_combos, max_rewards
+        # return runner_up_sat_ids[agent], ho_stamps[agent], best_combos[agent], max_rewards[agent]
+
+        return runner_up_sat_ids, ho_stamps, best_combos, max_rewards
 
     def calculate_mpc_with_handover(self, agent, robustness=True, only_runner_up=True,
                                     method="harmonic-mean", centralized=True):

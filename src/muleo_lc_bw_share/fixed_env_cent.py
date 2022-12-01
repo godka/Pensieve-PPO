@@ -232,7 +232,6 @@ class Environment:
                     is_handover = True
                     print("Forced Handover")
 
-
         # the "last buffer size" return to the controller
         # Note: in old version of dash the lowest buffer is 0.
         # In the new version the buffer always have at least

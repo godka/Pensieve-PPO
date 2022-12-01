@@ -1,6 +1,6 @@
 import numpy as np
 from muleo_lc_bw_share import load_trace
-from muleo_lc_bw_share import fixed_env as env
+from muleo_lc_bw_share import fixed_env_exhaustive as env
 import matplotlib.pyplot as plt
 import itertools
 import os
@@ -10,7 +10,7 @@ VIDEO_CHOICES = 6
 S_INFO = 5  # bit_rate, buffer_size, rebuffering_time, bandwidth_measurement, chunk_til_video_end
 S_LEN = 8  # take how many frames in the past
 A_DIM = 6
-MPC_FUTURE_CHUNK_COUNT = 3
+MPC_FUTURE_CHUNK_COUNT = 2
 ACTOR_LR_RATE = 0.0001
 CRITIC_LR_RATE = 0.001
 VIDEO_BIT_RATE = [300,750,1200,1850,2850,4300]  # Kbps
@@ -24,7 +24,7 @@ SMOOTH_PENALTY = 1
 DEFAULT_QUALITY = 1  # default video quality without agent
 RANDOM_SEED = 42
 RAND_RANGE = 1000000
-SUMMARY_DIR = './test_results_mpc/'
+SUMMARY_DIR = './test_results_mpc_exhaustive/'
 LOG_FILE = SUMMARY_DIR + 'log_sim_cent'
 TEST_TRACES = './test/'
 # log in format of time_stamp bit_rate buffer_size rebuffer_time chunk_size download_time reward
@@ -54,7 +54,7 @@ size_video6 = [181801, 155580, 139857, 155432, 163442, 126289, 153295, 173849, 1
 
 MPC_TYPE = "DualMPC"
 MPC_TYPE = "DualMPC-Centralization-Exhaustive"
-MPC_TYPE = "DualMPC-Centralization"
+# MPC_TYPE = "DualMPC-Centralization"
 
 # DualMPC-Centralization
 
@@ -106,11 +106,14 @@ def main():
     video_count = 0
     
     results = []
+    do_mpc = False
 
     # make chunk combination options
     for combo in itertools.product([0,1,2,3,4,5], repeat=5):
         CHUNK_COMBO_OPTIONS.append(combo)
-    
+    ho_stamps_log = [MPC_FUTURE_CHUNK_COUNT for _ in range(NUM_AGENTS)]
+    combo_log = [[DEFAULT_QUALITY] for _ in range(NUM_AGENTS)]
+    next_sat_log = [None for _ in range(NUM_AGENTS)]
     while True:  # serve video forever
         agent = net_env.get_first_agent()
 
@@ -146,16 +149,42 @@ def main():
             log_path = LOG_FILE + '_' + all_file_names[net_env.trace_idx]
             log_file = open(log_path, 'w')
 
+            ho_stamps_log = [MPC_FUTURE_CHUNK_COUNT for _ in range(NUM_AGENTS)]
+            ho_point = MPC_FUTURE_CHUNK_COUNT
+            combo_log = [[DEFAULT_QUALITY] for _ in range(NUM_AGENTS)]
+            next_sat_log = [None for _ in range(NUM_AGENTS)]
+        else:
+            bit_rate[agent] = combo_log[agent].pop(0)
+            ho_point = ho_stamps_log[agent]
+            ho_stamps_log[agent] -= 1
+            if np.isnan(bit_rate[agent]):
+                bit_rate[agent] = DEFAULT_QUALITY
+
+            # np.delete(combo_log[agent], 0)
+            # if len(combo_log[agent]) == 1 and agent == net_env.get_first_agent():
+            if not combo_log[agent]:
+                do_mpc = True
+
         # the action is from the last decision
         # this is to make the framework similar to the real
         delay, sleep_time, buffer_size, rebuf, \
         video_chunk_size, next_video_chunk_sizes, \
-        end_of_video, video_chunk_remain, b, is_handover, cur_sat_id, sat_status, _, _, _, _, _, _, _ = \
-            net_env.get_video_chunk(bit_rate[agent], agent, MPC_TYPE)
+        end_of_video, video_chunk_remain, is_handover, sat_status, _, _, _, _, _, _, cur_sat_id, \
+        runner_up_sat_ids, ho_stamps, best_combos\
+            = net_env.get_video_chunk(bit_rate[agent], agent, MPC_TYPE, next_sat_log[agent], ho_point, do_mpc)
+
+        is_handover = True if ho_point == 0 else False
+
+        if agent == 0 or do_mpc is True:
+            do_mpc = False
+
+            ho_stamps_log = ho_stamps
+            combo_log = best_combos
+            next_sat_log = runner_up_sat_ids
 
         time_stamp[agent] += delay  # in ms
         time_stamp[agent] += sleep_time  # in ms
-            
+
         # reward is video quality - rebuffer penalty
         reward = VIDEO_BIT_RATE[bit_rate[agent]] / M_IN_K \
                 - REBUF_PENALTY * rebuf \
@@ -183,6 +212,8 @@ def main():
                                    str(VIDEO_BIT_RATE[bit_rate[agent]]), str(round(buffer_size, 3)), str(round(rebuf, 3)),
                                    str(round(video_chunk_size, 3)), str(round(delay, 3)), str(round(reward, 3)), str(cur_sat_id), str(is_handover), str(sat_status)))
             log_file.flush()
+
+
         # retrieve previous state
         if len(s_batch[agent]) == 0:
             state = [[np.zeros((S_INFO, S_LEN))]for _ in range(NUM_AGENTS)]
@@ -210,8 +241,6 @@ def main():
         # because there is an intrinsic discrepancy in passing single state and batch states
 
         s_batch[agent].append(state[agent])
-
-        bit_rate[agent] = b
 
     # print(results, sum(results))
     print(sum(results) / len(results))
