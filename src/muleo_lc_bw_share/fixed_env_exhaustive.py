@@ -770,12 +770,11 @@ class Environment:
                     tmp_bws_sum.append(harmonic_bw)
                 tmp_bws.append(bw_log)
 
-
             if np.nanmean(best_bws_sum) < np.nanmean(tmp_bws_sum):
                 best_bws = tmp_bws
                 best_ho_positions = ho_positions
                 best_bws_sum = tmp_bws_sum
-            elif np.nanmean(best_bws_sum) == np.nanmean(tmp_bws_sum) and best_ho_positions[agent] >= ho_positions[agent]:
+            elif np.nanmean(best_bws_sum) == np.nanmean(tmp_bws_sum) and best_ho_positions[agent] <= ho_positions[agent]:
                 best_bws = tmp_bws
                 best_ho_positions = ho_positions
                 best_bws_sum = tmp_bws_sum
