@@ -489,7 +489,7 @@ class Environment:
         best_sat_id = self.cur_sat_id[agent]
         # start_time = time.time()
         #runner_up_sat_ids, ho_stamps, best_combos, max_rewards= self.calculate_mpc_with_handover_exhaustive_reduced(agent)
-        runner_up_sat_ids, ho_stamps, best_combos, max_rewards= self.calculate_mpc_with_handover_exhaustive_reduced(agent)
+        runner_up_sat_ids, ho_stamps, best_combos, max_rewards= self.calculate_mpc_with_handover_exhaustive(agent)
 
         # print(time.time()-start_time)
         return runner_up_sat_ids, ho_stamps, best_combos, max_rewards
