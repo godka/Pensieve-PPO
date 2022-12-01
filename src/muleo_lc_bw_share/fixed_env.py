@@ -28,7 +28,7 @@ BITRATE_WEIGHT = 2
 
 CHUNK_TIL_VIDEO_END_CAP = 48.0
 
-MPC_FUTURE_CHUNK_COUNT = 3
+MPC_FUTURE_CHUNK_COUNT = 2
 MPC_PAST_CHUNK_COUNT = 5
 
 # LEO SETTINGS
@@ -281,7 +281,7 @@ class Environment:
                 self.update_sat_info(new_sat_id, self.mahimahi_ptr[agent], 1)
                 self.prev_sat_id[agent] = self.cur_sat_id[agent]
                 self.cur_sat_id[agent] = new_sat_id
-                self.download_bw[agent] = []
+                # self.download_bw[agent] = []
                 # self.past_download_bw_errors[agent] = []
                 # self.past_download_ests[agent] = []
         else:
@@ -630,8 +630,7 @@ class Environment:
                             download_time += HANDOVER_DELAY
 
                         else:
-                            harmonic_bw = next_download_bws[agent_id] * next_sat_user_num / next_future_sat_user_num
-
+                            harmonic_bw = next_download_bws[agent_id] # * next_sat_user_num / next_future_sat_user_num
                         download_time += (self.video_size[chunk_quality][index] / B_IN_MB) \
                                          / harmonic_bw * BITS_IN_BYTE  # this is MB/MB/s --> seconds
 
@@ -660,8 +659,7 @@ class Environment:
                     best_combos = combos
                     max_rewards = rewards
                     ho_stamps = ho_positions
-                elif np.nanmean(rewards) == np.nanmean(max_rewards) and \
-                        (combos[agent][0] >= best_combos[agent][0] or ho_stamps[agent] >= ho_positions[agent]):
+                elif np.nanmean(rewards) == np.nanmean(max_rewards) and np.nansum(combos) >= np.nansum(best_combos):
                 # elif np.nanmean(rewards) == np.nanmean(max_rewards) \
                 #         and (rewards[agent] >= max_rewards[agent] or combos[agent][0] >= best_combos[agent][0]):
                     best_combos = combos
