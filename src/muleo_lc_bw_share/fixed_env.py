@@ -473,14 +473,14 @@ class Environment:
     def qoe_v2(self, agent, only_runner_up=True, centralized=False):
         is_handover = False
         best_sat_id = self.cur_sat_id[agent]
-        start_time = time.time()
+        # start_time = time.time()
         ho_sat_id, ho_stamp, best_combo, max_reward = self.calculate_mpc_with_handover(
             agent, only_runner_up=only_runner_up, centralized=centralized)
 
         if ho_stamp == 0:
             is_handover = True
             best_sat_id = ho_sat_id
-        print(time.time() - start_time)
+        # print(time.time() - start_time)
         bit_rate = best_combo[0]
 
         return is_handover, best_sat_id, bit_rate

@@ -10,7 +10,7 @@ VIDEO_CHOICES = 6
 S_INFO = 5  # bit_rate, buffer_size, rebuffering_time, bandwidth_measurement, chunk_til_video_end
 S_LEN = 8  # take how many frames in the past
 A_DIM = 6
-MPC_FUTURE_CHUNK_COUNT = 3
+MPC_FUTURE_CHUNK_COUNT = 2
 ACTOR_LR_RATE = 0.0001
 CRITIC_LR_RATE = 0.001
 VIDEO_BIT_RATE = [300,750,1200,1850,2850,4300]  # Kbps
@@ -36,7 +36,7 @@ import argparse
 
 parser = argparse.ArgumentParser(description='PyTorch Synthetic Benchmark',
                                  formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-parser.add_argument('--user', type=int, default=3)
+parser.add_argument('--user', type=int, default=2)
 args = parser.parse_args()
 NUM_AGENTS = args.user
 

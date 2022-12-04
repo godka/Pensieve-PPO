@@ -28,7 +28,7 @@ BITRATE_WEIGHT = 2
 
 CHUNK_TIL_VIDEO_END_CAP = 48.0
 
-MPC_FUTURE_CHUNK_COUNT = 3
+MPC_FUTURE_CHUNK_COUNT = 2
 MPC_PAST_CHUNK_COUNT = 5
 
 # LEO SETTINGS
@@ -76,7 +76,10 @@ class Environment:
         self.num_sat_info = {}
         for sat_id, sat_bw in self.cooked_bw.items():
             self.num_sat_info[sat_id] = [0 for _ in range(len(sat_bw))]
+            self.num_of_user_sat[sat_id] = 0
         # print(self.num_sat_info)
+
+        self.stored_num_of_user_sat = None
         # exit(1)
         # multiuser setting
         self.cur_sat_id = []
@@ -114,6 +117,7 @@ class Environment:
 
         assert quality >= 0
         assert quality < BITRATE_LEVELS
+
         video_chunk_size = self.video_size[quality][self.video_chunk_counter[agent]]
 
         # use the delivery opportunity in mahimahi
@@ -263,6 +267,7 @@ class Environment:
             self.buffer_size[agent] = 0
             self.video_chunk_counter[agent] = 0
 
+
             # Refresh satellite info
             # self.connection[self.cur_sat_id[agent]] = -1
             # self.cur_sat_id[agent] = None
@@ -298,6 +303,147 @@ class Environment:
             next_sat_bandwidth, next_sat_bw_logs, cur_sat_user_num, next_sat_user_num, cur_sat_bw_logs, connected_time, \
             self.cur_sat_id[agent], runner_up_sat_ids, ho_stamps, best_combos
 
+    def get_video_chunk_oracle(self, quality, agent, mahimahi_ptr, ho_stamp, cur_sat_id, next_sat_id, future_sat_user_nums):
+        assert quality is not None
+
+        video_chunk_counter = self.video_chunk_counter[agent]
+        # use the delivery opportunity in mahimahi
+        # delay = 0.0  # in ms
+        # self.delay[agent] = 0
+        end_of_network = False
+        is_handover = False
+        # cur_sat_id = self.cur_sat_id[agent]
+        mahimahi_ptr = self.mahimahi_ptr[agent]
+
+        last_mahimahi_time = self.last_mahimahi_time[agent]
+        buffer_size = self.buffer_size[agent]
+
+        avg_bws = []
+        rebuf = 0
+        for idx, bitrate_level in enumerate(quality):
+            video_chunk_size = self.video_size[bitrate_level][video_chunk_counter]
+            delay = 0  # in ms
+            video_chunk_counter_sent = 0  # in bytes
+
+            if ho_stamp == idx:
+                is_handover = True
+                delay += HANDOVER_DELAY
+                # runner_up_sat_id, _ = self.get_runner_up_sat_id(agent, mahimahi_ptr=mahimahi_ptr, method="harmonic-mean")
+                self.update_sat_info(cur_sat_id, mahimahi_ptr, -1)
+                self.update_sat_info(next_sat_id, mahimahi_ptr, 1)
+
+                cur_sat_id = next_sat_id
+
+            while True:  # download video chunk over mahimahi
+                # num_of_users = 1 if future_sat_user_nums[cur_sat_id][idx] == 0 else future_sat_user_nums[cur_sat_id][idx]
+                throughput = self.cooked_bw[cur_sat_id][mahimahi_ptr] \
+                             * B_IN_MB / BITS_IN_BYTE / self.get_num_of_user_sat(cur_sat_id)
+
+                if throughput == 0.0:
+                    # Do the forced handover
+                    # Connect the satellite that has the best serving time
+                    runner_up_sat_id, _ = self.get_runner_up_sat_id(agent, method="harmonic-mean")
+                    self.update_sat_info(cur_sat_id, mahimahi_ptr, -1)
+                    self.update_sat_info(runner_up_sat_id, mahimahi_ptr, 1)
+
+                    cur_sat_id = runner_up_sat_id
+                    # self.switch_sat(agent, sat_id)
+                    delay += HANDOVER_DELAY
+                    if ho_stamp != MPC_FUTURE_CHUNK_COUNT:
+                        return 100, 0
+                    # self.download_bw[agent] = []
+                    # print("Forced Handover")
+
+                duration = self.cooked_time[mahimahi_ptr] \
+                           - last_mahimahi_time
+
+                packet_payload = throughput * duration * PACKET_PAYLOAD_PORTION
+
+                if video_chunk_counter_sent + packet_payload > video_chunk_size:
+                    fractional_time = (video_chunk_size - video_chunk_counter_sent) / \
+                                      throughput / PACKET_PAYLOAD_PORTION
+                    delay += fractional_time
+                    last_mahimahi_time += fractional_time
+                    break
+
+                video_chunk_counter_sent += packet_payload
+                delay += duration
+                last_mahimahi_time = self.cooked_time[mahimahi_ptr]
+
+                mahimahi_ptr += 1
+
+                if mahimahi_ptr >= len(self.cooked_bw[cur_sat_id]):
+                    # loop back in the beginning
+                    # note: trace file starts with time 0
+                    mahimahi_ptr = 1
+                    last_mahimahi_time = 0
+                    end_of_video = True
+                    end_of_network = True
+                    break
+
+            delay *= MILLISECONDS_IN_SECOND
+            delay += LINK_RTT
+
+            # rebuffer time
+            rebuf += np.maximum(delay - buffer_size, 0.0)
+            # update the buffer
+            buffer_size = np.maximum(buffer_size - delay, 0.0)
+
+            # add in the new chunk
+            buffer_size += VIDEO_CHUNCK_LEN
+
+            # sleep if buffer gets too large
+            sleep_time = 0
+            if buffer_size > BUFFER_THRESH:
+                drain_buffer_time = buffer_size - BUFFER_THRESH
+                sleep_time = np.ceil(drain_buffer_time / DRAIN_BUFFER_SLEEP_TIME) * \
+                             DRAIN_BUFFER_SLEEP_TIME
+                buffer_size -= sleep_time
+
+                while True:
+                    if mahimahi_ptr >= len(self.cooked_bw[cur_sat_id]):
+                        # loop back in the beginning
+                        # note: trace file starts with time 0
+                        mahimahi_ptr = 1
+                        last_mahimahi_time = 0
+                        end_of_video = True
+                        end_of_network = True
+                        break
+
+                    duration = self.cooked_time[mahimahi_ptr] \
+                               - last_mahimahi_time
+                    if duration > sleep_time / MILLISECONDS_IN_SECOND:
+                        last_mahimahi_time += sleep_time / MILLISECONDS_IN_SECOND
+                        break
+                    sleep_time -= duration * MILLISECONDS_IN_SECOND
+                    last_mahimahi_time = self.cooked_time[mahimahi_ptr]
+                    mahimahi_ptr += 1
+
+                    throughput = self.cooked_bw[cur_sat_id][mahimahi_ptr] \
+                                 * B_IN_MB / BITS_IN_BYTE / self.get_num_of_user_sat(cur_sat_id)
+                    if throughput == 0.0:
+                        # Do the forced handover
+                        # Connect the satellite that has the best serving time
+                        sat_id = self.get_best_sat_id(agent, mahimahi_ptr)
+                        self.update_sat_info(cur_sat_id, mahimahi_ptr, -1)
+                        self.update_sat_info(sat_id, mahimahi_ptr, 1)
+                        prev_sat_id = cur_sat_id
+                        cur_sat_id = sat_id
+                        if ho_stamp != MPC_FUTURE_CHUNK_COUNT:
+                            return 100, 0
+
+            video_chunk_counter += 1
+            avg_bws.append(float(video_chunk_size) / delay / M_IN_K * BITS_IN_BYTE)
+
+            if video_chunk_counter >= TOTAL_VIDEO_CHUNCK or end_of_network:
+                end_of_video = True
+                buffer_size = 0
+                video_chunk_counter = 0
+                break
+
+
+        return rebuf / MILLISECONDS_IN_SECOND, sum(avg_bws) / len(avg_bws)
+
     def reset(self):
         
         self.video_chunk_counter = [0 for _ in range(self.num_agents)]
@@ -318,6 +464,10 @@ class Environment:
 
         self.cooked_time = self.all_cooked_time[self.trace_idx]
         self.cooked_bw = self.all_cooked_bw[self.trace_idx]
+
+        for sat_id, sat_bw in self.cooked_bw.items():
+            self.num_sat_info[sat_id] = [0 for _ in range(len(sat_bw))]
+            self.num_of_user_sat[sat_id] = 0
 
         self.mahimahi_ptr = [1 for _ in range(self.num_agents)]
         self.last_mahimahi_time = [self.cooked_time[self.mahimahi_start_ptr - 1] for _ in range(self.num_agents)]
@@ -487,11 +637,13 @@ class Environment:
     def qoe_v3(self, agent):
         is_handover = False
         best_sat_id = self.cur_sat_id[agent]
-        # start_time = time.time()
+        # start_time = time.time()rewards
         #runner_up_sat_ids, ho_stamps, best_combos, max_rewards= self.calculate_mpc_with_handover_exhaustive_reduced(agent)
-        runner_up_sat_ids, ho_stamps, best_combos, max_rewards= self.calculate_mpc_with_handover_exhaustive(agent)
+        # runner_up_sat_ids, ho_stamps, best_combos, max_rewards= self.calculate_mpc_with_handover_exhaustive(agent)
+        runner_up_sat_ids, ho_stamps, best_combos, max_rewards = self.calculate_mpc_with_handover_exhaustive_oracle(agent)
 
         # print(time.time()-start_time)
+        # print(runner_up_sat_ids, ho_stamps, best_combos, max_rewards)
         return runner_up_sat_ids, ho_stamps, best_combos, max_rewards
 
     def calculate_mpc_with_handover_exhaustive(self, agent):
@@ -514,14 +666,7 @@ class Environment:
         for i in range(self.num_agents):
             if video_chunk_remain[i] < MPC_FUTURE_CHUNK_COUNT:
                 future_chunk_length[i] = video_chunk_remain[i]
-        """
-        if future_chunk_length[agent] == 0:
-            max_reward = -10000000
-            best_combo = (self.last_quality[agent],)
-            ho_sat_id = self.cur_sat_id[agent]
-            ho_stamp = MPC_FUTURE_CHUNK_COUNT
-            return ho_sat_id, ho_stamp, best_combo, max_reward
-        """
+
         cur_download_bws = [self.predict_download_bw(i, True) for i in range(self.num_agents)]
 
         cur_sat_ids = [self.cur_sat_id[i] for i in range(self.num_agents)]
@@ -550,7 +695,8 @@ class Environment:
                 next_download_bws.append(cur_download_bws[agent_id] * tmp_next_bw / tmp_cur_bw)
 
         max_rewards = [-10000000 for _ in range(self.num_agents)]
-        best_combos = [[self.last_quality[i]] for i in range(self.num_agents)]
+        best_combos = [[self.last_quality[i]] * MPC_FUTURE_CHUNK_COUNT for i in range(self.num_agents)]
+        best_bws_sum = [-10000000]
         ho_stamps = [MPC_FUTURE_CHUNK_COUNT for _ in range(self.num_agents)]
         sat_user_nums = num_of_sats
 
@@ -587,6 +733,7 @@ class Environment:
                         combos.append(cur_combo)
 
                 rewards = []
+                tmp_bws_sum = []
                 for agent_id, combo in enumerate(combos):
                     if combo == [np.nan] * MPC_FUTURE_CHUNK_COUNT:
                         rewards.append(np.nan)
@@ -599,7 +746,6 @@ class Environment:
                     last_index = int(CHUNK_TIL_VIDEO_END_CAP - video_chunk_remain[agent_id])
 
                     for position in range(0, len(combo)):
-                        # 0, 1, 2 -> 0, 2, 4
                         chunk_quality = combo[position]
                         index = last_index + position  # e.g., if last chunk is 3, then first iter is 3+0+1=4
                         download_time = 0
@@ -627,6 +773,8 @@ class Environment:
                         else:
                             harmonic_bw = next_download_bws[agent_id] * next_sat_user_num / next_future_sat_user_num
 
+                        tmp_bws_sum.append(harmonic_bw)
+
                         download_time += (self.video_size[chunk_quality][index] / B_IN_MB) \
                                          / harmonic_bw * BITS_IN_BYTE  # this is MB/MB/s --> seconds
 
@@ -651,20 +799,130 @@ class Environment:
                     rewards.append(bitrate_sum * QUALITY_FACTOR / M_IN_K - (REBUF_PENALTY * curr_rebuffer_time) \
                              - SMOOTH_PENALTY * smoothness_diff / M_IN_K)
 
-                if np.nanmean(rewards) >= np.nanmean(max_rewards):
+                if np.nanmean(rewards) > np.nanmean(max_rewards):
                     best_combos = combos
                     max_rewards = rewards
                     ho_stamps = ho_positions
+                    best_bws_sum = tmp_bws_sum
                 elif np.nanmean(rewards) == np.nanmean(max_rewards) and \
-                        (combos[agent][0] >= best_combos[agent][0] or ho_stamps[agent] >= ho_positions[agent]):
+                        (ho_stamps[agent] >= ho_positions[agent]
+                        or np.nanmean(tmp_bws_sum) >= np.nanmean(best_bws_sum)):
                 # elif np.nanmean(rewards) == np.nanmean(max_rewards) \
                 #         and (rewards[agent] >= max_rewards[agent] or combos[agent][0] >= best_combos[agent][0]):
                     best_combos = combos
                     max_rewards = rewards
                     ho_stamps = ho_positions
+                    best_bws_sum = tmp_bws_sum
 
         # return runner_up_sat_ids[agent], ho_stamps[agent], best_combos[agent], max_rewards[agent]
 
+        return runner_up_sat_ids, ho_stamps, best_combos, max_rewards
+
+    def calculate_mpc_with_handover_exhaustive_oracle(self, agent):
+        # future chunks length (try 4 if that many remaining)
+        video_chunk_remain = [self.video_chunk_remain[i] for i in range(self.num_agents)]
+        # last_index = self.get_total_video_chunk() - video_chunk_remain
+
+        chunk_combo_option = []
+        ho_combo_option = []
+        # make chunk combination options
+        for combo in itertools.product(list(range(int(BITRATE_LEVELS / BITRATE_WEIGHT))),
+                                       repeat=MPC_FUTURE_CHUNK_COUNT * self.num_agents):
+            chunk_combo_option.append(list([BITRATE_WEIGHT * x for x in combo]))
+
+        # make handover combination options
+        for combo in itertools.product(list(range(MPC_FUTURE_CHUNK_COUNT + 1)), repeat=self.num_agents):
+            ho_combo_option.append(list(combo))
+
+        future_chunk_length = [MPC_FUTURE_CHUNK_COUNT] * self.num_agents
+        for i in range(self.num_agents):
+            if video_chunk_remain[i] < MPC_FUTURE_CHUNK_COUNT:
+                future_chunk_length[i] = video_chunk_remain[i]
+
+        # cur_download_bws = [self.predict_download_bw(i, True) for i in range(self.num_agents)]
+
+        cur_sat_ids = [self.cur_sat_id[i] for i in range(self.num_agents)]
+        runner_up_sat_ids = [self.get_runner_up_sat_id(i, method="harmonic-mean")[0] for i in range(self.num_agents)]
+
+        # related_sat_ids = list(set(cur_sat_ids + runner_up_sat_ids))
+        num_of_sats = self.get_num_of_user_sat(sat_id="all")
+
+        max_rewards = [-10000000 for _ in range(self.num_agents)]
+        best_combos = [[self.last_quality[i] * MPC_FUTURE_CHUNK_COUNT] for i in range(self.num_agents)]
+        best_bws_sum = [-10000000]
+        ho_stamps = [MPC_FUTURE_CHUNK_COUNT for _ in range(self.num_agents)]
+        sat_user_nums = num_of_sats
+
+        for ho_positions in ho_combo_option:
+            future_sat_user_nums = {}
+
+            for sat_id in sat_user_nums.keys():
+                future_sat_user_nums[sat_id] = np.array([sat_user_nums[sat_id]] * MPC_FUTURE_CHUNK_COUNT)
+
+            for idx, ho_point in enumerate(ho_positions):
+                cur_sat_id = cur_sat_ids[idx]
+                next_sat_id = runner_up_sat_ids[idx]
+                cur_nums = future_sat_user_nums[cur_sat_id]
+                next_nums = future_sat_user_nums[next_sat_id]
+
+                cur_nums[ho_point:] = cur_nums[ho_point:] - 1
+                next_nums[ho_point:] = next_nums[ho_point:] + 1
+
+                future_sat_user_nums[cur_sat_id] = cur_nums
+                future_sat_user_nums[next_sat_id] = next_nums
+
+            for full_combo in chunk_combo_option:
+                combos = []
+                # Break at the end of the chunk
+                for agent_id in range(self.num_agents):
+                    cur_combo = full_combo[MPC_FUTURE_CHUNK_COUNT * agent_id: MPC_FUTURE_CHUNK_COUNT * agent_id +
+                                                                              future_chunk_length[agent_id]]
+                    if not cur_combo:
+                        combos.append([np.nan] * MPC_FUTURE_CHUNK_COUNT)
+                    else:
+                        combos.append(cur_combo)
+
+                rewards = []
+                tmp_bws_sum = []
+                self.froze_num_of_user_sat()
+                for agent_id, combo in enumerate(combos):
+                    if combo == [np.nan] * MPC_FUTURE_CHUNK_COUNT:
+                        rewards.append(np.nan)
+                        continue
+                    bitrate_sum = 0
+                    smoothness_diff = 0
+                    last_quality = self.last_quality[agent_id]
+
+                    cur_sat_id = cur_sat_ids[agent_id]
+                    next_sat_id = runner_up_sat_ids[agent_id]
+                    rebuf, avg_bw = self.get_video_chunk_oracle(combo, agent_id, self.mahimahi_ptr[agent_id], ho_positions[agent_id], cur_sat_id, next_sat_id, future_sat_user_nums)
+                    tmp_bws_sum.append(avg_bw)
+                    for position in range(0, len(combo)):
+                        chunk_quality = combo[position]
+                        bitrate_sum += VIDEO_BIT_RATE[chunk_quality]
+                        smoothness_diff += abs(
+                            VIDEO_BIT_RATE[chunk_quality] - VIDEO_BIT_RATE[last_quality])
+                        last_quality = chunk_quality
+
+                    rewards.append(bitrate_sum * QUALITY_FACTOR / M_IN_K - (REBUF_PENALTY * rebuf) \
+                                   - SMOOTH_PENALTY * smoothness_diff / M_IN_K)
+                self.restore_num_of_user_sat()
+                if np.nanmean(rewards) > np.nanmean(max_rewards):
+                    best_combos = combos
+                    max_rewards = rewards
+                    ho_stamps = ho_positions
+                    best_bws_sum = tmp_bws_sum
+                elif np.nanmean(rewards) == np.nanmean(max_rewards) and \
+                        (ho_stamps[agent] >= ho_positions[agent]
+                         or np.nanmean(tmp_bws_sum) >= np.nanmean(best_bws_sum)):
+                    # elif np.nanmean(rewards) == np.nanmean(max_rewards) \
+                    #         and (rewards[agent] >= max_rewards[agent] or combos[agent][0] >= best_combos[agent][0]):
+                    best_combos = combos
+                    max_rewards = rewards
+                    ho_stamps = ho_positions
+                    best_bws_sum = tmp_bws_sum
+
+        # return runner_up_sat_ids[agent], ho_stamps[agent], best_combos[agent], max_rewards[agent]
         return runner_up_sat_ids, ho_stamps, best_combos, max_rewards
 
     def calculate_mpc_with_handover_exhaustive_reduced(self, agent):
@@ -717,16 +975,16 @@ class Environment:
 
         max_rewards = [-10000000 for _ in range(self.num_agents)]
         best_combos = [[self.last_quality[i]] for i in range(self.num_agents)]
-        ho_stamps = [MPC_FUTURE_CHUNK_COUNT for _ in range(self.num_agents)]
         sat_user_nums = num_of_sats
         best_bws = [-10000000 for _ in range(self.num_agents)]
-        best_bws_sum= [-10000000]
+        best_bws_sum = [-10000000]
         best_ho_positions = {}
 
         for ho_positions in ho_combo_option:
             future_sat_user_nums = {}
             tmp_bws = []
             tmp_bws_sum = []
+
             for sat_id in sat_user_nums.keys():
                 future_sat_user_nums[sat_id] = np.array([sat_user_nums[sat_id]] * MPC_FUTURE_CHUNK_COUNT)
 
@@ -750,6 +1008,7 @@ class Environment:
 
                 cur_sat_id = cur_sat_ids[idx]
                 next_sat_id = runner_up_sat_ids[idx]
+
                 cur_sat_user_num = 1 if sat_user_nums[cur_sat_id] == 0 \
                     else sat_user_nums[cur_sat_id]
                 next_sat_user_num = 1 if sat_user_nums[next_sat_id] == 0 \
@@ -835,7 +1094,7 @@ class Environment:
                 rewards.append(bitrate_sum * QUALITY_FACTOR / M_IN_K - (REBUF_PENALTY * curr_rebuffer_time) \
                          - SMOOTH_PENALTY * smoothness_diff / M_IN_K)
 
-            if np.nanmean(rewards) >= np.nanmean(max_rewards):
+            if np.nanmean(rewards) > np.nanmean(max_rewards):
                 best_combos = combos
                 max_rewards = rewards
                 # ho_stamps = ho_positions
@@ -1222,6 +1481,7 @@ class Environment:
         best_sat_bw = 0
         if mahimahi_ptr is None:
             mahimahi_ptr = self.mahimahi_ptr[agent]
+
         for sat_id, sat_bw in self.cooked_bw.items():
             real_sat_bw = None
 
@@ -1664,3 +1924,9 @@ class Environment:
             self.delay[agent] = HANDOVER_DELAY
             # self.sat_decision_log[agent].append(sat_id)
             return sat_id
+
+    def froze_num_of_user_sat(self):
+        self.stored_num_of_user_sat = self.num_of_user_sat.copy()
+
+    def restore_num_of_user_sat(self):
+        self.num_of_user_sat = self.stored_num_of_user_sat.copy()
