@@ -8,7 +8,7 @@ import numpy as np
 import copy
 
 from muleo_lc_bw_share.satellite import Satellite
-from util.constants import EPSILON
+from util.constants import EPSILON, MAX_RATIO, MIN_RATIO
 
 VIDEO_BIT_RATE = [300, 750, 1200, 1850, 2850, 4300]
 M_IN_K = 1000.0
@@ -171,6 +171,7 @@ class Environment:
                 is_handover = True
                 self.download_bw[agent] = []
                 print("Forced Handover")
+                throughput = self.cur_satellite[self.cur_sat_id[agent]].data_rate(agent, self.mahimahi_ptr[agent], None)
 
             duration = self.cooked_time[self.mahimahi_ptr[agent]] \
                        - self.last_mahimahi_time[agent]
@@ -252,7 +253,8 @@ class Environment:
                     self.switch_sat(agent, sat_id)
                     is_handover = True
                     print("Forced Handover")
-
+                    throughput = self.cur_satellite[self.cur_sat_id[agent]].data_rate(agent, self.mahimahi_ptr[agent],
+                                                                                      None)
 
         # the "last buffer size" return to the controller
         # Note: in old version of dash the lowest buffer is 0.
@@ -265,7 +267,6 @@ class Environment:
 
         cur_sat_bw_logs, next_sat_bandwidth, next_sat_id, next_sat_bw_logs, connected_time = self.get_next_sat_info(agent, self.mahimahi_ptr[agent])
         if self.video_chunk_counter[agent] >= TOTAL_VIDEO_CHUNCK or end_of_network:
-
             self.end_of_video[agent] = True
             self.buffer_size[agent] = 0
             self.video_chunk_counter[agent] = 0
@@ -751,7 +752,10 @@ class Environment:
             is_handover, new_sat_id, bit_rate = self.qoe_v2(
                 agent, centralized=True)
         elif model_type == "DualMPC-Centralization-Exhaustive":
-            runner_up_sat_ids, ho_stamps, best_combos, max_rewards = self.qoe_v3(agent)
+            runner_up_sat_ids, ho_stamps, best_combos, max_rewards, best_user_info = self.qoe_v3(agent)
+            for sat_id in best_user_info:
+                self.cur_satellite[sat_id].set_data_rate_ratio(best_user_info[sat_id][2], best_user_info[sat_id][3])
+
         else:
             print("Cannot happen!")
             exit(-1)
@@ -777,12 +781,12 @@ class Environment:
         best_sat_id = self.cur_sat_id[agent]
         # start_time = time.time()rewards
         # runner_up_sat_ids, ho_stamps, best_combos, max_rewards= self.calculate_mpc_with_handover_exhaustive_reduced(agent)
-        runner_up_sat_ids, ho_stamps, best_combos, max_rewards = self.calculate_mpc_with_handover_exhaustive(agent)
+        runner_up_sat_ids, ho_stamps, best_combos, max_rewards, best_user_info = self.calculate_mpc_with_handover_exhaustive(agent)
         # runner_up_sat_ids, ho_stamps, best_combos, max_rewards = self.calculate_mpc_with_handover_exhaustive_oracle(agent)
 
         # print(time.time()-start_time)
         # print(runner_up_sat_ids, ho_stamps, best_combos, max_rewards)
-        return runner_up_sat_ids, ho_stamps, best_combos, max_rewards
+        return runner_up_sat_ids, ho_stamps, best_combos, max_rewards, best_user_info
 
     def calculate_mpc_with_handover_exhaustive(self, agent):
         # future chunks length (try 4 if that many remaining)
@@ -830,6 +834,7 @@ class Environment:
             if cur_download_bws[agent_id] is None:
                 next_download_bws.append(None)
             else:
+                assert cur_download_bws[agent_id] * tmp_next_bw / tmp_cur_bw != 0.0
                 next_download_bws.append(cur_download_bws[agent_id] * tmp_next_bw / tmp_cur_bw)
 
         max_rewards = [-10000000 for _ in range(self.num_agents)]
@@ -837,6 +842,7 @@ class Environment:
         best_bws_sum = [-10000000]
         ho_stamps = [MPC_FUTURE_CHUNK_COUNT for _ in range(self.num_agents)]
         sat_user_nums = num_of_sats
+        best_user_info = None
 
         for ho_positions in ho_combo_option:
             future_sat_user_nums = {}
@@ -847,8 +853,8 @@ class Environment:
                 future_sat_user_list[sat_id] = {}
                 for i in range(MPC_FUTURE_CHUNK_COUNT):
                     future_sat_user_list[sat_id][i] = copy.deepcopy(self.cur_satellite[sat_id].get_ue_list())
-            for idx, ho_point in enumerate(ho_positions):
 
+            for idx, ho_point in enumerate(ho_positions):
                 cur_sat_id = cur_sat_ids[idx]
                 next_sat_id = runner_up_sat_ids[idx]
                 cur_nums = future_sat_user_nums[cur_sat_id]
@@ -856,6 +862,7 @@ class Environment:
 
                 cur_nums[ho_point:] = cur_nums[ho_point:] - 1
                 next_nums[ho_point:] = next_nums[ho_point:] + 1
+
                 for i in range(MPC_FUTURE_CHUNK_COUNT):
                     if i >= ho_point:
                         future_sat_user_list[cur_sat_id][i].remove(idx)
@@ -869,7 +876,8 @@ class Environment:
                 # Break at the end of the chunk
 
                 for agent_id in range(self.num_agents):
-                    cur_combo = full_combo[MPC_FUTURE_CHUNK_COUNT * agent_id: MPC_FUTURE_CHUNK_COUNT * agent_id + future_chunk_length[agent_id]]
+                    cur_combo = full_combo[MPC_FUTURE_CHUNK_COUNT * agent_id:
+                                           MPC_FUTURE_CHUNK_COUNT * agent_id + future_chunk_length[agent_id]]
                     # if cur_download_bws[agent_id] is None and cur_combo != [DEFAULT_QUALITY] * MPC_FUTURE_CHUNK_COUNT:
                     #     wrong_format = True
                     #     break
@@ -884,6 +892,7 @@ class Environment:
                 op_vars_index = 0
                 bounds = []
                 constraints = []
+                sat_id_list = []
                 for sat_id in future_sat_user_nums.keys():
                     user_list = []
                     is_multi_users = False
@@ -893,19 +902,11 @@ class Environment:
                             user_list = [*user_list, *future_sat_user_list[sat_id][i]]
                     if is_multi_users:
                         user_list = list(set(user_list))
-                        user_info[sat_id] = (op_vars_index, len(user_list), user_list)
+                        user_info[sat_id] = (op_vars_index, op_vars_index + len(user_list), user_list)
 
                         op_vars = [*op_vars, *([1 / len(user_list)] * len(user_list))]
-                        bounds = [*bounds, *[(0, 1) for _ in range(len(user_list))]]
-
-                        def const(s):
-                            sum = 0
-                            nonlocal op_vars_index
-                            nonlocal user_list
-                            for i in range(op_vars_index, len(user_list)):
-                                sum += s[i]
-
-                            return sum - 1
+                        bounds = [*bounds, *[(0+EPSILON, 1-EPSILON) for _ in range(len(user_list))]]
+                        sat_id_list.append(sat_id)
 
                         target_array = np.zeros(op_vars_index + len(user_list))
                         target_array[op_vars_index:len(user_list)] = 1
@@ -915,7 +916,10 @@ class Environment:
 
                         # constraints = [*constraints, {'type': 'eq', 'fun': const}]
                         constraints.append(constraint)
+
                 if op_vars:
+                    import warnings
+                    warnings.filterwarnings("ignore")
                     ue_ratio = minimize(
                         self.objective_function,
                         x0=op_vars,
@@ -925,6 +929,7 @@ class Environment:
                               next_download_bws, user_info, bw_ratio),
                         constraints=constraint,
                         bounds=bounds,
+                        method="SLSQP" # or BFGS
                     )
                     """
                     print(ue_ratio)
@@ -934,8 +939,11 @@ class Environment:
                     print(ho_positions)
                     print(cur_sat_ids)
                     print(runner_up_sat_ids)
-                    bw_ratio[sat_id] = ue_ratio
                     """
+                    for sat_id in sat_id_list:
+                        user_info[sat_id] = user_info[sat_id] + (ue_ratio.x[user_info[sat_id][0]:user_info[sat_id][1]],)
+                        # user_info[sat_id] = user_info[sat_id] + (np.array([0.5, 0.5]),)
+
                 rewards = []
                 tmp_bws_sum = []
                 for agent_id, combo in enumerate(combos):
@@ -967,15 +975,26 @@ class Environment:
                         # next_sat_user_num = sat_user_nums[next_sat_id]
                         next_future_sat_user_num = future_sat_user_nums[next_sat_id][position]
 
+                        now_sat_id = None
                         if ho_positions[agent_id] > position:
-                            harmonic_bw = cur_download_bws[agent_id] * cur_sat_user_num / cur_future_sat_user_num
+                            harmonic_bw = cur_download_bws[agent_id] * cur_sat_user_num
+                            if cur_future_sat_user_num > 1:
+                                now_sat_id = cur_sat_id
                         elif ho_positions[agent_id] == position:
-                            harmonic_bw = next_download_bws[agent_id] * next_sat_user_num / next_future_sat_user_num
+                            harmonic_bw = next_download_bws[agent_id] * next_sat_user_num
+                            if next_future_sat_user_num > 1:
+                                now_sat_id = next_sat_id
                             # Give them a penalty
                             download_time += HANDOVER_DELAY
-
                         else:
-                            harmonic_bw = next_download_bws[agent_id] * next_sat_user_num / next_future_sat_user_num
+                            harmonic_bw = next_download_bws[agent_id] * next_sat_user_num
+                            if next_future_sat_user_num > 1:
+                                now_sat_id = next_sat_id
+
+                        if now_sat_id:
+                            var_index = user_info[now_sat_id][2].index(agent_id)
+                            harmonic_bw *= user_info[now_sat_id][3][var_index]
+
 
                         tmp_bws_sum.append(harmonic_bw)
 
@@ -1008,6 +1027,7 @@ class Environment:
                     max_rewards = rewards
                     ho_stamps = ho_positions
                     best_bws_sum = tmp_bws_sum
+                    best_user_info = user_info
                 elif np.nanmean(rewards) == np.nanmean(max_rewards) and \
                         (ho_stamps[agent] <= ho_positions[agent]
                         or np.nanmean(tmp_bws_sum) >= np.nanmean(best_bws_sum)):
@@ -1017,10 +1037,9 @@ class Environment:
                     max_rewards = rewards
                     ho_stamps = ho_positions
                     best_bws_sum = tmp_bws_sum
-
+                    best_user_info = user_info
         # return runner_up_sat_ids[agent], ho_stamps[agent], best_combos[agent], max_rewards[agent]
-
-        return runner_up_sat_ids, ho_stamps, best_combos, max_rewards
+        return runner_up_sat_ids, ho_stamps, best_combos, max_rewards, best_user_info
 
     def calculate_mpc_with_handover_exhaustive_oracle(self, agent):
         # future chunks length (try 4 if that many remaining)
@@ -1562,6 +1581,16 @@ class Environment:
                     now_download_bws = next_download_bws[agent_id] * next_sat_user_num
                     now_sat_id = next_sat_id
 
+                if now_download_bws == 0:
+                    print(combos)
+                    print(next_download_bws)
+                    print(cur_download_bws)
+                    print(ho_positions)
+                    print(cur_sat_ids)
+                    print(runner_up_sat_ids)
+                    print(user_info)
+                    exit(1)
+
                 if now_future_sat_user_num > 1:
                     assert now_sat_id in user_info.keys()
                     var_index = user_info[now_sat_id][0] + user_info[now_sat_id][2].index(agent_id)
@@ -1973,7 +2002,7 @@ class Environment:
         else:
             past_bw = self.cooked_bw[sat_id][mahimahi_ptr - 1] / num_of_user_sat
         if past_bw == 0:
-            return 0
+            return self.cooked_bw[sat_id][mahimahi_ptr]
 
         if sat_id in self.past_bw_ests[agent].keys() and len(self.past_bw_ests[agent][sat_id]) > 0 \
                 and mahimahi_ptr - 1 in self.past_bw_ests[agent][sat_id].keys():

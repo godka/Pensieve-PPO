@@ -25,7 +25,7 @@ class Satellite:
         self.tx_power = 30  # in dBm (was 40)
         self.conn_ues = []
         self.height = 15
-        self.data_rate_ratio = []
+        self.data_rate_ratio = {}
 
         # just consider downlink for now; more interesting for most apps anyways
         self.log = structlog.get_logger(sat_id=self.sat_id)
@@ -71,16 +71,35 @@ class Satellite:
 
     def add_ue(self, user_id):
         self.conn_ues.append(user_id)
+        """
+        if user_id not in self.data_rate_ratio.keys():
+            for tmp_id in self.data_rate_ratio.keys():
+                self.data_rate_ratio[tmp_id] = (1 - 1/ self.num_conn_ues) * self.data_rate_ratio[tmp_id]
+
+            self.data_rate_ratio[user_id] = 1 / self.num_conn_ues
+        assert sum(self.data_rate_ratio.values()) <= 1
+        """
 
     def remove_ue(self, user_id):
         assert user_id in self.conn_ues
         self.conn_ues.remove(user_id)
 
+        """
+        if user_id in self.data_rate_ratio.keys():
+            removed_ratio = self.data_rate_ratio.pop(user_id)
+            for tmp_id in self.data_rate_ratio.keys():
+                self.data_rate_ratio[tmp_id] += removed_ratio / len(self.data_rate_ratio.keys())
+        assert sum(self.data_rate_ratio.values()) <= 1
+        """
+
     def get_ue_list(self):
         return self.conn_ues
 
-    def set_data_rate_ratio(self, ratio_list):
-        self.data_rate_ratio = ratio_list
+    def set_data_rate_ratio(self, user_id, ratio_list):
+        index = 0
+        for uid in user_id:
+            self.data_rate_ratio[uid] = ratio_list[index]
+            index += 1
 
     def path_loss(self, distance, ue_height=1.5):
         """Return path loss in dBm to a UE at a given position. Calculation using Okumura Hata, suburban indoor"""
@@ -114,7 +133,7 @@ class Satellite:
         dr_ue_unshared *= np.random.uniform(NOISE_LOW, NOISE_HIGH)
         return dr_ue_unshared
 
-    def data_rate_shared(self, agent, dr_ue_unshared):
+    def data_rate_shared(self, agent_id, dr_ue_unshared):
         """
         Return the shared data rate the given UE would get based on its unshared data rate and a sharing model.
 
@@ -128,10 +147,22 @@ class Satellite:
         # resource-fair = time/bandwidth-fair: split time slots/bandwidth/RBs equally among all connected UEs
         if self.sharing_model == 'resource-fair':
             # split data rate by all already connected UEs incl. this UE
-            dr_ue_shared = dr_ue_unshared / self.num_conn_ues
-            if self.data_rate_ratio:
-                print(self.data_rate_ratio)
-                dr_ue_shared *= self.data_rate_ratio[agent]
+            # assert agent_id in self.data_rate_ratio
+            if agent_id not in self.data_rate_ratio:
+                dr_ue_shared = dr_ue_unshared / self.num_conn_ues
+            else:
+                if len(self.data_rate_ratio.keys()) < self.num_conn_ues:
+                    dr_ue_unshared -= dr_ue_unshared / self.num_conn_ues * (self.num_conn_ues - len(self.data_rate_ratio.keys()))
+                    dr_ue_shared *= self.data_rate_ratio[agent_id]
+                elif len(self.data_rate_ratio.keys()) == self.num_conn_ues:
+                    dr_ue_shared = dr_ue_unshared * self.data_rate_ratio[agent_id]
+                else:
+                    more_ratio = 0
+                    for user_id in self.data_rate_ratio.keys():
+                        if user_id not in self.conn_ues:
+                            more_ratio += self.data_rate_ratio[user_id]
+                    dr_ue_shared = dr_ue_unshared * (self.data_rate_ratio[agent_id] + more_ratio / self.num_conn_ues)
+
         return dr_ue_shared
 
     def data_rate(self, agent, mahimahi_ptr, distance):

@@ -11,6 +11,8 @@ SMOOTH_PENALTY = 1
 DEFAULT_QUALITY = 1  # default video quality without agent
 # small epsilon used in denominator to avoid division by zero
 EPSILON = 1e-16
+MIN_RATIO = 0.1
+MAX_RATIO = 0.9
 B_IN_MB = 1000000.0
 BITS_IN_BYTE = 8.0
 

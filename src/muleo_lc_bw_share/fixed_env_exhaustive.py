@@ -167,6 +167,12 @@ class Environment:
                 is_handover = True
                 self.download_bw[agent] = []
                 print("Forced Handover")
+                if self.get_num_of_user_sat(self.cur_sat_id[agent]) == 0:
+                    throughput = self.cooked_bw[self.cur_sat_id[agent]][self.mahimahi_ptr[agent]] \
+                                 * B_IN_MB / BITS_IN_BYTE
+                else:
+                    throughput = self.cooked_bw[self.cur_sat_id[agent]][self.mahimahi_ptr[agent]] \
+                                 * B_IN_MB / BITS_IN_BYTE / self.get_num_of_user_sat(self.cur_sat_id[agent])
 
             duration = self.cooked_time[self.mahimahi_ptr[agent]] \
                        - self.last_mahimahi_time[agent]
@@ -253,7 +259,12 @@ class Environment:
                     self.switch_sat(agent, sat_id)
                     is_handover = True
                     print("Forced Handover")
-
+                    if self.get_num_of_user_sat(self.cur_sat_id[agent]) == 0:
+                        throughput = self.cooked_bw[self.cur_sat_id[agent]][self.mahimahi_ptr[agent]] \
+                                     * B_IN_MB / BITS_IN_BYTE
+                    else:
+                        throughput = self.cooked_bw[self.cur_sat_id[agent]][self.mahimahi_ptr[agent]] \
+                                     * B_IN_MB / BITS_IN_BYTE / self.get_num_of_user_sat(self.cur_sat_id[agent])
 
         # the "last buffer size" return to the controller
         # Note: in old version of dash the lowest buffer is 0.
@@ -270,7 +281,6 @@ class Environment:
             self.end_of_video[agent] = True
             self.buffer_size[agent] = 0
             self.video_chunk_counter[agent] = 0
-
 
             # Refresh satellite info
             # self.connection[self.cur_sat_id[agent]] = -1
@@ -778,8 +788,8 @@ class Environment:
         best_sat_id = self.cur_sat_id[agent]
         # start_time = time.time()rewards
         #runner_up_sat_ids, ho_stamps, best_combos, max_rewards= self.calculate_mpc_with_handover_exhaustive_reduced(agent)
-        # runner_up_sat_ids, ho_stamps, best_combos, max_rewards = self.calculate_mpc_with_handover_exhaustive(agent)
-        runner_up_sat_ids, ho_stamps, best_combos, max_rewards = self.calculate_mpc_with_handover_exhaustive_oracle(agent)
+        runner_up_sat_ids, ho_stamps, best_combos, max_rewards = self.calculate_mpc_with_handover_exhaustive(agent)
+        # runner_up_sat_ids, ho_stamps, best_combos, max_rewards = self.calculate_mpc_with_handover_exhaustive_oracle(agent)
 
         # print(time.time()-start_time)
         # print(runner_up_sat_ids, ho_stamps, best_combos, max_rewards)
@@ -831,6 +841,7 @@ class Environment:
             if cur_download_bws[agent_id] is None:
                 next_download_bws.append(None)
             else:
+                assert cur_download_bws[agent_id] * tmp_next_bw / tmp_cur_bw != 0.0
                 next_download_bws.append(cur_download_bws[agent_id] * tmp_next_bw / tmp_cur_bw)
 
         max_rewards = [-10000000 for _ in range(self.num_agents)]
@@ -862,7 +873,8 @@ class Environment:
                 # Break at the end of the chunk
 
                 for agent_id in range(self.num_agents):
-                    cur_combo = full_combo[MPC_FUTURE_CHUNK_COUNT * agent_id: MPC_FUTURE_CHUNK_COUNT * agent_id + future_chunk_length[agent_id]]
+                    cur_combo = full_combo[MPC_FUTURE_CHUNK_COUNT * agent_id:
+                                           MPC_FUTURE_CHUNK_COUNT * agent_id + future_chunk_length[agent_id]]
                     # if cur_download_bws[agent_id] is None and cur_combo != [DEFAULT_QUALITY] * MPC_FUTURE_CHUNK_COUNT:
                     #     wrong_format = True
                     #     break
@@ -1145,6 +1157,7 @@ class Environment:
             if cur_download_bws[agent_id] is None:
                 next_download_bws.append(None)
             else:
+                assert cur_download_bws[agent_id] * tmp_next_bw / tmp_cur_bw != 0.0
                 next_download_bws.append(cur_download_bws[agent_id] * tmp_next_bw / tmp_cur_bw)
 
         max_rewards = [-10000000 for _ in range(self.num_agents)]
@@ -1839,7 +1852,7 @@ class Environment:
         else:
             past_bw = self.cooked_bw[sat_id][mahimahi_ptr - 1] / num_of_user_sat
         if past_bw == 0:
-            return 0
+            return self.cooked_bw[sat_id][mahimahi_ptr]
 
         if sat_id in self.past_bw_ests[agent].keys() and len(self.past_bw_ests[agent][sat_id]) > 0 \
                 and mahimahi_ptr - 1 in self.past_bw_ests[agent][sat_id].keys():

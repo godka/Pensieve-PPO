@@ -2,7 +2,8 @@ import numpy as np
 import structlog
 
 from muleo_lc_bw_share import load_trace
-from muleo_lc_bw_share import fixed_env_exhaustive_snr as env
+# from muleo_lc_bw_share import fixed_env_exhaustive_ratio as env
+from muleo_lc_bw_share import fixed_env_exhaustive as env
 import matplotlib.pyplot as plt
 import itertools
 import os
@@ -116,6 +117,7 @@ def main():
     ho_stamps_log = [MPC_FUTURE_CHUNK_COUNT for _ in range(NUM_AGENTS)]
     combo_log = [[DEFAULT_QUALITY] for _ in range(NUM_AGENTS)]
     next_sat_log = [None for _ in range(NUM_AGENTS)]
+
     while True:  # serve video forever
         agent = net_env.get_first_agent()
 
@@ -155,6 +157,7 @@ def main():
             ho_point = MPC_FUTURE_CHUNK_COUNT
             combo_log = [[DEFAULT_QUALITY] for _ in range(NUM_AGENTS)]
             next_sat_log = [None for _ in range(NUM_AGENTS)]
+            continue
         else:
             bit_rate[agent] = combo_log[agent].pop(0)
             ho_point = ho_stamps_log[agent]
