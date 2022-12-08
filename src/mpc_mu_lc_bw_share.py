@@ -1,9 +1,11 @@
 import numpy as np
 from muleo_lc_bw_share import load_trace
 from muleo_lc_bw_share import fixed_env as env
-import matplotlib.pyplot as plt
 import itertools
 import os
+
+from util.constants import VIDEO_BIT_RATE, BUFFER_NORM_FACTOR, CHUNK_TIL_VIDEO_END_CAP, M_IN_K, REBUF_PENALTY, \
+    SMOOTH_PENALTY, DEFAULT_QUALITY
 
 VIDEO_CHOICES = 6
 
@@ -13,20 +15,12 @@ A_DIM = 6
 MPC_FUTURE_CHUNK_COUNT = 3
 ACTOR_LR_RATE = 0.0001
 CRITIC_LR_RATE = 0.001
-VIDEO_BIT_RATE = [300,750,1200,1850,2850,4300]  # Kbps
-BITRATE_REWARD = [1, 2, 3, 12, 15, 20]
-BUFFER_NORM_FACTOR = 10.0
-CHUNK_TIL_VIDEO_END_CAP = 48.0
-TOTAL_VIDEO_CHUNKS = 48
-M_IN_K = 1000.0
-REBUF_PENALTY = 4.3  # 1 sec rebuffering -> 3 Mbps
-SMOOTH_PENALTY = 1
-DEFAULT_QUALITY = 1  # default video quality without agent
 RANDOM_SEED = 42
 RAND_RANGE = 1000000
 SUMMARY_DIR = './test_results_mpc/'
 LOG_FILE = SUMMARY_DIR + 'log_sim_cent'
 TEST_TRACES = './test/'
+
 # log in format of time_stamp bit_rate buffer_size rebuffer_time chunk_size download_time reward
 # NN_MODEL = './models/nn_model_ep_5900.ckpt'
 
@@ -36,14 +30,14 @@ import argparse
 
 parser = argparse.ArgumentParser(description='PyTorch Synthetic Benchmark',
                                  formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-parser.add_argument('--user', type=int, default=3)
+parser.add_argument('--user', type=int, default=8)
 args = parser.parse_args()
-NUM_AGENTS = args.user
 
+NUM_AGENTS = args.user
 # past errors in bandwidth
 
-past_errors = [[]for _ in range(NUM_AGENTS)]
-past_bandwidth_ests = [[]for _ in range(NUM_AGENTS)]
+past_errors = [[] for _ in range(NUM_AGENTS)]
+past_bandwidth_ests = [[] for _ in range(NUM_AGENTS)]
 
 size_video1 = [2354772, 2123065, 2177073, 2160877, 2233056, 1941625, 2157535, 2290172, 2055469, 2169201, 2173522, 2102452, 2209463, 2275376, 2005399, 2152483, 2289689, 2059512, 2220726, 2156729, 2039773, 2176469, 2221506, 2044075, 2186790, 2105231, 2395588, 1972048, 2134614, 2164140, 2113193, 2147852, 2191074, 2286761, 2307787, 2143948, 1919781, 2147467, 2133870, 2146120, 2108491, 2184571, 2121928, 2219102, 2124950, 2246506, 1961140, 2155012, 1433658]
 size_video2 = [1728879, 1431809, 1300868, 1520281, 1472558, 1224260, 1388403, 1638769, 1348011, 1429765, 1354548, 1519951, 1422919, 1578343, 1231445, 1471065, 1491626, 1358801, 1537156, 1336050, 1415116, 1468126, 1505760, 1323990, 1383735, 1480464, 1547572, 1141971, 1498470, 1561263, 1341201, 1497683, 1358081, 1587293, 1492672, 1439896, 1139291, 1499009, 1427478, 1402287, 1339500, 1527299, 1343002, 1587250, 1464921, 1483527, 1231456, 1364537, 889412]
@@ -98,10 +92,10 @@ def main():
     for i in range(NUM_AGENTS):
         action_vec[i][DEFAULT_QUALITY] = 1
 
-    s_batch = [[np.zeros((S_INFO, S_LEN))]for _ in range(NUM_AGENTS)]
-    a_batch = [[action_vec]for _ in range(NUM_AGENTS)]
-    r_batch = [[]for _ in range(NUM_AGENTS)]
-    entropy_record = [[]for _ in range(NUM_AGENTS)]
+    s_batch = [[np.zeros((S_INFO, S_LEN))] for _ in range(NUM_AGENTS)]
+    a_batch = [[action_vec] for _ in range(NUM_AGENTS)]
+    r_batch = [[] for _ in range(NUM_AGENTS)]
+    entropy_record = [[] for _ in range(NUM_AGENTS)]
 
     video_count = 0
     
@@ -130,10 +124,10 @@ def main():
             for i in range(NUM_AGENTS):
                 action_vec[i][bit_rate[agent]] = 1
 
-            s_batch = [[np.zeros((S_INFO, S_LEN))]for _ in range(NUM_AGENTS)]
-            a_batch = [[action_vec]for _ in range(NUM_AGENTS)]
-            r_batch = [[]for _ in range(NUM_AGENTS)]
-            entropy_record = [[]for _ in range(NUM_AGENTS)]
+            s_batch = [[np.zeros((S_INFO, S_LEN))] for _ in range(NUM_AGENTS)]
+            a_batch = [[action_vec] for _ in range(NUM_AGENTS)]
+            r_batch = [[] for _ in range(NUM_AGENTS)]
+            entropy_record = [[] for _ in range(NUM_AGENTS)]
 
             print("network count", video_count)
             print(sum(results) / len(results))
@@ -158,9 +152,9 @@ def main():
             
         # reward is video quality - rebuffer penalty
         reward = VIDEO_BIT_RATE[bit_rate[agent]] / M_IN_K \
-                - REBUF_PENALTY * rebuf \
-                - SMOOTH_PENALTY * np.abs(VIDEO_BIT_RATE[bit_rate[agent]] -
-                                        VIDEO_BIT_RATE[last_bit_rate[agent]]) / M_IN_K
+                 - REBUF_PENALTY * rebuf \
+                 - SMOOTH_PENALTY * np.abs(VIDEO_BIT_RATE[bit_rate[agent]] -
+                                           VIDEO_BIT_RATE[last_bit_rate[agent]]) / M_IN_K
 
         r_batch[agent].append(reward)
         results.append(reward)
@@ -185,7 +179,7 @@ def main():
             log_file.flush()
         # retrieve previous state
         if len(s_batch[agent]) == 0:
-            state = [[np.zeros((S_INFO, S_LEN))]for _ in range(NUM_AGENTS)]
+            state = [[np.zeros((S_INFO, S_LEN))] for _ in range(NUM_AGENTS)]
         else:
             state = [np.array(s_batch[agent][-1], copy=True) for agent in range(NUM_AGENTS)]
 

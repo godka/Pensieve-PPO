@@ -1,9 +1,15 @@
 import numpy as np
+import structlog
+
 from muleo_lc_bw_share import load_trace
-from muleo_lc_bw_share import fixed_env_exhaustive as env
+from muleo_lc_bw_share import fixed_env_exhaustive_snr as env
 import matplotlib.pyplot as plt
 import itertools
 import os
+import logging
+
+from util.constants import VIDEO_BIT_RATE, BUFFER_NORM_FACTOR, CHUNK_TIL_VIDEO_END_CAP, M_IN_K, REBUF_PENALTY, \
+    SMOOTH_PENALTY, DEFAULT_QUALITY
 
 VIDEO_CHOICES = 6
 
@@ -13,20 +19,13 @@ A_DIM = 6
 MPC_FUTURE_CHUNK_COUNT = 2
 ACTOR_LR_RATE = 0.0001
 CRITIC_LR_RATE = 0.001
-VIDEO_BIT_RATE = [300,750,1200,1850,2850,4300]  # Kbps
 BITRATE_REWARD = [1, 2, 3, 12, 15, 20]
-BUFFER_NORM_FACTOR = 10.0
-CHUNK_TIL_VIDEO_END_CAP = 48.0
 TOTAL_VIDEO_CHUNKS = 48
-M_IN_K = 1000.0
-REBUF_PENALTY = 4.3  # 1 sec rebuffering -> 3 Mbps
-SMOOTH_PENALTY = 1
-DEFAULT_QUALITY = 1  # default video quality without agent
 RANDOM_SEED = 42
 RAND_RANGE = 1000000
 SUMMARY_DIR = './test_results_mpc_exhaustive/'
 LOG_FILE = SUMMARY_DIR + 'log_sim_cent'
-TEST_TRACES = './test/'
+TEST_TRACES = './test_tight/'
 # log in format of time_stamp bit_rate buffer_size rebuffer_time chunk_size download_time reward
 # NN_MODEL = './models/nn_model_ep_5900.ckpt'
 
@@ -58,6 +57,9 @@ MPC_TYPE = "DualMPC-Centralization-Exhaustive"
 
 # DualMPC-Centralization
 
+structlog.configure(
+    wrapper_class=structlog.make_filtering_bound_logger(logging.WARNING),
+)
 
 def get_chunk_size(quality, index):
     if index < 0 or index > 48:
