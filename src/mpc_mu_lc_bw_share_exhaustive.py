@@ -2,8 +2,8 @@ import numpy as np
 import structlog
 
 from muleo_lc_bw_share import load_trace
-# from muleo_lc_bw_share import fixed_env_exhaustive_ratio as env
-from muleo_lc_bw_share import fixed_env_exhaustive as env
+from muleo_lc_bw_share import fixed_env_exhaustive_ratio as env
+# from muleo_lc_bw_share import fixed_env_exhaustive as env
 import matplotlib.pyplot as plt
 import itertools
 import os

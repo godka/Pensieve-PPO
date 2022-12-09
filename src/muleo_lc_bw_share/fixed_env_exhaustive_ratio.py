@@ -8,6 +8,7 @@ import numpy as np
 import copy
 
 from muleo_lc_bw_share.satellite import Satellite
+from muleo_lc_bw_share.user import User
 from util.constants import EPSILON, MAX_RATIO, MIN_RATIO
 
 VIDEO_BIT_RATE = [300, 750, 1200, 1850, 2850, 4300]
@@ -82,6 +83,12 @@ class Environment:
             self.num_sat_info[sat_id] = [0 for _ in range(len(sat_bw))]
             self.num_of_user_sat[sat_id] = 0
             self.cur_satellite[sat_id] = Satellite(sat_id, sat_bw, "resource-fair")
+
+
+        self.cur_user = []
+        for agent_id in range(self.num_agents):
+            self.cur_user.append(User(agent_id))
+
         # print(self.num_sat_info)
 
         self.stored_num_of_user_sat = None
@@ -130,6 +137,9 @@ class Environment:
         assert quality >= 0
         assert quality < BITRATE_LEVELS
 
+        # update noise of agent SNR
+        self.cur_user[agent].update_snr_noise()
+
         video_chunk_size = self.video_size[quality][self.video_chunk_counter[agent]]
 
         # use the delivery opportunity in mahimahi
@@ -157,7 +167,7 @@ class Environment:
         self.last_quality[agent] = quality
 
         while True:  # download video chunk over mahimahi
-            throughput = self.cur_satellite[self.cur_sat_id[agent]].data_rate(agent, self.mahimahi_ptr[agent], None)
+            throughput = self.cur_satellite[self.cur_sat_id[agent]].data_rate(self.cur_user[agent], self.mahimahi_ptr[agent])
 
             if throughput == 0.0:
                 # Do the forced handover
@@ -171,7 +181,7 @@ class Environment:
                 is_handover = True
                 self.download_bw[agent] = []
                 print("Forced Handover")
-                throughput = self.cur_satellite[self.cur_sat_id[agent]].data_rate(agent, self.mahimahi_ptr[agent], None)
+                throughput = self.cur_satellite[self.cur_sat_id[agent]].data_rate(self.cur_user[agent], self.mahimahi_ptr[agent])
 
             duration = self.cooked_time[self.mahimahi_ptr[agent]] \
                        - self.last_mahimahi_time[agent]
@@ -243,7 +253,7 @@ class Environment:
                 self.last_mahimahi_time[agent] = self.cooked_time[self.mahimahi_ptr[agent]]
                 self.mahimahi_ptr[agent] += 1
 
-                throughput = self.cur_satellite[self.cur_sat_id[agent]].data_rate(agent, self.mahimahi_ptr[agent], None)
+                throughput = self.cur_satellite[self.cur_sat_id[agent]].data_rate(self.cur_user[agent], self.mahimahi_ptr[agent])
                 if throughput == 0.0:
                     # Do the forced handover
                     # Connect the satellite that has the best serving time
@@ -253,8 +263,7 @@ class Environment:
                     self.switch_sat(agent, sat_id)
                     is_handover = True
                     print("Forced Handover")
-                    throughput = self.cur_satellite[self.cur_sat_id[agent]].data_rate(agent, self.mahimahi_ptr[agent],
-                                                                                      None)
+                    throughput = self.cur_satellite[self.cur_sat_id[agent]].data_rate(self.cur_user[agent], self.mahimahi_ptr[agent])
 
         # the "last buffer size" return to the controller
         # Note: in old version of dash the lowest buffer is 0.
@@ -341,7 +350,7 @@ class Environment:
 
             while True:  # download video chunk over mahimahi
                 # num_of_users = 1 if future_sat_user_nums[cur_sat_id][idx] == 0 else future_sat_user_nums[cur_sat_id][idx]
-                throughput = self.cur_satellite[self.cur_sat_id[agent]].data_rate(agent, self.mahimahi_ptr[agent], None)
+                throughput = self.cur_satellite[self.cur_sat_id[agent]].data_rate(self.cur_user[agent], self.mahimahi_ptr[agent])
 
                 if throughput == 0.0:
                     # Do the forced handover
@@ -476,7 +485,7 @@ class Environment:
 
         while True:  # download video chunk over mahimahi
             # num_of_users = 1 if future_sat_user_nums[cur_sat_id][idx] == 0 else future_sat_user_nums[cur_sat_id][idx]
-            throughput = self.cur_satellite[self.cur_sat_id[agent]].data_rate(agent, self.mahimahi_ptr[agent], None)
+            throughput = self.cur_satellite[self.cur_sat_id[agent]].data_rate(self.cur_user[agent], self.mahimahi_ptr[agent])
 
             if throughput == 0.0:
                 # Do the forced handover
@@ -558,7 +567,7 @@ class Environment:
                 sleep_time -= duration * MILLISECONDS_IN_SECOND
                 self.last_mahimahi_time[agent] = self.cooked_time[self.mahimahi_ptr[agent]]
                 self.mahimahi_ptr[agent] += 1
-                throughput = self.cur_satellite[self.cur_sat_id[agent]].data_rate(agent, self.mahimahi_ptr[agent], None)
+                throughput = self.cur_satellite[self.cur_sat_id[agent]].data_rate(self.cur_user[agent], self.mahimahi_ptr[agent])
 
                 if throughput == 0.0:
                     # Do the forced handover
@@ -607,6 +616,10 @@ class Environment:
             self.num_sat_info[sat_id] = [0 for _ in range(len(sat_bw))]
             self.num_of_user_sat[sat_id] = 0
             self.cur_satellite[sat_id] = Satellite(sat_id, sat_bw, "resource-fair")
+
+        self.cur_user = []
+        for agent_id in range(self.num_agents):
+            self.cur_user.append(User(agent_id))
 
         self.mahimahi_ptr = [1 for _ in range(self.num_agents)]
         self.last_mahimahi_time = [self.cooked_time[self.mahimahi_start_ptr - 1] for _ in range(self.num_agents)]

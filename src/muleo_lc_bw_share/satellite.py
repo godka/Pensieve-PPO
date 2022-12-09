@@ -1,6 +1,7 @@
 import structlog
 
-from util.constants import SUPPORTED_SHARING, EPSILON, NOISE_LOW, NOISE_HIGH, B_IN_MB, BITS_IN_BYTE
+from muleo_lc_bw_share.user import User
+from util.constants import SUPPORTED_SHARING, EPSILON, SNR_NOISE_LOW, SNR_NOISE_HIGH, B_IN_MB, BITS_IN_BYTE
 import numpy as np
 
 SNR_THRESHOLD = 2e-8
@@ -119,31 +120,34 @@ class Satellite:
         self.log.debug('SNR to UE', distance=str(distance), signal=signal)
         return signal / self.noise
 
-    def data_rate_unshared(self, mahimahi_ptr, distance):
+    def data_rate_unshared(self, mahimahi_ptr, user: User):
         """
         Return the achievable data rate for a given UE assuming that it gets the BS' full, unshared data rate.
 
-        :param ue: UE requesting the achievable data rate
+        :param mahimahi_ptr:
+        :param user:
         :return: Return the max. achievable data rate for the UE if it were/is connected to the BS.
         """
         # snr = self.snr(distance)
         # dr_ue_unshared = self.bw * np.log2(1 + snr)
         # For test
         dr_ue_unshared = self.sat_bw[mahimahi_ptr]
-        dr_ue_unshared *= np.random.uniform(NOISE_LOW, NOISE_HIGH)
+        dr_ue_unshared *= user.get_snr_noise()
+        # dr_ue_unshared *= np.random.uniform(SNR_NOISE_LOW, SNR_NOISE_HIGH)
         return dr_ue_unshared
 
-    def data_rate_shared(self, agent_id, dr_ue_unshared):
+    def data_rate_shared(self, user: User, dr_ue_unshared):
         """
         Return the shared data rate the given UE would get based on its unshared data rate and a sharing model.
 
         param distance: UE requesting the achievable data rate
+        :param user:
         :param dr_ue_unshared: The UE's unshared achievable data rate
         :return: The UE's final, shared data rate that it (could/does) get from this BS
         """
         assert self.sharing_model in SUPPORTED_SHARING, f"{self.sharing_model=} not supported. {SUPPORTED_SHARING=}"
         dr_ue_shared = None
-
+        agent_id = user.get_agent_id()
         # resource-fair = time/bandwidth-fair: split time slots/bandwidth/RBs equally among all connected UEs
         if self.sharing_model == 'resource-fair':
             # split data rate by all already connected UEs incl. this UE
@@ -165,7 +169,7 @@ class Satellite:
 
         return dr_ue_shared
 
-    def data_rate(self, agent, mahimahi_ptr, distance):
+    def data_rate(self, user: User, mahimahi_ptr):
         """
         Return the achievable data rate for a given UE (may or may not be connected already).
         Share & split the achievable data rate among all connected UEs, pretending this UE is also connected.
@@ -174,9 +178,9 @@ class Satellite:
         """
         # 0 data rate if the UE cannot connect because the SNR is too low
         # achievable data rate if it wasn't shared with any other connected UEs
-        dr_ue_unshared = self.data_rate_unshared(mahimahi_ptr, distance)
+        dr_ue_unshared = self.data_rate_unshared(mahimahi_ptr, user)
         # final, shared data rate depends on sharing model
-        dr_ue_shared = self.data_rate_shared(agent, dr_ue_unshared)
-        self.log.debug('Achievable data rate', distance=distance, dr_ue_unshared=dr_ue_unshared, dr_ue_shared=dr_ue_shared,
+        dr_ue_shared = self.data_rate_shared(user, dr_ue_unshared)
+        self.log.debug('Achievable data rate', dr_ue_unshared=dr_ue_unshared, dr_ue_shared=dr_ue_shared,
                        num_conn_ues=self.num_conn_ues)
         return dr_ue_shared * B_IN_MB / BITS_IN_BYTE
