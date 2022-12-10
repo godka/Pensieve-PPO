@@ -1,6 +1,7 @@
 src/__pycache__
 src/*.pyc
 src/test_results/
+src/test_results*
 src/results/
 src/ppo_gumbel/
 src/models/

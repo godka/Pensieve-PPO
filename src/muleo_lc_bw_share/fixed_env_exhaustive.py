@@ -52,6 +52,8 @@ SMOOTH_PENALTY = 1
 SAT_STRATEGY = "resource-fair"
 SAT_STRATEGY = "ratio-based"
 
+SNR_MIN = 70
+
 
 class Environment:
     def __init__(self, all_cooked_time, all_cooked_bw, random_seed=RANDOM_SEED, num_agents=NUM_AGENTS):
@@ -91,7 +93,7 @@ class Environment:
 
         self.cur_user = []
         for agent_id in range(self.num_agents):
-            self.cur_user.append(User(agent_id))
+            self.cur_user.append(User(agent_id, SNR_MIN))
 
         # print(self.num_sat_info)
 
@@ -623,7 +625,7 @@ class Environment:
 
         self.cur_user = []
         for agent_id in range(self.num_agents):
-            self.cur_user.append(User(agent_id))
+            self.cur_user.append(User(agent_id, SNR_MIN))
 
         self.mahimahi_ptr = [1 for _ in range(self.num_agents)]
         self.last_mahimahi_time = [self.cooked_time[self.mahimahi_start_ptr - 1] for _ in range(self.num_agents)]
