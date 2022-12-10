@@ -150,6 +150,8 @@ class Satellite:
         agent_id = user.get_agent_id()
         # resource-fair = time/bandwidth-fair: split time slots/bandwidth/RBs equally among all connected UEs
         if self.sharing_model == 'resource-fair':
+            dr_ue_shared = dr_ue_unshared / self.num_conn_ues
+        elif self.sharing_model == 'ratio-based':
             # split data rate by all already connected UEs incl. this UE
             # assert agent_id in self.data_rate_ratio
             if agent_id not in self.data_rate_ratio:

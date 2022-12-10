@@ -1,5 +1,5 @@
 
-SUPPORTED_SHARING = {'max-cap', 'resource-fair', 'rate-fair', 'proportional-fair'}
+SUPPORTED_SHARING = {'max-cap', 'resource-fair', 'ratio-based'}
 VIDEO_BIT_RATE = [300,750,1200,1850,2850,4300]  # Kbps
 BITRATE_REWARD = [1, 2, 3, 12, 15, 20]
 BUFFER_NORM_FACTOR = 10.0
@@ -17,6 +17,6 @@ B_IN_MB = 1000000.0
 BITS_IN_BYTE = 8.0
 
 SNR_NOISE_LOW = 0.8
-SNR_NOISE_HIGH = 1.2
+SNR_NOISE_HIGH = 1
 SNR_NOISE_UNIT = 0.05
 

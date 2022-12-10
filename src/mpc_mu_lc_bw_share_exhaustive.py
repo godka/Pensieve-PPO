@@ -2,8 +2,7 @@ import numpy as np
 import structlog
 
 from muleo_lc_bw_share import load_trace
-from muleo_lc_bw_share import fixed_env_exhaustive_ratio as env
-# from muleo_lc_bw_share import fixed_env_exhaustive as env
+from muleo_lc_bw_share import fixed_env_exhaustive as env
 import matplotlib.pyplot as plt
 import itertools
 import os
@@ -36,7 +35,7 @@ import argparse
 
 parser = argparse.ArgumentParser(description='PyTorch Synthetic Benchmark',
                                  formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-parser.add_argument('--user', type=int, default=2)
+parser.add_argument('--user', type=int, default=3)
 args = parser.parse_args()
 NUM_AGENTS = args.user
 
