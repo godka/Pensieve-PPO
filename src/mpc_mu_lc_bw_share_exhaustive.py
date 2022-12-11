@@ -53,13 +53,14 @@ size_video6 = [181801, 155580, 139857, 155432, 163442, 126289, 153295, 173849, 1
 
 MPC_TYPE = "DualMPC"
 MPC_TYPE = "DualMPC-Centralization-Exhaustive"
-# MPC_TYPE = "DualMPC-Centralization"
+MPC_TYPE = "DualMPC-Centralization-Reduced"
 
 # DualMPC-Centralization
 
 structlog.configure(
     wrapper_class=structlog.make_filtering_bound_logger(logging.WARNING),
 )
+
 
 def get_chunk_size(quality, index):
     if index < 0 or index > 48:

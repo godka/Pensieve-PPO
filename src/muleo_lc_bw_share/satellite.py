@@ -159,7 +159,7 @@ class Satellite:
             else:
                 if len(self.data_rate_ratio.keys()) < self.num_conn_ues:
                     dr_ue_unshared -= dr_ue_unshared / self.num_conn_ues * (self.num_conn_ues - len(self.data_rate_ratio.keys()))
-                    dr_ue_shared *= self.data_rate_ratio[agent_id]
+                    dr_ue_shared = dr_ue_unshared * self.data_rate_ratio[agent_id]
                 elif len(self.data_rate_ratio.keys()) == self.num_conn_ues:
                     dr_ue_shared = dr_ue_unshared * self.data_rate_ratio[agent_id]
                 else:

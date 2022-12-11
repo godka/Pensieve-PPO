@@ -78,6 +78,7 @@ class User:
         return self.agent_id
 
 
+"""
 snr_noise = [np.random.uniform(SNR_NOISE_LOW, 1)]
 for _ in range(TOTAL_VIDEO_CHUNKS):
     snr_noise.append(snr_noise[-1] + np.random.uniform(-SNR_NOISE_UNIT, SNR_NOISE_UNIT))
@@ -86,4 +87,4 @@ for _ in range(TOTAL_VIDEO_CHUNKS):
     elif snr_noise[-1] < SNR_NOISE_LOW:
         snr_noise[-1] = SNR_NOISE_LOW
 print(snr_noise)
-
+"""

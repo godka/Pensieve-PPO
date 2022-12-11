@@ -1,7 +1,6 @@
 src/__pycache__
 src/*.pyc
 src/test_results/
-src/test_results*
 src/results/
 src/ppo_gumbel/
 src/models/
@@ -9,3 +8,14 @@ src/*.tar.gz
 src/ppo/
 src/test_smo.py
 src/ppo-smo/
+
+/src/test_results3/
+/src/test_results6/
+/src/test_results_cent2/
+/src/test_results_cent22/
+/src/test_results_cent33/
+/src/test_results_mpc/
+/src/test_results_mpc_exhaustive/
+/src/test_results_mpc_exhaustive_ratio/
+
+source ../venv/bin/activate;vi muleo_lc_bw_share/fixed_env_exhaustive.py;python3 mpc_mu_lc_bw_share_exhaustive.py
