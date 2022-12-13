@@ -9,9 +9,9 @@ SNR_THRESHOLD = 2e-8
 
 class Satellite:
     """A base station sending data to connected UEs"""
-    def __init__(self, sat_id, sat_bw, sharing_model):
+    def __init__(self, sat_id, sat_bw, user_id, sharing_model):
         self.sat_id = sat_id
-        self.sat_bw = sat_bw
+        self.sat_bw = {user_id: sat_bw}
 
         # model for sharing rate/resources among connected UEs. One of SUPPORTED_SHARING models
         self.sharing_model = sharing_model
@@ -69,6 +69,9 @@ class Satellite:
         if len(self.conn_ues) > 0:
             return min([ue.utility for ue in self.conn_ues])
         return MAX_UTILITY
+
+    def add_bw(self, sat_bw, user_id):
+        self.sat_bw[user_id] = sat_bw
 
     def add_ue(self, user_id):
         self.conn_ues.append(user_id)
@@ -131,8 +134,8 @@ class Satellite:
         # snr = self.snr(distance)
         # dr_ue_unshared = self.bw * np.log2(1 + snr)
         # For test
-        dr_ue_unshared = self.sat_bw[mahimahi_ptr]
-        dr_ue_unshared *= user.get_snr_noise()
+        dr_ue_unshared = self.sat_bw[int(repr(user))][mahimahi_ptr]
+        # dr_ue_unshared *= user.get_snr_noise()
         # dr_ue_unshared *= np.random.uniform(SNR_NOISE_LOW, SNR_NOISE_HIGH)
         return dr_ue_unshared
 

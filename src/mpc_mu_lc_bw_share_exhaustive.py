@@ -25,7 +25,7 @@ RANDOM_SEED = 42
 RAND_RANGE = 1000000
 SUMMARY_DIR = './test_results_mpc_exhaustive/'
 LOG_FILE = SUMMARY_DIR + 'log_sim_cent'
-TEST_TRACES = './test_tight/'
+TEST_TRACES = './test/'
 # log in format of time_stamp bit_rate buffer_size rebuffer_time chunk_size download_time reward
 # NN_MODEL = './models/nn_model_ep_5900.ckpt'
 
@@ -35,7 +35,7 @@ import argparse
 
 parser = argparse.ArgumentParser(description='PyTorch Synthetic Benchmark',
                                  formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-parser.add_argument('--user', type=int, default=2)
+parser.add_argument('--user', type=int, default=3)
 args = parser.parse_args()
 NUM_AGENTS = args.user
 
@@ -76,7 +76,7 @@ def main():
 
     assert len(VIDEO_BIT_RATE) == A_DIM
 
-    all_cooked_time, all_cooked_bw, all_file_names = load_trace.load_trace(TEST_TRACES)
+    all_cooked_time, all_cooked_bw, all_file_names = load_trace.load_trace(TEST_TRACES, NUM_AGENTS)
 
     net_env = env.Environment(all_cooked_time=all_cooked_time,
                               all_cooked_bw=all_cooked_bw,

@@ -42,12 +42,12 @@ class User:
         self.agent_id = agent_id
 
         # self.snr_noise = [np.random.uniform(SNR_NOISE_LOW, 1)]
-        self.snr_noise = TMP_SNR[snr_min][self.agent_id]
+        # self.snr_noise = TMP_SNR[snr_min][self.agent_id]
         self.index = -1
 
         # just consider downlink for now; more interesting for most apps anyways
         self.log = structlog.get_logger(sat_id=self.agent_id)
-        self.log.info('User init', snr_noise=self.snr_noise)
+        self.log.info('User init', agent_id=self.agent_id)
 
     def __repr__(self):
         return str(self.agent_id)
