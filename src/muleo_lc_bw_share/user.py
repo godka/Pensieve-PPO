@@ -42,7 +42,7 @@ class User:
         self.agent_id = agent_id
 
         # self.snr_noise = [np.random.uniform(SNR_NOISE_LOW, 1)]
-        # self.snr_noise = TMP_SNR[snr_min][self.agent_id]
+        self.snr_noise = TMP_SNR[snr_min][self.agent_id]
         self.index = -1
 
         # just consider downlink for now; more interesting for most apps anyways
