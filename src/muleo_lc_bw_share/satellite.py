@@ -70,6 +70,9 @@ class Satellite:
             return min([ue.utility for ue in self.conn_ues])
         return MAX_UTILITY
 
+    def add_bw(self, sat_bw, user_id):
+        self.sat_bw[user_id] = sat_bw
+
     def add_ue(self, user_id):
         self.conn_ues.append(user_id)
         """
@@ -156,12 +159,15 @@ class Satellite:
             # assert agent_id in self.data_rate_ratio
             if agent_id not in self.data_rate_ratio:
                 dr_ue_shared = dr_ue_unshared / self.num_conn_ues
+                # print(self.data_rate_ratio)
             else:
                 if len(self.data_rate_ratio.keys()) < self.num_conn_ues:
                     dr_ue_unshared -= dr_ue_unshared / self.num_conn_ues * (self.num_conn_ues - len(self.data_rate_ratio.keys()))
                     dr_ue_shared = dr_ue_unshared * self.data_rate_ratio[agent_id]
+
                 elif len(self.data_rate_ratio.keys()) == self.num_conn_ues:
                     dr_ue_shared = dr_ue_unshared * self.data_rate_ratio[agent_id]
+
                 else:
                     more_ratio = 0
                     for user_id in self.data_rate_ratio.keys():
@@ -169,6 +175,9 @@ class Satellite:
                             more_ratio += self.data_rate_ratio[user_id]
                     dr_ue_shared = dr_ue_unshared * (self.data_rate_ratio[agent_id] + more_ratio / self.num_conn_ues)
 
+        else:
+            print("Wrong")
+            exit(1)
         return dr_ue_shared
 
     def data_rate(self, user: User, mahimahi_ptr):

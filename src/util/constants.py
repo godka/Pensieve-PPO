@@ -20,3 +20,7 @@ SNR_NOISE_LOW = 0.9
 SNR_NOISE_HIGH = 1
 SNR_NOISE_UNIT = 0.05
 
+
+# Multi-user config in the trace files
+NUM_USERS = 10
+MULTI_USER_FOLDER = 'test_multi_user/'
