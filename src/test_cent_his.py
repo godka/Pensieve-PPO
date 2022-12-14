@@ -1,19 +1,19 @@
 import os
 import sys
 
-from util.encode import encode_other_sat_info
+from util.encode import encode_other_sat_info, one_hot_encode
 
 os.environ['CUDA_VISIBLE_DEVICES']='-1'
 import numpy as np
 import tensorflow.compat.v1 as tf
 from muleo_lc_bw_share import load_trace
-from muleo_lc_bw_share import fixed_env_cent as env
-import ppo_cent_his as network
+from muleo_lc_bw_share import fixed_env_cent3 as env
+import ppo_cent_his3 as network
 
 # S_INFO = 10 + 1 + 3 + 6 * 5  # Original + nums of sat + bw of sats + decisions of users
 S_LEN = 8  # take how many frames in the past
 A_DIM = 6
-PAST_SAT_LOG_LEN = 3
+PAST_SAT_LOG_LEN = 1
 PAST_LEN = 8
 A_SAT = 2
 MAX_SAT = 8
@@ -30,9 +30,9 @@ RANDOM_SEED = 42
 TEST_TRACES = './test/'
 NN_MODEL = sys.argv[1]
 NUM_AGENTS = int(sys.argv[2])
-S_INFO = 12 + MAX_SAT - A_SAT + NUM_AGENTS * PAST_SAT_LOG_LEN
+S_INFO = 11 + NUM_AGENTS-1 + (NUM_AGENTS-1) * PAST_SAT_LOG_LEN + (NUM_AGENTS-1)
 
-LOG_FILE = './test_results_cent_his' + str(NUM_AGENTS) + '/log_sim_ppo'
+LOG_FILE = './test_results_cent_his33' + str(NUM_AGENTS) + '/log_sim_ppo'
 
 
 # A_SAT = NUM_AGENTS
@@ -74,10 +74,12 @@ def main():
         time_stamp = [0 for _ in range(NUM_AGENTS)]
 
         last_bit_rate = [DEFAULT_QUALITY for _ in range(NUM_AGENTS)]
+        last_sat_id = [-1 for _ in range(NUM_AGENTS)]
         last_penalty = [0 for _ in range(NUM_AGENTS)]
         bit_rate = [DEFAULT_QUALITY for _ in range(NUM_AGENTS)]
         sat = [0 for _ in range(NUM_AGENTS)]
-
+        prev_sat_id = None
+        next_sat_id = None
         action_vec = [np.zeros(A_DIM * A_SAT) for _ in range(NUM_AGENTS)]
         for i in range(NUM_AGENTS):
             action_vec[i][bit_rate] = 1
@@ -146,6 +148,7 @@ def main():
                     - SMOOTH_PENALTY * np.abs(VIDEO_BIT_RATE[bit_rate[agent]] -
                                             VIDEO_BIT_RATE[last_bit_rate[agent]]) / M_IN_K
             last_penalty[agent] = REBUF_PENALTY * rebuf
+            last_sat_id[agent] = next_sat_id
             results.append(reward)
 
             # log time_stamp, bit_rate, buffer_size, reward
@@ -161,7 +164,7 @@ def main():
                         str(reward) + '\n')
             log_file.flush()
 
-            reward += net_env.get_others_reward(agent, last_bit_rate, last_penalty)
+            reward += net_env.get_others_reward(agent, last_bit_rate, prev_sat_id, next_sat_id)
 
             r_batch[agent].append(reward)
             last_bit_rate[agent] = bit_rate[agent]
@@ -193,24 +196,30 @@ def main():
             if is_handover:
                 state[agent][8:9, 0:S_LEN] = np.zeros((1, S_LEN))
                 state[agent][9:10, 0:S_LEN] = np.zeros((1, S_LEN))
+            if last_sat_id[agent] != next_sat_id:
+                state[agent][9:10, 0:S_LEN] = np.zeros((1, S_LEN))
             state[agent][8:9, -1] = np.array(cur_sat_user_num) / 10
             state[agent][9:10, -1] = np.array(next_sat_user_num) / 10
             state[agent][10, :A_SAT] = [float(connected_time[0]) / BUFFER_NORM_FACTOR / 10, float(connected_time[1]) / BUFFER_NORM_FACTOR / 10]
 
             other_user_sat_decisions, other_sat_num_users, other_sat_bws, cur_user_sat_decisions \
                 = encode_other_sat_info(net_env.sat_decision_log, NUM_AGENTS, cur_sat_id, next_sat_id, agent,
-                                        other_sat_users, other_sat_bw_logs)
+                                        other_sat_users, other_sat_bw_logs, PAST_SAT_LOG_LEN)
 
             # state[agent][11:11+MAX_SAT - A_SAT, -1] = np.reshape(np.array(other_sat_num_users), (MAX_SAT - A_SAT, 1)) / 10
-            state[agent][11:12, 0:NUM_AGENTS - 1] = np.array(other_buffer_sizes) / BUFFER_NORM_FACTOR
-            state[agent][12:(12 + MAX_SAT - A_SAT), 0:PAST_LEN] = np.array(other_sat_bws) / 10
+            state[agent][11:(11 + NUM_AGENTS-1), -1:] = np.reshape(np.array(other_buffer_sizes) / BUFFER_NORM_FACTOR, (-1, 1))
+            # state[agent][12:(12 + MAX_SAT - A_SAT), 0:PAST_LEN] = np.array(other_sat_bws) / 10
 
-            state[agent][(12 + MAX_SAT - A_SAT):(12 + MAX_SAT - A_SAT + PAST_SAT_LOG_LEN),
-            0:3] = np.reshape(cur_user_sat_decisions, (-1, 3))
+            # state[agent][(12 + MAX_SAT - A_SAT):(12 + MAX_SAT - A_SAT + PAST_SAT_LOG_LEN),
+            # 0:3] = np.reshape(cur_user_sat_decisions, (-1, 3))
 
-            state[agent][(12 + MAX_SAT - A_SAT + PAST_SAT_LOG_LEN):(12 + MAX_SAT - A_SAT + PAST_SAT_LOG_LEN
-                                                                    + (NUM_AGENTS-1) * PAST_SAT_LOG_LEN),
-            0:3] = np.reshape(other_user_sat_decisions, (-1, 3))
+            state[agent][(11 + NUM_AGENTS-1):(11 + NUM_AGENTS-1 + (NUM_AGENTS-1) * PAST_SAT_LOG_LEN),
+            0:2] = np.reshape(other_user_sat_decisions, (-1, 2))
+
+            others_last_bit_rate = np.delete(np.array(last_bit_rate), agent)
+            state[agent][(11 + NUM_AGENTS-1 + (NUM_AGENTS-1) * PAST_SAT_LOG_LEN):
+                         (11 + NUM_AGENTS-1 + (NUM_AGENTS-1) * PAST_SAT_LOG_LEN + (NUM_AGENTS-1)),
+            0:len(VIDEO_BIT_RATE)] = np.reshape(one_hot_encode(others_last_bit_rate, len(VIDEO_BIT_RATE)), (-1, len(VIDEO_BIT_RATE)))
             # if len(next_sat_user_num) < PAST_LEN:
             #     next_sat_user_num = [0] * (PAST_LEN - len(next_sat_user_num)) + next_sat_user_num
 
@@ -223,7 +232,7 @@ def main():
             sat[agent] = action // A_DIM
             bit_rate[agent] = action % A_DIM
 
-            changed_sat_id = net_env.set_satellite(agent, sat[agent])
+            prev_sat_id, next_sat_id = net_env.set_satellite(agent, sat[agent])
             if sat[agent] == 1:
                 is_handover = True
                 # print("Handover!!")
