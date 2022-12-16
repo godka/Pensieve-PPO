@@ -1643,13 +1643,16 @@ class Environment:
         start_buffers = [self.buffer_size[i] / MILLISECONDS_IN_SECOND for i in range(self.num_agents)]
 
         next_download_bws = []
+        next_bws = []
+        cur_bws = []
         for agent_id in range(self.num_agents):
             tmp_next_bw = self.predict_bw(runner_up_sat_ids[agent_id], agent_id, True,
                             mahimahi_ptr=self.mahimahi_ptr[agent_id],
-                            plus=True, past_len=MPC_PAST_CHUNK_COUNT)
+                            plus=False, past_len=MPC_PAST_CHUNK_COUNT)
             tmp_cur_bw = self.predict_bw(cur_sat_ids[agent_id], agent_id, True, mahimahi_ptr=self.mahimahi_ptr[agent_id],
                             plus=False, past_len=MPC_PAST_CHUNK_COUNT)
-
+            next_bws.append(tmp_next_bw)
+            cur_bws.append(tmp_cur_bw)
             if cur_download_bws[agent_id] is None:
                 next_download_bws.append(None)
             else:
@@ -1732,11 +1735,14 @@ class Environment:
                     next_future_sat_user_num = tmp_future_sat_user_nums[next_sat_id][position]
 
                     if ho_positions[idx] > position:
-                        harmonic_bw = cur_download_bws[idx] * cur_sat_user_num / cur_future_sat_user_num
+                        # harmonic_bw = cur_download_bws[idx] * cur_sat_user_num / cur_future_sat_user_num
+                        harmonic_bw = cur_bws[idx] * cur_sat_user_num / cur_future_sat_user_num
                     elif ho_positions[idx] == position:
-                        harmonic_bw = next_download_bws[idx] * next_sat_user_num / next_future_sat_user_num
+                        # harmonic_bw = next_download_bws[idx] * next_sat_user_num / next_future_sat_user_num
+                        harmonic_bw = next_bws[idx] * next_sat_user_num / next_future_sat_user_num
                     else:
-                        harmonic_bw = next_download_bws[idx] * next_sat_user_num / next_future_sat_user_num
+                        # harmonic_bw = next_download_bws[idx] * next_sat_user_num / next_future_sat_user_num
+                        harmonic_bw = next_bws[idx] * next_sat_user_num / next_future_sat_user_num
 
                     bw_log.append(harmonic_bw)
                     tmp_bws_sum.append(harmonic_bw)
@@ -1880,7 +1886,7 @@ class Environment:
 
                     assert harmonic_bw != 0
                     download_time += (self.video_size[chunk_quality][index] / B_IN_MB) \
-                                     / harmonic_bw * BITS_IN_BYTE  # this is MB/MB/s --> seconds
+                                     / (harmonic_bw / BITS_IN_BYTE / PACKET_PAYLOAD_PORTION)  # this is MB/MB/s --> seconds
 
                     if curr_buffer < download_time:
                         curr_rebuffer_time += (download_time - curr_buffer)
@@ -2153,7 +2159,7 @@ class Environment:
                     harmonic_bw *= x[var_index]
 
                 download_time += (self.video_size[chunk_quality][index] / B_IN_MB) \
-                                 / harmonic_bw * BITS_IN_BYTE  # this is MB/MB/s --> seconds
+                                 / (harmonic_bw / BITS_IN_BYTE / PACKET_PAYLOAD_PORTION)  # this is MB/MB/s --> seconds
 
                 if curr_buffer < download_time:
                     curr_rebuffer_time += (download_time - curr_buffer)

@@ -25,6 +25,7 @@ RAND_RANGE = 1000000
 SUMMARY_DIR = './test_results_mpc_exhaustive/'
 LOG_FILE = SUMMARY_DIR + 'log_sim_cent'
 TEST_TRACES = './test_tight/'
+SUMMARY_FILE = SUMMARY_DIR + 'summary'
 # log in format of time_stamp bit_rate buffer_size rebuffer_time chunk_size download_time reward
 # NN_MODEL = './models/nn_model_ep_5900.ckpt'
 
@@ -34,7 +35,7 @@ import argparse
 
 parser = argparse.ArgumentParser(description='PyTorch Synthetic Benchmark',
                                  formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-parser.add_argument('--user', type=int, default=4)
+parser.add_argument('--user', type=int, default=3)
 args = parser.parse_args()
 NUM_AGENTS = args.user
 
@@ -108,6 +109,7 @@ def main():
     video_count = 0
     
     results = []
+    tmp_results = []
     do_mpc = False
     end_of_video = False
 
@@ -143,7 +145,14 @@ def main():
             entropy_record = [[]for _ in range(NUM_AGENTS)]
 
             print("network count", video_count)
-            print(sum(results) / len(results))
+            print(sum(tmp_results) / len(tmp_results))
+            summary_file = open(summary_file, 'a')
+            summary_file.write(sum(tmp_results) / len(tmp_results))
+            summary_file.write('\n')
+            summary_file.close()
+
+            results.append(tmp_results)
+            tmp_results = []
             video_count += 1
             # break
 
@@ -157,6 +166,7 @@ def main():
             ho_point = MPC_FUTURE_CHUNK_COUNT
             combo_log = [[DEFAULT_QUALITY] for _ in range(NUM_AGENTS)]
             next_sat_log = [None for _ in range(NUM_AGENTS)]
+            end_of_video = False
             continue
         else:
             bit_rate[agent] = combo_log[agent].pop(0)
@@ -198,7 +208,7 @@ def main():
                                         VIDEO_BIT_RATE[last_bit_rate[agent]]) / M_IN_K
 
         r_batch[agent].append(reward)
-        results.append(reward)
+        tmp_results.append(reward)
             
             # print(net_env.video_chunk_counter)
             # print(len(net_env.cooked_bw[1161]))
