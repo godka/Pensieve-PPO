@@ -167,7 +167,7 @@ def main():
             print("network count", video_count)
             print(sum(tmp_results) / len(tmp_results))
             summary_file = open(SUMMARY_PATH, 'a')
-            summary_file.write(sum(tmp_results) / len(tmp_results))
+            summary_file.write(str(sum(tmp_results) / len(tmp_results)))
             summary_file.write('\n')
             summary_file.close()
 
