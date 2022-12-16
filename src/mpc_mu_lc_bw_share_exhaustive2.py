@@ -25,7 +25,7 @@ RAND_RANGE = 1000000
 SUMMARY_DIR = './test_results_mpc_exhaustive/'
 LOG_FILE = SUMMARY_DIR + 'log_sim_cent'
 TEST_TRACES = './test_tight/'
-SUMMARY_FILE = SUMMARY_DIR + 'summary'
+SUMMARY_PATH = SUMMARY_DIR + 'summary'
 # log in format of time_stamp bit_rate buffer_size rebuffer_time chunk_size download_time reward
 # NN_MODEL = './models/nn_model_ep_5900.ckpt'
 
@@ -166,7 +166,7 @@ def main():
 
             print("network count", video_count)
             print(sum(tmp_results) / len(tmp_results))
-            summary_file = open(summary_file, 'a')
+            summary_file = open(SUMMARY_PATH, 'a')
             summary_file.write(sum(tmp_results) / len(tmp_results))
             summary_file.write('\n')
             summary_file.close()
