@@ -52,9 +52,14 @@ class User:
     def __repr__(self):
         return str(self.agent_id)
 
-    def get_snr_noise(self):
+    def get_snr_noise(self, mahimahi_ptr=None):
         # return self.snr_noise[-1]
-        return self.snr_noise[self.index]
+        if mahimahi_ptr:
+            if mahimahi_ptr < 0:
+                mahimahi_ptr = 0
+            return self.snr_noise[mahimahi_ptr]
+        else:
+            return self.snr_noise[self.index]
 
     def get_snr_log(self):
         return self.snr_noise

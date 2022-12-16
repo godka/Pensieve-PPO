@@ -143,7 +143,7 @@ class Satellite:
         # dr_ue_unshared *= np.random.uniform(SNR_NOISE_LOW, SNR_NOISE_HIGH)
         return dr_ue_unshared
 
-    def data_rate_shared(self, user: User, dr_ue_unshared):
+    def data_rate_shared(self, user: User, dr_ue_unshared, plus=False):
         """
         Return the shared data rate the given UE would get based on its unshared data rate and a sharing model.
 
@@ -155,33 +155,41 @@ class Satellite:
         assert self.sharing_model in SUPPORTED_SHARING, f"{self.sharing_model=} not supported. {SUPPORTED_SHARING=}"
         dr_ue_shared = None
         agent_id = user.get_agent_id()
+        num_conn_ues = self.num_conn_ues
+
+        if plus:
+            num_conn_ues += 1
+
+        if num_conn_ues == 0:
+            num_conn_ues = 1
+
         # resource-fair = time/bandwidth-fair: split time slots/bandwidth/RBs equally among all connected UEs
         if self.sharing_model == 'resource-fair':
-            dr_ue_shared = dr_ue_unshared / self.num_conn_ues
+            dr_ue_shared = dr_ue_unshared / num_conn_ues
         elif self.sharing_model == 'ratio-based':
             # split data rate by all already connected UEs incl. this UE
             # assert agent_id in self.data_rate_ratio
             if agent_id not in self.data_rate_ratio:
-                dr_ue_shared = dr_ue_unshared / self.num_conn_ues
+                dr_ue_shared = dr_ue_unshared / num_conn_ues
             else:
-                if len(self.data_rate_ratio.keys()) < self.num_conn_ues:
-                    dr_ue_unshared -= dr_ue_unshared / self.num_conn_ues * (self.num_conn_ues - len(self.data_rate_ratio.keys()))
+                if len(self.data_rate_ratio.keys()) < num_conn_ues:
+                    dr_ue_unshared -= dr_ue_unshared / num_conn_ues * (num_conn_ues - len(self.data_rate_ratio.keys()))
                     dr_ue_shared = dr_ue_unshared * self.data_rate_ratio[agent_id]
 
-                elif len(self.data_rate_ratio.keys()) == self.num_conn_ues:
+                elif len(self.data_rate_ratio.keys()) == num_conn_ues:
                     dr_ue_shared = dr_ue_unshared * self.data_rate_ratio[agent_id]
                 else:
                     more_ratio = 0
                     for user_id in self.data_rate_ratio.keys():
                         if user_id not in self.conn_ues:
                             more_ratio += self.data_rate_ratio[user_id]
-                    dr_ue_shared = dr_ue_unshared * (self.data_rate_ratio[agent_id] + more_ratio / self.num_conn_ues)
+                    dr_ue_shared = dr_ue_unshared * (self.data_rate_ratio[agent_id] + more_ratio / num_conn_ues)
         else:
             print("Wrong")
             exit(1)
         return dr_ue_shared
 
-    def data_rate(self, user: User, mahimahi_ptr):
+    def data_rate(self, user: User, mahimahi_ptr, plus=False):
         """
         Return the achievable data rate for a given UE (may or may not be connected already).
         Share & split the achievable data rate among all connected UEs, pretending this UE is also connected.
@@ -190,9 +198,11 @@ class Satellite:
         """
         # 0 data rate if the UE cannot connect because the SNR is too low
         # achievable data rate if it wasn't shared with any other connected UEs
+        if mahimahi_ptr < 0:
+            mahimahi_ptr = 0
         dr_ue_unshared = self.data_rate_unshared(mahimahi_ptr, user)
         # final, shared data rate depends on sharing model
-        dr_ue_shared = self.data_rate_shared(user, dr_ue_unshared)
+        dr_ue_shared = self.data_rate_shared(user, dr_ue_unshared, plus)
         self.log.debug('Achievable data rate', dr_ue_unshared=dr_ue_unshared, dr_ue_shared=dr_ue_shared,
                        num_conn_ues=self.num_conn_ues)
         return dr_ue_shared * B_IN_MB / BITS_IN_BYTE

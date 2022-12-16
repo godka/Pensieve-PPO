@@ -22,7 +22,7 @@ BITRATE_REWARD = [1, 2, 3, 12, 15, 20]
 TOTAL_VIDEO_CHUNKS = 48
 RANDOM_SEED = 42
 RAND_RANGE = 1000000
-SUMMARY_DIR = './test_results_mpc_exhaustive2/'
+SUMMARY_DIR = 'test_results_mpc_exhaustive_resource/'
 LOG_FILE = SUMMARY_DIR + 'log_sim_cent'
 TEST_TRACES = './test_tight/'
 SUMMARY_PATH = SUMMARY_DIR + 'summary'
@@ -130,6 +130,7 @@ def main():
 
     results = []
     tmp_results = []
+    best_user_infos = []
     do_mpc = False
     end_of_video = False
 
@@ -167,12 +168,14 @@ def main():
             print("network count", video_count)
             print(sum(tmp_results) / len(tmp_results))
             summary_file = open(SUMMARY_PATH, 'a')
-            summary_file.write(str(sum(tmp_results) / len(tmp_results)))
+            summary_file.write(str(best_user_infos))
             summary_file.write('\n')
+            summary_file.write(str(sum(tmp_results) / len(tmp_results)))
             summary_file.close()
 
-            results.append(tmp_results)
+            results += tmp_results
             tmp_results = []
+            best_user_infos = []
             video_count += 1
             # break
 
@@ -199,7 +202,7 @@ def main():
             # if len(combo_log[agent]) == 1 and agent == net_env.get_first_agent():
             if not combo_log[agent]:
                 do_mpc = True
-            do_mpc = True
+            # do_mpc = True
 
         # the action is from the last decision
         # this is to make the framework similar to the real
@@ -208,6 +211,8 @@ def main():
         end_of_video, video_chunk_remain, is_handover, sat_status, _, _, _, _, _, _, cur_sat_id, \
         runner_up_sat_ids, ho_stamps, best_combos, best_user_info \
             = net_env.get_video_chunk(bit_rate[agent], agent, MPC_TYPE, next_sat_log[agent], ho_point, do_mpc)
+
+        best_user_infos.append(best_user_info)
 
         is_handover = True if ho_point == 0 else False
 
