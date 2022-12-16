@@ -100,10 +100,14 @@ class Satellite:
         return self.conn_ues
 
     def set_data_rate_ratio(self, user_id, ratio_list):
+        self.data_rate_ratio = {}
         index = 0
         for uid in user_id:
             self.data_rate_ratio[uid] = ratio_list[index]
             index += 1
+
+    def get_data_rate_ratio(self):
+        return self.data_rate_ratio
 
     def path_loss(self, distance, ue_height=1.5):
         """Return path loss in dBm to a UE at a given position. Calculation using Okumura Hata, suburban indoor"""
@@ -159,7 +163,6 @@ class Satellite:
             # assert agent_id in self.data_rate_ratio
             if agent_id not in self.data_rate_ratio:
                 dr_ue_shared = dr_ue_unshared / self.num_conn_ues
-                # print(self.data_rate_ratio)
             else:
                 if len(self.data_rate_ratio.keys()) < self.num_conn_ues:
                     dr_ue_unshared -= dr_ue_unshared / self.num_conn_ues * (self.num_conn_ues - len(self.data_rate_ratio.keys()))
@@ -167,14 +170,12 @@ class Satellite:
 
                 elif len(self.data_rate_ratio.keys()) == self.num_conn_ues:
                     dr_ue_shared = dr_ue_unshared * self.data_rate_ratio[agent_id]
-
                 else:
                     more_ratio = 0
                     for user_id in self.data_rate_ratio.keys():
                         if user_id not in self.conn_ues:
                             more_ratio += self.data_rate_ratio[user_id]
                     dr_ue_shared = dr_ue_unshared * (self.data_rate_ratio[agent_id] + more_ratio / self.num_conn_ues)
-
         else:
             print("Wrong")
             exit(1)

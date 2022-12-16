@@ -9,14 +9,13 @@ import os
 import logging
 
 from util.constants import VIDEO_BIT_RATE, BUFFER_NORM_FACTOR, CHUNK_TIL_VIDEO_END_CAP, M_IN_K, REBUF_PENALTY, \
-    SMOOTH_PENALTY, DEFAULT_QUALITY
+    SMOOTH_PENALTY, DEFAULT_QUALITY, MPC_FUTURE_CHUNK_COUNT
 
 VIDEO_CHOICES = 6
 
 S_INFO = 5  # bit_rate, buffer_size, rebuffering_time, bandwidth_measurement, chunk_til_video_end
 S_LEN = 8  # take how many frames in the past
 A_DIM = 6
-MPC_FUTURE_CHUNK_COUNT = 2
 ACTOR_LR_RATE = 0.0001
 CRITIC_LR_RATE = 0.001
 BITRATE_REWARD = [1, 2, 3, 12, 15, 20]
@@ -25,7 +24,7 @@ RANDOM_SEED = 42
 RAND_RANGE = 1000000
 SUMMARY_DIR = './test_results_mpc_exhaustive/'
 LOG_FILE = SUMMARY_DIR + 'log_sim_cent'
-TEST_TRACES = './test/'
+TEST_TRACES = './test_tight/'
 # log in format of time_stamp bit_rate buffer_size rebuffer_time chunk_size download_time reward
 # NN_MODEL = './models/nn_model_ep_5900.ckpt'
 
@@ -35,7 +34,7 @@ import argparse
 
 parser = argparse.ArgumentParser(description='PyTorch Synthetic Benchmark',
                                  formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-parser.add_argument('--user', type=int, default=3)
+parser.add_argument('--user', type=int, default=4)
 args = parser.parse_args()
 NUM_AGENTS = args.user
 
@@ -110,6 +109,7 @@ def main():
     
     results = []
     do_mpc = False
+    end_of_video = False
 
     # make chunk combination options
     for combo in itertools.product([0,1,2,3,4,5], repeat=5):
@@ -121,7 +121,7 @@ def main():
     while True:  # serve video forever
         agent = net_env.get_first_agent()
 
-        if agent == -1:
+        if agent == -1 or end_of_video:
             log_file.write('\n')
             log_file.close()
 
@@ -169,6 +169,7 @@ def main():
             # if len(combo_log[agent]) == 1 and agent == net_env.get_first_agent():
             if not combo_log[agent]:
                 do_mpc = True
+            do_mpc = True
 
         # the action is from the last decision
         # this is to make the framework similar to the real

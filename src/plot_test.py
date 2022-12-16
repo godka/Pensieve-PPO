@@ -2,7 +2,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from itertools import compress
 
-LOG_PATH = './test_results/log_sim_ppo_rss_Beijing_2022-9-21-00-00-00'
+LOG_PATH = './test_results_mpc_exhaustive/log_sim_cent_rss_Beijing_2022-9-21-00-00-00'
 # LOG_PATH = 'results/log_sim_mpc_truth_naive_london'
 # PLOT_SAMPLES = 300
 
@@ -31,10 +31,6 @@ with open(LOG_PATH, 'r') as f:
         parse = line.split()
         if parse:
             time_stamp.append(float(parse[0]))
-            if str(parse[1]) == "True":
-                is_handover.append(True)
-            else:
-                is_handover.append(False)
             avg_download.append(float(parse[3]))
             pred_download.append(float(parse[4]))
             bit_sel.append(float(parse[5]))

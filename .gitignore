@@ -19,3 +19,4 @@ src/ppo-smo/
 /src/test_results_mpc_exhaustive_ratio/
 
 source ../venv/bin/activate;vi muleo_lc_bw_share/fixed_env_exhaustive.py;python3 mpc_mu_lc_bw_share_exhaustive.py
+/src/test_results_mpc_exhaustive_resource/

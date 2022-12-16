@@ -6,6 +6,8 @@ BUFFER_NORM_FACTOR = 10.0
 CHUNK_TIL_VIDEO_END_CAP = 48.0
 TOTAL_VIDEO_CHUNKS = 48
 M_IN_K = 1000.0
+
+QUALITY_FACTOR = 1
 REBUF_PENALTY = 4.3  # 1 sec rebuffering -> 3 Mbps
 SMOOTH_PENALTY = 1
 DEFAULT_QUALITY = 1  # default video quality without agent
@@ -20,6 +22,9 @@ SNR_NOISE_LOW = 0.9
 SNR_NOISE_HIGH = 1
 SNR_NOISE_UNIT = 0.05
 
+
+MPC_FUTURE_CHUNK_COUNT = 3
+MPC_PAST_CHUNK_COUNT = 5
 
 # Multi-user config in the trace files
 NUM_USERS = 10
