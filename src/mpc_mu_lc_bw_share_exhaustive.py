@@ -176,7 +176,7 @@ def main():
         delay, sleep_time, buffer_size, rebuf, \
         video_chunk_size, next_video_chunk_sizes, \
         end_of_video, video_chunk_remain, is_handover, sat_status, _, _, _, _, _, _, cur_sat_id, \
-        runner_up_sat_ids, ho_stamps, best_combos\
+        runner_up_sat_ids, ho_stamps, best_combos, best_user_info\
             = net_env.get_video_chunk(bit_rate[agent], agent, MPC_TYPE, next_sat_log[agent], ho_point, do_mpc)
 
         is_handover = True if ho_point == 0 else False
@@ -213,10 +213,10 @@ def main():
             # log time_stamp, bit_rate, buffer_size, reward
             # log time_stamp, bit_rate, buffer_size, reward
             log_file.write("{: <15} {: <10} {: <10} {: <15} {: <15} {: <15}"
-                           " {: <15} {: <15} {: <15} {: <15} {: <15}\n"
+                           " {: <15} {: <15} {: <15} {: <15} {: <15} {: <15}\n"
                            .format(str(round(time_stamp[agent] / M_IN_K, 3)), str(agent),
                                    str(VIDEO_BIT_RATE[bit_rate[agent]]), str(round(buffer_size, 3)), str(round(rebuf, 3)),
-                                   str(round(video_chunk_size, 3)), str(round(delay, 3)), str(round(reward, 3)), str(cur_sat_id), str(is_handover), str(sat_status)))
+                                   str(round(video_chunk_size, 3)), str(round(delay, 3)), str(round(reward, 3)), str(cur_sat_id), str(is_handover), str(sat_status), str(best_user_info)))
             log_file.flush()
 
 

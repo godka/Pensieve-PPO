@@ -42,7 +42,7 @@ SCALE_VIDEO_LEN_FOR_TEST = 2
 NUM_AGENTS = None
 
 SAT_STRATEGY = "resource-fair"
-# SAT_STRATEGY = "ratio-based"
+SAT_STRATEGY = "ratio-based"
 
 SNR_MIN = 70
 
@@ -309,9 +309,9 @@ class Environment:
         next_sat_user_num = len(self.cur_satellite[next_sat_id].get_ue_list())
 
         if model_type is not None and (agent == 0 or do_mpc) and self.end_of_video[agent] is not True:
-            runner_up_sat_ids, ho_stamps, best_combos = self.run_mpc(agent, model_type)
+            runner_up_sat_ids, ho_stamps, best_combos, best_user_info = self.run_mpc(agent, model_type)
         else:
-            runner_up_sat_ids, ho_stamps, best_combos = None, None, None
+            runner_up_sat_ids, ho_stamps, best_combos, best_user_info = None, None, None, None
 
         return delay, \
                sleep_time, \
@@ -323,7 +323,7 @@ class Environment:
                video_chunk_remain, \
                is_handover, self.get_num_of_user_sat(sat_id="all"), \
                next_sat_bandwidth, next_sat_bw_logs, cur_sat_user_num, next_sat_user_num, cur_sat_bw_logs, connected_time, \
-               self.cur_sat_id[agent], runner_up_sat_ids, ho_stamps, best_combos
+               self.cur_sat_id[agent], runner_up_sat_ids, ho_stamps, best_combos, best_user_info
 
     def get_video_chunk_oracle(self, quality, agent, mahimahi_ptr, ho_stamp, cur_sat_id, next_sat_id,
                                future_sat_user_nums):
@@ -790,7 +790,7 @@ class Environment:
         else:
             print("Cannot happen!")
             exit(-1)
-        return runner_up_sat_ids, ho_stamps, best_combos
+        return runner_up_sat_ids, ho_stamps, best_combos, best_user_info
 
     def qoe_v2(self, agent, only_runner_up=True, centralized=False):
         is_handover = False
@@ -1920,8 +1920,8 @@ class Environment:
 
         # return runner_up_sat_ids[agent], ho_stamps[agent], best_combos[agent], max_rewards[agent]
         # print(future_sat_user_nums, cur_sat_ids, runner_up_sat_ids, best_ho_positions, best_combos, max_rewards, best_user_info)
-        if best_user_info:
-            print(self.mahimahi_ptr[agent], best_user_info)
+        # if best_user_info:
+        #    print(self.mahimahi_ptr[agent], best_user_info)
         # print(future_sat_user_nums)
         # print(runner_up_sat_ids, best_ho_positions, best_combos, max_rewards, best_user_info)
 
@@ -2161,8 +2161,8 @@ class Environment:
                 else:
                     curr_buffer -= download_time
                 curr_buffer += VIDEO_CHUNCK_LEN / MILLISECONDS_IN_SECOND
-            # total_buffer_diff += curr_buffer - start_buffers[agent_id]
-            total_buffer_diff += curr_buffer
+            total_buffer_diff += curr_buffer - start_buffers[agent_id]
+            # total_buffer_diff += curr_buffer
         return curr_rebuffer_time - total_buffer_diff / 10
 
     """
