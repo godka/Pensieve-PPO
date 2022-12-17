@@ -155,6 +155,7 @@ class Satellite:
         assert self.sharing_model in SUPPORTED_SHARING, f"{self.sharing_model=} not supported. {SUPPORTED_SHARING=}"
         dr_ue_shared = None
         agent_id = user.get_agent_id()
+
         num_conn_ues = self.num_conn_ues
 
         if plus:
@@ -169,19 +170,21 @@ class Satellite:
         elif self.sharing_model == 'ratio-based':
             # split data rate by all already connected UEs incl. this UE
             # assert agent_id in self.data_rate_ratio
-            if agent_id not in self.data_rate_ratio:
+            if agent_id not in self.data_rate_ratio.keys() or set(self.data_rate_ratio.keys()) != set(self.conn_ues):
                 dr_ue_shared = dr_ue_unshared / num_conn_ues
             else:
                 if len(self.data_rate_ratio.keys()) < num_conn_ues:
+                    assert False
                     dr_ue_unshared -= dr_ue_unshared / num_conn_ues * (num_conn_ues - len(self.data_rate_ratio.keys()))
                     dr_ue_shared = dr_ue_unshared * self.data_rate_ratio[agent_id]
 
                 elif len(self.data_rate_ratio.keys()) == num_conn_ues:
                     dr_ue_shared = dr_ue_unshared * self.data_rate_ratio[agent_id]
                 else:
+                    assert False
                     more_ratio = 0
                     for user_id in self.data_rate_ratio.keys():
-                        if user_id not in self.conn_ues:
+                        if user_id not in self.conn_ues and user_id != agent_id:
                             more_ratio += self.data_rate_ratio[user_id]
                     dr_ue_shared = dr_ue_unshared * (self.data_rate_ratio[agent_id] + more_ratio / num_conn_ues)
         else:

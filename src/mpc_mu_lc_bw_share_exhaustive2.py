@@ -202,7 +202,7 @@ def main():
             # if len(combo_log[agent]) == 1 and agent == net_env.get_first_agent():
             if not combo_log[agent]:
                 do_mpc = True
-            # do_mpc = True
+            do_mpc = True
 
         # the action is from the last decision
         # this is to make the framework similar to the real
@@ -250,12 +250,12 @@ def main():
             # log time_stamp, bit_rate, buffer_size, reward
             # log time_stamp, bit_rate, buffer_size, reward
             log_file.write("{: <15} {: <10} {: <10} {: <15} {: <15} {: <15}"
-                           " {: <15} {: <15} {: <15} {: <15} {: <15} {: <15}\n"
+                           " {: <15} {: <15} {: <15} {: <15} {: <15} {: <15} {: <15}\n"
                            .format(str(round(time_stamp[agent] / M_IN_K, 3)), str(agent),
                                    str(VIDEO_BIT_RATE[bit_rate[agent]]), str(round(buffer_size, 3)),
                                    str(round(rebuf, 3)),
                                    str(round(video_chunk_size, 3)), str(round(delay, 3)), str(round(reward, 3)),
-                                   str(cur_sat_id), str(is_handover), str(sat_status), str(best_user_info)))
+                                   str(cur_sat_id), str(is_handover), str(sat_status), str(ho_stamps), str(best_user_info)))
             log_file.flush()
 
         # retrieve previous state
