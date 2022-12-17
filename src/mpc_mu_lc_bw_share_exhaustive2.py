@@ -212,8 +212,6 @@ def main():
         runner_up_sat_ids, ho_stamps, best_combos, best_user_info \
             = net_env.get_video_chunk(bit_rate[agent], agent, MPC_TYPE, next_sat_log[agent], ho_point, do_mpc)
 
-        best_user_infos.append(best_user_info)
-
         is_handover = True if ho_point == 0 else False
 
         if agent == 0 or do_mpc is True:
@@ -225,6 +223,10 @@ def main():
 
         time_stamp[agent] += delay  # in ms
         time_stamp[agent] += sleep_time  # in ms
+
+        if best_user_info:
+            best_user_info["time"] = time_stamp[agent] / M_IN_K
+            best_user_infos.append(best_user_info)
 
         # reward is video quality - rebuffer penalty
         reward = VIDEO_BIT_RATE[bit_rate[agent]] / M_IN_K \
