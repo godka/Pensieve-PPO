@@ -9,7 +9,8 @@ import copy
 
 from muleo_lc_bw_share.satellite import Satellite
 from muleo_lc_bw_share.user import User
-from util.constants import EPSILON, MAX_RATIO, MPC_FUTURE_CHUNK_COUNT, QUALITY_FACTOR, REBUF_PENALTY, SMOOTH_PENALTY, MPC_PAST_CHUNK_COUNT
+from util.constants import EPSILON, MAX_RATIO, MPC_FUTURE_CHUNK_COUNT, QUALITY_FACTOR, REBUF_PENALTY, SMOOTH_PENALTY, \
+    MPC_PAST_CHUNK_COUNT
 
 VIDEO_BIT_RATE = [300, 750, 1200, 1850, 2850, 4300]
 M_IN_K = 1000.0
@@ -42,7 +43,7 @@ SCALE_VIDEO_LEN_FOR_TEST = 2
 NUM_AGENTS = None
 
 SAT_STRATEGY = "resource-fair"
-# SAT_STRATEGY = "ratio-based"
+SAT_STRATEGY = "ratio-based"
 
 SNR_MIN = 70
 
@@ -129,6 +130,8 @@ class Environment:
                 for line in f:
                     self.video_size[bitrate].append(int(line.split()[0]))
 
+        self.last_delay = [MPC_PAST_CHUNK_COUNT for _ in range(self.num_agents)]
+
     @property
     def active_agents_list(self):
         agent_list = []
@@ -141,9 +144,6 @@ class Environment:
 
         assert quality >= 0
         assert quality < BITRATE_LEVELS
-
-        # update noise of agent SNR
-        self.cur_user[agent].update_snr_noise()
 
         if model_type is not None and (agent == 0 or do_mpc) and self.end_of_video[agent] is not True:
             runner_up_sat_ids, ho_stamps, best_combos, best_user_info = self.run_mpc(agent, model_type)
@@ -170,11 +170,15 @@ class Environment:
                     self.download_bw[i] = []
                     ho_stamps[i] = -1
 
+            quality = best_combos[agent][0]
+            ho_stamp = ho_stamps[agent]
+
         else:
             runner_up_sat_ids, ho_stamps, best_combos, best_user_info = None, None, None, None
 
-        quality = best_combos[agent][0]
-        ho_stamp = ho_stamps[agent]
+        # update noise of agent SNR
+        self.cur_user[agent].update_snr_noise()
+
         video_chunk_size = self.video_size[quality][self.video_chunk_counter[agent]]
 
         # use the delivery opportunity in mahimahi
@@ -192,10 +196,10 @@ class Environment:
             # self.connection[new_sat_id] = agent
             # update sat info
             throughput = self.cur_satellite[runner_up_sat_id].data_rate(self.cur_user[agent],
-                                                                              self.mahimahi_ptr[agent])
-            if throughput ==0:
+                                                                        self.mahimahi_ptr[agent])
+            if throughput == 0:
                 runner_up_sat_id, _ = self.get_runner_up_sat_id(agent, method="harmonic-mean", plus=True)
-            
+
             self.update_sat_info(self.cur_sat_id[agent], self.mahimahi_ptr[agent], agent, -1)
             self.update_sat_info(runner_up_sat_id, self.mahimahi_ptr[agent], agent, 1)
             self.prev_sat_id[agent] = self.cur_sat_id[agent]
@@ -341,6 +345,8 @@ class Environment:
         cur_sat_user_num = len(self.cur_satellite[self.cur_sat_id[agent]].get_ue_list())
         self.next_sat_id[agent] = next_sat_id
         next_sat_user_num = len(self.cur_satellite[next_sat_id].get_ue_list())
+
+        self.last_delay[agent] = int(delay)
         """
         if model_type is not None and (agent == 0 or do_mpc) and self.end_of_video[agent] is not True:
             runner_up_sat_ids, ho_stamps, best_combos, best_user_info = self.run_mpc(agent, model_type)
@@ -700,6 +706,8 @@ class Environment:
             self.cur_sat_id.append(cur_sat_id)
             self.update_sat_info(cur_sat_id, self.mahimahi_ptr[agent], agent, 1)
 
+        self.last_delay = [MPC_PAST_CHUNK_COUNT for _ in range(self.num_agents)]
+
     def check_end(self):
         for agent in range(self.num_agents):
             if not self.end_of_video[agent]:
@@ -736,7 +744,8 @@ class Environment:
                 if len(self.cur_satellite[self.cur_sat_id[agent]].get_ue_list()) == 0:
                     bw_list.append(sat_bw[mahimahi_ptr - i])
                 else:
-                    bw_list.append(sat_bw[mahimahi_ptr - i] / len(self.cur_satellite[self.cur_sat_id[agent]].get_ue_list()))
+                    bw_list.append(
+                        sat_bw[mahimahi_ptr - i] / len(self.cur_satellite[self.cur_sat_id[agent]].get_ue_list()))
         if len(bw_list) == 0:
             bw = 0
         else:
@@ -871,14 +880,16 @@ class Environment:
         best_user_info = None
         if reduced:
             if SAT_STRATEGY == "resource-fair":
-                runner_up_sat_ids, ho_stamps, best_combos, max_rewards = self.calculate_mpc_with_handover_exhaustive_reduced(agent)
+                runner_up_sat_ids, ho_stamps, best_combos, max_rewards = self.calculate_mpc_with_handover_exhaustive_reduced(
+                    agent)
             else:
                 runner_up_sat_ids, ho_stamps, best_combos, max_rewards, best_user_info = self.calculate_mpc_with_handover_exhaustive_ratio_reduced(
                     agent)
         else:
             # runner_up_sat_ids, ho_stamps, best_combos, max_rewards= self.calculate_mpc_with_handover_exhaustive_reduced(agent)
             if SAT_STRATEGY == "resource-fair":
-                runner_up_sat_ids, ho_stamps, best_combos, max_rewards = self.calculate_mpc_with_handover_exhaustive(agent)
+                runner_up_sat_ids, ho_stamps, best_combos, max_rewards = self.calculate_mpc_with_handover_exhaustive(
+                    agent)
             else:
                 runner_up_sat_ids, ho_stamps, best_combos, max_rewards, best_user_info = self.calculate_mpc_with_handover_exhaustive_ratio(
                     agent)
@@ -910,10 +921,10 @@ class Environment:
             if video_chunk_remain[i] < MPC_FUTURE_CHUNK_COUNT:
                 future_chunk_length[i] = video_chunk_remain[i]
 
-        cur_download_bws = [self.predict_download_bw(i, True) for i in range(self.num_agents)]
+        # cur_download_bws = [self.predict_download_bw(i, True) for i in range(self.num_agents)]
 
         cur_sat_ids = [self.cur_sat_id[i] for i in range(self.num_agents)]
-        runner_up_sat_ids = [self.get_runner_up_sat_id(i, method="harmonic-mean")[0] for i in range(self.num_agents)]
+        runner_up_sat_ids = [self.get_runner_up_sat_id(i, method="harmonic-mean", plus=True)[0] for i in range(self.num_agents)]
 
         related_sat_ids = list(set(cur_sat_ids + runner_up_sat_ids))
         num_of_sats = {}
@@ -923,52 +934,79 @@ class Environment:
         start_buffers = [self.buffer_size[i] / MILLISECONDS_IN_SECOND for i in range(self.num_agents)]
 
         next_download_bws = []
+        next_bws = []
+        cur_bws = []
         for agent_id in range(self.num_agents):
             tmp_next_bw = self.predict_bw(runner_up_sat_ids[agent_id], agent_id, True,
-                            mahimahi_ptr=self.mahimahi_ptr[agent_id],
-                            plus=False, past_len=MPC_PAST_CHUNK_COUNT)
-            tmp_cur_bw = self.predict_bw(cur_sat_ids[agent_id], agent_id, True, mahimahi_ptr=self.mahimahi_ptr[agent_id],
-                            plus=False, past_len=MPC_PAST_CHUNK_COUNT)
-
+                                          mahimahi_ptr=self.mahimahi_ptr[agent_id],
+                                          plus=False, past_len=self.last_delay[agent_id])
+            tmp_cur_bw = self.predict_bw(cur_sat_ids[agent_id], agent_id, True,
+                                         mahimahi_ptr=self.mahimahi_ptr[agent_id],
+                                         plus=False, past_len=self.last_delay[agent_id])
+            next_bws.append(tmp_next_bw)
+            cur_bws.append(tmp_cur_bw)
+            """
             if cur_download_bws[agent_id] is None:
                 next_download_bws.append(None)
             else:
                 assert cur_download_bws[agent_id] * tmp_next_bw / tmp_cur_bw != 0.0
                 next_download_bws.append(cur_download_bws[agent_id] * tmp_next_bw / tmp_cur_bw)
-
+            """
         max_rewards = [-10000000 for _ in range(self.num_agents)]
         best_combos = [[self.last_quality[i]] * MPC_FUTURE_CHUNK_COUNT for i in range(self.num_agents)]
         best_bws_sum = [-10000000]
+        best_bws = [[-10000000] * MPC_FUTURE_CHUNK_COUNT for _ in range(self.num_agents)]
         ho_stamps = [MPC_FUTURE_CHUNK_COUNT for _ in range(self.num_agents)]
+        best_ho_positions = {}
+
         sat_user_nums = num_of_sats
+
         best_user_info = None
 
+        tmp_future_sat_user_nums = None
+        tmp_future_sat_user_list = None
+
         for ho_positions in ho_combo_option:
-            future_sat_user_nums = {}
-            future_sat_user_list = {}
+            tmp_future_sat_user_nums = {}
+            tmp_future_sat_user_list = {}
+            tmp_bws = []
+            tmp_bws_sum = []
+            impossible_route = False
 
             for sat_id in sat_user_nums.keys():
-                future_sat_user_nums[sat_id] = np.array([sat_user_nums[sat_id]] * MPC_FUTURE_CHUNK_COUNT)
-                future_sat_user_list[sat_id] = {}
+                tmp_future_sat_user_nums[sat_id] = np.array([sat_user_nums[sat_id]] * MPC_FUTURE_CHUNK_COUNT)
+                tmp_future_sat_user_list[sat_id] = {}
                 for i in range(MPC_FUTURE_CHUNK_COUNT):
-                    future_sat_user_list[sat_id][i] = copy.deepcopy(self.cur_satellite[sat_id].get_ue_list())
+                    tmp_future_sat_user_list[sat_id][i] = copy.deepcopy(self.cur_satellite[sat_id].get_ue_list())
 
             for idx, ho_point in enumerate(ho_positions):
                 cur_sat_id = cur_sat_ids[idx]
                 next_sat_id = runner_up_sat_ids[idx]
-                cur_nums = future_sat_user_nums[cur_sat_id]
-                next_nums = future_sat_user_nums[next_sat_id]
+
+                if cur_sat_id == next_sat_id and ho_point != MPC_FUTURE_CHUNK_COUNT:
+                    impossible_route = True
+                    break
+
+                cur_nums = tmp_future_sat_user_nums[cur_sat_id]
+                next_nums = tmp_future_sat_user_nums[next_sat_id]
 
                 cur_nums[ho_point:] = cur_nums[ho_point:] - 1
                 next_nums[ho_point:] = next_nums[ho_point:] + 1
 
+                if any(cur_nums < 0) or any(next_nums < 0):
+                    impossible_route = True
+                    break
+
                 for i in range(MPC_FUTURE_CHUNK_COUNT):
                     if i >= ho_point:
-                        future_sat_user_list[cur_sat_id][i].remove(idx)
-                        future_sat_user_list[next_sat_id][i].append(idx)
+                        tmp_future_sat_user_list[cur_sat_id][i].remove(idx)
+                        tmp_future_sat_user_list[next_sat_id][i].append(idx)
 
-                future_sat_user_nums[cur_sat_id] = cur_nums
-                future_sat_user_nums[next_sat_id] = next_nums
+                tmp_future_sat_user_nums[cur_sat_id] = cur_nums
+                tmp_future_sat_user_nums[next_sat_id] = next_nums
+
+            if impossible_route:
+                continue
 
             for full_combo in chunk_combo_option:
                 combos = []
@@ -980,7 +1018,7 @@ class Environment:
                     # if cur_download_bws[agent_id] is None and cur_combo != [DEFAULT_QUALITY] * MPC_FUTURE_CHUNK_COUNT:
                     #     wrong_format = True
                     #     break
-                    if cur_download_bws[agent_id] is None:
+                    if cur_bws[agent_id] is None:
                         combos.append([np.nan] * MPC_FUTURE_CHUNK_COUNT)
                     else:
                         combos.append(cur_combo)
@@ -993,13 +1031,13 @@ class Environment:
                 constraints = []
                 sat_id_list = []
                 const_array = []
-                for sat_id in future_sat_user_nums.keys():
+                for sat_id in tmp_future_sat_user_nums.keys():
                     user_list = []
                     is_multi_users = False
-                    for i in range(len(future_sat_user_nums[sat_id])):
-                        if future_sat_user_nums[sat_id][i] > 1:
+                    for i in range(len(tmp_future_sat_user_nums[sat_id])):
+                        if tmp_future_sat_user_nums[sat_id][i] > 1:
                             is_multi_users = True
-                            user_list = [*user_list, *future_sat_user_list[sat_id][i]]
+                            user_list = [*user_list, *tmp_future_sat_user_list[sat_id][i]]
                     if is_multi_users:
                         user_list = list(set(user_list))
                         user_info[sat_id] = (op_vars_index, op_vars_index + len(user_list), user_list)
@@ -1009,7 +1047,7 @@ class Environment:
                         sat_id_list.append(sat_id)
 
                         target_array = np.zeros(op_vars_index + len(user_list))
-                        target_array[op_vars_index:op_vars_index+len(user_list)] = 1
+                        target_array[op_vars_index:op_vars_index + len(user_list)] = 1
                         op_vars_index += len(user_list)
 
                         const_array.append(target_array)
@@ -1031,7 +1069,7 @@ class Environment:
                         self.objective_function,
                         x0=np.array(op_vars),
                         args=(combos, cur_sat_ids, runner_up_sat_ids, sat_user_nums,
-                              future_sat_user_nums, ho_positions, start_buffers,
+                              tmp_future_sat_user_nums, ho_positions, start_buffers,
                               video_chunk_remain, cur_download_bws,
                               next_download_bws, user_info, bw_ratio),
                         constraints=constraints,
@@ -1069,25 +1107,32 @@ class Environment:
                             else sat_user_nums[next_sat_id]
 
                         # cur_sat_user_num = sat_user_nums[cur_sat_id]
-                        cur_future_sat_user_num = future_sat_user_nums[cur_sat_id][position]
+                        cur_future_sat_user_num = tmp_future_sat_user_nums[cur_sat_id][position]
                         # next_sat_user_num = sat_user_nums[next_sat_id]
-                        next_future_sat_user_num = future_sat_user_nums[next_sat_id][position]
+                        next_future_sat_user_num = tmp_future_sat_user_nums[next_sat_id][position]
 
                         now_sat_id = None
                         if ho_positions[agent_id] > position:
-                            harmonic_bw = cur_download_bws[agent_id] * cur_sat_user_num
                             if cur_future_sat_user_num > 1:
                                 now_sat_id = cur_sat_id
+                                harmonic_bw = cur_bws[agent_id]
+                            else:
+                                harmonic_bw = cur_bws[agent_id] / cur_future_sat_user_num
                         elif ho_positions[agent_id] == position:
-                            harmonic_bw = next_download_bws[agent_id] * next_sat_user_num
                             if next_future_sat_user_num > 1:
                                 now_sat_id = next_sat_id
+                                harmonic_bw = next_bws[agent_id]
+                            else:
+                                harmonic_bw = next_bws[agent_id] / next_future_sat_user_num
+
                             # Give them a penalty
                             download_time += HANDOVER_DELAY
                         else:
-                            harmonic_bw = next_download_bws[agent_id] * next_sat_user_num
                             if next_future_sat_user_num > 1:
                                 now_sat_id = next_sat_id
+                                harmonic_bw = next_bws[agent_id]
+                            else:
+                                harmonic_bw = next_bws[agent_id] / next_future_sat_user_num
 
                         if now_sat_id:
                             var_index = user_info[now_sat_id][2].index(agent_id)
@@ -1124,8 +1169,7 @@ class Environment:
                     ho_stamps = ho_positions
                     best_bws_sum = tmp_bws_sum
                     best_user_info = user_info
-                elif np.nanmean(rewards) == np.nanmean(max_rewards) and \
-                        (np.nanmean(tmp_bws_sum) >= np.nanmean(best_bws_sum)):
+                elif np.nanmean(rewards) == np.nanmean(max_rewards) and sum(combos[:][0]) >= sum(best_combos[:][0]):
                     # elif np.nanmean(rewards) == np.nanmean(max_rewards) \
                     #         and (rewards[agent] >= max_rewards[agent] or combos[agent][0] >= best_combos[agent][0]):
                     best_combos = combos
@@ -1157,10 +1201,10 @@ class Environment:
             if video_chunk_remain[i] < MPC_FUTURE_CHUNK_COUNT:
                 future_chunk_length[i] = video_chunk_remain[i]
 
-        cur_download_bws = [self.predict_download_bw(i, True) for i in range(self.num_agents)]
+        # cur_download_bws = [self.predict_download_bw(i, True) for i in range(self.num_agents)]
 
         cur_sat_ids = [self.cur_sat_id[i] for i in range(self.num_agents)]
-        runner_up_sat_ids = [self.get_runner_up_sat_id(i, method="harmonic-mean")[0] for i in range(self.num_agents)]
+        runner_up_sat_ids = [self.get_runner_up_sat_id(i, method="harmonic-mean", plus=True)[0] for i in range(self.num_agents)]
 
         related_sat_ids = list(set(cur_sat_ids + runner_up_sat_ids))
         num_of_sats = {}
@@ -1170,46 +1214,64 @@ class Environment:
         start_buffers = [self.buffer_size[i] / MILLISECONDS_IN_SECOND for i in range(self.num_agents)]
 
         next_download_bws = []
+        next_bws = []
+        cur_bws = []
         for agent_id in range(self.num_agents):
             tmp_next_bw = self.predict_bw(runner_up_sat_ids[agent_id], agent_id, True,
-                            mahimahi_ptr=self.mahimahi_ptr[agent_id],
-                            plus=False, past_len=MPC_PAST_CHUNK_COUNT)
-            tmp_cur_bw = self.predict_bw(cur_sat_ids[agent_id], agent_id, True, mahimahi_ptr=self.mahimahi_ptr[agent_id],
-                            plus=False, past_len=MPC_PAST_CHUNK_COUNT)
-
+                                          mahimahi_ptr=self.mahimahi_ptr[agent_id],
+                                          plus=False, past_len=self.last_delay[agent_id])
+            tmp_cur_bw = self.predict_bw(cur_sat_ids[agent_id], agent_id, True,
+                                         mahimahi_ptr=self.mahimahi_ptr[agent_id],
+                                         plus=False, past_len=self.last_delay[agent_id])
+            next_bws.append(tmp_next_bw)
+            cur_bws.append(tmp_cur_bw)
+            """
             if cur_download_bws[agent_id] is None:
                 next_download_bws.append(None)
             else:
                 assert cur_download_bws[agent_id] * tmp_next_bw / tmp_cur_bw != 0.0
                 next_download_bws.append(cur_download_bws[agent_id] * tmp_next_bw / tmp_cur_bw)
-
+            """
         max_rewards = [-10000000 for _ in range(self.num_agents)]
         best_combos = [[self.last_quality[i]] * MPC_FUTURE_CHUNK_COUNT for i in range(self.num_agents)]
         ho_stamps = [MPC_FUTURE_CHUNK_COUNT for _ in range(self.num_agents)]
-        best_bws = [-10000000 for _ in range(self.num_agents)]
+        best_bws = [[-10000000] for _ in range(self.num_agents)]
         best_bws_sum = [-10000000]
 
         sat_user_nums = num_of_sats
 
         for ho_positions in ho_combo_option:
-            future_sat_user_nums = {}
+            tmp_future_sat_user_nums = {}
             tmp_bws = []
             tmp_bws_sum = []
+            impossible_route = False
 
             for sat_id in sat_user_nums.keys():
-                future_sat_user_nums[sat_id] = np.array([sat_user_nums[sat_id]] * MPC_FUTURE_CHUNK_COUNT)
+                tmp_future_sat_user_nums[sat_id] = np.array([sat_user_nums[sat_id]] * MPC_FUTURE_CHUNK_COUNT)
 
             for idx, ho_point in enumerate(ho_positions):
                 cur_sat_id = cur_sat_ids[idx]
                 next_sat_id = runner_up_sat_ids[idx]
-                cur_nums = future_sat_user_nums[cur_sat_id]
-                next_nums = future_sat_user_nums[next_sat_id]
+
+                if cur_sat_id == next_sat_id and ho_point != MPC_FUTURE_CHUNK_COUNT:
+                    impossible_route = True
+                    break
+
+                cur_nums = tmp_future_sat_user_nums[cur_sat_id]
+                next_nums = tmp_future_sat_user_nums[next_sat_id]
 
                 cur_nums[ho_point:] = cur_nums[ho_point:] - 1
                 next_nums[ho_point:] = next_nums[ho_point:] + 1
 
-                future_sat_user_nums[cur_sat_id] = cur_nums
-                future_sat_user_nums[next_sat_id] = next_nums
+                if any(cur_nums < 0) or any(next_nums < 0):
+                    impossible_route = True
+                    break
+
+                tmp_future_sat_user_nums[cur_sat_id] = cur_nums
+                tmp_future_sat_user_nums[next_sat_id] = next_nums
+
+            if impossible_route:
+                continue
 
             for full_combo in chunk_combo_option:
                 combos = []
@@ -1221,10 +1283,67 @@ class Environment:
                     # if cur_download_bws[agent_id] is None and cur_combo != [DEFAULT_QUALITY] * MPC_FUTURE_CHUNK_COUNT:
                     #     wrong_format = True
                     #     break
-                    if cur_download_bws[agent_id] is None:
+                    if cur_bws[agent_id] is None:
                         combos.append([np.nan] * MPC_FUTURE_CHUNK_COUNT)
                     else:
                         combos.append(cur_combo)
+
+                bw_ratio = {}
+                user_info = {}
+                op_vars = []
+                op_vars_index = 0
+                bounds = []
+                constraints = []
+                sat_id_list = []
+                const_array = []
+                for sat_id in tmp_future_sat_user_nums.keys():
+                    user_list = []
+                    is_multi_users = False
+                    for i in range(len(tmp_future_sat_user_nums[sat_id])):
+                        if tmp_future_sat_user_nums[sat_id][i] > 1:
+                            is_multi_users = True
+                            user_list = [*user_list, *future_sat_user_list[sat_id][i]]
+                    if is_multi_users:
+                        user_list = list(set(user_list))
+                        user_info[sat_id] = (op_vars_index, op_vars_index + len(user_list), user_list)
+
+                        op_vars = [*op_vars, *([1 / len(user_list)] * len(user_list))]
+                        bounds = [*bounds, *[(0 + EPSILON, 1 - EPSILON) for _ in range(len(user_list))]]
+                        sat_id_list.append(sat_id)
+
+                        target_array = np.zeros(op_vars_index + len(user_list))
+                        target_array[op_vars_index:op_vars_index + len(user_list)] = 1
+                        op_vars_index += len(user_list)
+
+                        const_array.append(target_array)
+
+                if op_vars:
+                    for i in range(len(const_array)):
+                        data = const_array[i]
+                        if len(const_array[i]) < op_vars_index:
+                            data = np.append(const_array[i], [0] * (op_vars_index - len(const_array[i])))
+
+                        constraint = LinearConstraint(data, lb=1, ub=1)
+
+                        # constraints = [*constraints, {'type': 'eq', 'fun': const}]
+                        constraints.append(constraint)
+
+                    import warnings
+                    warnings.filterwarnings("ignore")
+                    ue_ratio = minimize(
+                        self.objective_function,
+                        x0=np.array(op_vars),
+                        args=(combos, cur_sat_ids, runner_up_sat_ids, sat_user_nums,
+                              tmp_future_sat_user_nums, ho_positions, start_buffers,
+                              video_chunk_remain, cur_download_bws,
+                              next_download_bws, user_info, bw_ratio),
+                        constraints=constraints,
+                        bounds=bounds,
+                        method="SLSQP"  # or BFGS
+                    )
+                    for sat_id in sat_id_list:
+                        user_info[sat_id] = user_info[sat_id] + (ue_ratio.x[user_info[sat_id][0]:user_info[sat_id][1]],)
+                        # user_info[sat_id] = user_info[sat_id] + (np.array([0.5, 0.5]),)
 
                 rewards = []
                 tmp_bws_sum = []
@@ -1253,19 +1372,19 @@ class Environment:
                         download_time = 0
 
                         # cur_sat_user_num = sat_user_nums[cur_sat_id]
-                        cur_future_sat_user_num = future_sat_user_nums[cur_sat_id][position]
+                        cur_future_sat_user_num = tmp_future_sat_user_nums[cur_sat_id][position]
                         # next_sat_user_num = sat_user_nums[next_sat_id]
-                        next_future_sat_user_num = future_sat_user_nums[next_sat_id][position]
+                        next_future_sat_user_num = tmp_future_sat_user_nums[next_sat_id][position]
 
                         if ho_positions[agent_id] > position:
-                            harmonic_bw = cur_download_bws[agent_id] * cur_sat_user_num / cur_future_sat_user_num
+                            harmonic_bw = cur_bws[agent_id] / cur_future_sat_user_num
                         elif ho_positions[agent_id] == position:
-                            harmonic_bw = next_download_bws[agent_id] * next_sat_user_num / next_future_sat_user_num
+                            harmonic_bw = next_bws[agent_id] / next_future_sat_user_num
                             # Give them a penalty
                             download_time += HANDOVER_DELAY
 
                         else:
-                            harmonic_bw = next_download_bws[agent_id] * next_sat_user_num / next_future_sat_user_num
+                            harmonic_bw = next_bws[agent_id] / next_future_sat_user_num
 
                         tmp_bws_sum.append(harmonic_bw)
 
@@ -1298,10 +1417,7 @@ class Environment:
                     max_rewards = rewards
                     ho_stamps = ho_positions
                     best_bws_sum = tmp_bws_sum
-                elif np.nanmean(rewards) == np.nanmean(max_rewards) and \
-                        (ho_stamps[agent] <= ho_positions[agent]
-                         or np.nansum(combos[agent]) >= np.nansum(best_combos[agent])
-                         or np.nanmean(tmp_bws_sum) >= np.nanmean(best_bws_sum)):
+                elif np.nanmean(rewards) == np.nanmean(max_rewards) and sum(combos[:][0]) >= sum(best_combos[:][0]):
                     # (rewards[agent] >= max_rewards[agent] or combos[agent][0] >= best_combos[agent][0]):
                     best_combos = combos
                     max_rewards = rewards
@@ -1478,7 +1594,8 @@ class Environment:
         # cur_download_bws = [self.predict_download_bw(i, True) for i in range(self.num_agents)]
 
         cur_sat_ids = [self.cur_sat_id[i] for i in range(self.num_agents)]
-        runner_up_sat_ids = [self.get_runner_up_sat_id(i, method="harmonic-mean", plus=True)[0] for i in range(self.num_agents)]
+        runner_up_sat_ids = [self.get_runner_up_sat_id(i, method="harmonic-mean", plus=True)[0] for i in
+                             range(self.num_agents)]
 
         related_sat_ids = list(set(cur_sat_ids + runner_up_sat_ids))
         num_of_sats = {}
@@ -1492,10 +1609,11 @@ class Environment:
         cur_bws = []
         for agent_id in range(self.num_agents):
             tmp_next_bw = self.predict_bw(runner_up_sat_ids[agent_id], agent_id, True,
-                            mahimahi_ptr=self.mahimahi_ptr[agent_id],
-                            plus=False, past_len=MPC_PAST_CHUNK_COUNT)
-            tmp_cur_bw = self.predict_bw(cur_sat_ids[agent_id], agent_id, True, mahimahi_ptr=self.mahimahi_ptr[agent_id],
-                            plus=False, past_len=MPC_PAST_CHUNK_COUNT)
+                                          mahimahi_ptr=self.mahimahi_ptr[agent_id],
+                                          plus=False, past_len=self.last_delay[agent_id])
+            tmp_cur_bw = self.predict_bw(cur_sat_ids[agent_id], agent_id, True,
+                                         mahimahi_ptr=self.mahimahi_ptr[agent_id],
+                                         plus=False, past_len=self.last_delay[agent_id])
             next_bws.append(tmp_next_bw)
             cur_bws.append(tmp_cur_bw)
             """
@@ -1505,6 +1623,7 @@ class Environment:
                 assert cur_download_bws[agent_id] * tmp_next_bw / tmp_cur_bw != 0.0
                 next_download_bws.append(cur_download_bws[agent_id] * tmp_next_bw / tmp_cur_bw)
             """
+
         max_rewards = [-10000000 for _ in range(self.num_agents)]
         best_combos = [[self.last_quality[i]] for i in range(self.num_agents)]
         best_bws = [[-10000000] for _ in range(self.num_agents)]
@@ -1574,14 +1693,17 @@ class Environment:
 
                     if ho_positions[idx] > position:
                         # harmonic_bw = cur_download_bws[idx] * cur_sat_user_num / cur_future_sat_user_num
-                        harmonic_bw = cur_bws[idx] * cur_sat_user_num / cur_future_sat_user_num
+                        # harmonic_bw = cur_bws[idx] * cur_sat_user_num / cur_future_sat_user_num
+                        harmonic_bw = cur_bws[idx] / cur_future_sat_user_num
                     elif ho_positions[idx] == position:
                         # harmonic_bw = next_download_bws[idx] * next_sat_user_num / next_future_sat_user_num
-                        harmonic_bw = next_bws[idx] * next_sat_user_num / next_future_sat_user_num
-                        harmonic_bw *= (1-HANDOVER_DELAY)
+                        # harmonic_bw = next_bws[idx] * next_sat_user_num / next_future_sat_user_num
+                        harmonic_bw = next_bws[idx] / next_future_sat_user_num
+                        harmonic_bw *= (1 - HANDOVER_DELAY)
                     else:
                         # harmonic_bw = next_download_bws[idx] * next_sat_user_num / next_future_sat_user_num
-                        harmonic_bw = next_bws[idx] * next_sat_user_num / next_future_sat_user_num
+                        # harmonic_bw = next_bws[idx] * next_sat_user_num / next_future_sat_user_num
+                        harmonic_bw = next_bws[idx] / next_future_sat_user_num
 
                     bw_log.append(harmonic_bw)
                     tmp_bws_sum.append(harmonic_bw)
@@ -1599,6 +1721,7 @@ class Environment:
                 future_sat_user_nums = tmp_future_sat_user_nums
         # print(future_sat_user_nums)
         # print(best_ho_positions)
+
         for full_combo in chunk_combo_option:
             combos = []
             # Break at the end of the chunk
@@ -1666,8 +1789,7 @@ class Environment:
                 best_combos = combos
                 max_rewards = rewards
                 # ho_stamps = ho_positions
-            elif np.nanmean(rewards) == np.nanmean(max_rewards) and np.nansum(combos) >= np.nansum(
-                    best_combos):
+            elif np.nanmean(rewards) == np.nanmean(max_rewards) and sum(combos[:][0]) >= sum(best_combos[:][0]):
                 # elif np.nanmean(rewards) == np.nanmean(max_rewards) \
                 #         and (rewards[agent] >= max_rewards[agent] or combos[agent][0] >= best_combos[agent][0]):
                 best_combos = combos
@@ -1700,7 +1822,8 @@ class Environment:
         # cur_download_bws = [self.predict_download_bw(i, True) for i in range(self.num_agents)]
 
         cur_sat_ids = [self.cur_sat_id[i] for i in range(self.num_agents)]
-        runner_up_sat_ids = [self.get_runner_up_sat_id(i, method="harmonic-mean", plus=True)[0] for i in range(self.num_agents)]
+        runner_up_sat_ids = [self.get_runner_up_sat_id(i, method="harmonic-mean", plus=True)[0] for i in
+                             range(self.num_agents)]
 
         related_sat_ids = list(set(cur_sat_ids + runner_up_sat_ids))
         num_of_sats = {}
@@ -1714,10 +1837,11 @@ class Environment:
         cur_bws = []
         for agent_id in range(self.num_agents):
             tmp_next_bw = self.predict_bw(runner_up_sat_ids[agent_id], agent_id, True,
-                            mahimahi_ptr=self.mahimahi_ptr[agent_id],
-                            plus=False, past_len=MPC_PAST_CHUNK_COUNT)
-            tmp_cur_bw = self.predict_bw(cur_sat_ids[agent_id], agent_id, True, mahimahi_ptr=self.mahimahi_ptr[agent_id],
-                            plus=False, past_len=MPC_PAST_CHUNK_COUNT)
+                                          mahimahi_ptr=self.mahimahi_ptr[agent_id],
+                                          plus=False, past_len=self.last_delay[agent_id])
+            tmp_cur_bw = self.predict_bw(cur_sat_ids[agent_id], agent_id, True,
+                                         mahimahi_ptr=self.mahimahi_ptr[agent_id],
+                                         plus=False, past_len=self.last_delay[agent_id])
             next_bws.append(tmp_next_bw)
             cur_bws.append(tmp_cur_bw)
             """
@@ -1772,6 +1896,7 @@ class Environment:
                 if any(cur_nums < 0) or any(next_nums < 0):
                     impossible_route = True
                     break
+
                 for i in range(MPC_FUTURE_CHUNK_COUNT):
                     if i >= ho_point:
                         tmp_future_sat_user_list[cur_sat_id][i].remove(idx)
@@ -1805,14 +1930,17 @@ class Environment:
 
                     if ho_positions[idx] > position:
                         # harmonic_bw = cur_download_bws[idx] * cur_sat_user_num / cur_future_sat_user_num
-                        harmonic_bw = cur_bws[idx] * cur_sat_user_num / cur_future_sat_user_num
+                        # harmonic_bw = cur_bws[idx] * cur_sat_user_num / cur_future_sat_user_num
+                        harmonic_bw = cur_bws[idx] / cur_future_sat_user_num
                     elif ho_positions[idx] == position:
                         # harmonic_bw = next_download_bws[idx] * next_sat_user_num / next_future_sat_user_num
-                        harmonic_bw = next_bws[idx] * next_sat_user_num / next_future_sat_user_num
-                        harmonic_bw *= (1-HANDOVER_DELAY)
+                        # harmonic_bw = next_bws[idx] * next_sat_user_num / next_future_sat_user_num
+                        harmonic_bw = next_bws[idx] / next_future_sat_user_num
+                        harmonic_bw *= (1 - HANDOVER_DELAY)
                     else:
                         # harmonic_bw = next_download_bws[idx] * next_sat_user_num / next_future_sat_user_num
-                        harmonic_bw = next_bws[idx] * next_sat_user_num / next_future_sat_user_num
+                        # harmonic_bw = next_bws[idx] * next_sat_user_num / next_future_sat_user_num
+                        harmonic_bw = next_bws[idx] / next_future_sat_user_num
 
                     bw_log.append(harmonic_bw)
                     tmp_bws_sum.append(harmonic_bw)
@@ -1824,7 +1952,7 @@ class Environment:
                 best_bws_sum = tmp_bws_sum
                 future_sat_user_nums = tmp_future_sat_user_nums
                 future_sat_user_list = tmp_future_sat_user_list
-            elif np.nanmean(best_bws_sum) == np.nanmean(tmp_bws_sum) and best_ho_positions[agent] <= ho_positions[agent]:
+            elif np.nanmean(best_bws_sum) == np.nanmean(tmp_bws_sum) and sum(best_ho_positions) <= sum(ho_positions):
                 best_bws = tmp_bws
                 best_ho_positions = ho_positions
                 best_bws_sum = tmp_bws_sum
@@ -1984,7 +2112,7 @@ class Environment:
                 # ho_stamps = ho_positions
                 best_user_info = user_info
 
-            elif np.nanmean(rewards) == np.nanmean(max_rewards) and combos[agent][0] >= best_combos[agent][0]:
+            elif np.nanmean(rewards) == np.nanmean(max_rewards) and sum(combos[:][0]) >= sum(best_combos[:][0]):
                 # elif np.nanmean(rewards) == np.nanmean(max_rewards) \
                 #         and (rewards[agent] >= max_rewards[agent] or combos[agent][0] >= best_combos[agent][0]):
                 best_combos = combos
@@ -1995,7 +2123,7 @@ class Environment:
         # return runner_up_sat_ids[agent], ho_stamps[agent], best_combos[agent], max_rewards[agent]
         # print(future_sat_user_nums, cur_sat_ids, runner_up_sat_ids, best_ho_positions, best_combos, max_rewards, best_user_info)
         if best_user_info:
-           print(self.mahimahi_ptr[agent], best_user_info)
+            print(self.mahimahi_ptr[agent], best_user_info)
         # print(future_sat_user_nums)
         # print(runner_up_sat_ids, best_ho_positions, best_combos, max_rewards, best_user_info)
 
@@ -2063,10 +2191,12 @@ class Environment:
                     # Based on the bw, not download bw
                     next_download_bw = None
                     if method == "harmonic-mean":
-                        tmp_next_bw = self.predict_bw(next_sat_id, agent, robustness, mahimahi_ptr=self.mahimahi_ptr[agent],
-                                        plus=False, past_len=MPC_PAST_CHUNK_COUNT)
+                        tmp_next_bw = self.predict_bw(next_sat_id, agent, robustness,
+                                                      mahimahi_ptr=self.mahimahi_ptr[agent],
+                                                      plus=False, past_len=self.last_delay[agent])
                         tmp_cur_bw = self.predict_bw(self.cur_sat_id[agent], agent, robustness,
-                                        mahimahi_ptr=self.mahimahi_ptr[agent], plus=False, past_len=MPC_PAST_CHUNK_COUNT)
+                                                     mahimahi_ptr=self.mahimahi_ptr[agent], plus=False,
+                                                     past_len=self.last_delay[agent])
 
                         next_download_bw = cur_download_bw * tmp_next_bw / tmp_cur_bw
 
@@ -2228,16 +2358,16 @@ class Environment:
 
                 download_time += (self.video_size[chunk_quality][index]) \
                                  / harmonic_bw / PACKET_PAYLOAD_PORTION  # this is MB/MB/s --> seconds
-
+                curr_rebuffer_time += (download_time - curr_buffer)
                 if curr_buffer < download_time:
                     curr_rebuffer_time += (download_time - curr_buffer)
                     curr_buffer = 0.0
                 else:
                     curr_buffer -= download_time
                 curr_buffer += VIDEO_CHUNCK_LEN / MILLISECONDS_IN_SECOND
-            total_buffer_diff += curr_buffer - start_buffers[agent_id]
+            # total_buffer_diff += curr_buffer #  - start_buffers[agent_id]
             # total_buffer_diff += curr_buffer
-        return curr_rebuffer_time # * 100 - total_buffer_diff / 10
+        return curr_rebuffer_time
 
     """
     def calculate_cent_mpc(self, robustness=True, only_runner_up=True,
@@ -2449,12 +2579,12 @@ class Environment:
             real_sat_bw = None
 
             # Pass the previously connected satellite
-            if sat_id == self.cur_sat_id[agent] or sat_id == self.prev_sat_id[agent]:
+            if sat_id == self.cur_sat_id[agent]:  # or sat_id == self.prev_sat_id[agent]:
                 continue
 
             if method == "harmonic-mean":
                 target_sat_bw = self.predict_bw(sat_id, agent, mahimahi_ptr=mahimahi_ptr,
-                                                plus=plus, past_len=MPC_PAST_CHUNK_COUNT)
+                                                plus=plus, past_len=self.last_delay[agent])
                 real_sat_bw = target_sat_bw  # / (self.get_num_of_user_sat(sat_id) + 1)
             elif method == "holt-winter":
                 target_sat_bw = self.predict_bw_holt_winter(sat_id, agent, num=1)
@@ -2593,7 +2723,7 @@ class Environment:
         # pick bitrate according to MPC
         # first get harmonic mean of last 5 bandwidths
         # past_bws = self.cooked_bw[self.cur_sat_id][start_index: self.mahimahi_ptr]
-        past_bws = self.download_bw[agent][-MPC_PAST_CHUNK_COUNT:]
+        past_bws = self.download_bw[agent][-self.last_delay[agent]:]
         while past_bws[0] == 0.0:
             past_bws = past_bws[1:]
 
@@ -2607,8 +2737,8 @@ class Environment:
         if robustness:
             # future bandwidth prediction
             # divide by 1 + max of last 5 (or up to 5) errors
-            error_pos = -MPC_PAST_CHUNK_COUNT
-            if len(self.past_download_bw_errors[agent]) < MPC_PAST_CHUNK_COUNT:
+            error_pos = -self.last_delay[agent]
+            if len(self.past_download_bw_errors[agent]) < self.last_delay[agent]:
                 error_pos = -len(self.past_download_bw_errors[agent])
             max_error = float(max(self.past_download_bw_errors[agent][error_pos:]))
             harmonic_bw = harmonic_bw / (1 + max_error)  # robustMPC here
@@ -2621,21 +2751,21 @@ class Environment:
             mahimahi_ptr = self.mahimahi_ptr[agent]
 
         if mahimahi_ptr <= 0:
-            return self.cur_satellite[sat_id].data_rate(self.cur_user[agent], 0, plus)
+            return self.cur_satellite[sat_id].data_rate_unshared(0, self.cur_user[agent])
 
         if past_len:
             for i in range(past_len, 1, -1):
-                if mahimahi_ptr-i > 0:
-                    self.predict_bw(sat_id, agent, robustness, plus, mahimahi_ptr=mahimahi_ptr-i)
+                if mahimahi_ptr - i > 0:
+                    self.predict_bw(sat_id, agent, robustness, plus, mahimahi_ptr=mahimahi_ptr - i)
 
         # num_of_user_sat = len(self.cur_satellite[sat_id].get_ue_list()) + 1
 
         # past_bw = self.cooked_bw[self.cur_sat_id][self.mahimahi_ptr - 1]
 
-        past_bw = self.cur_satellite[sat_id].data_rate(self.cur_user[agent], mahimahi_ptr-1, plus)
+        past_bw = self.cur_satellite[sat_id].data_rate_unshared(mahimahi_ptr - 1, self.cur_user[agent])
 
         if past_bw == 0:
-            return self.cur_satellite[sat_id].data_rate(self.cur_user[agent], mahimahi_ptr, plus)
+            return self.cur_satellite[sat_id].data_rate_unshared(mahimahi_ptr, self.cur_user[agent])
 
         if sat_id in self.past_bw_ests[agent].keys() and len(self.past_bw_ests[agent][sat_id]) > 0 \
                 and mahimahi_ptr - 1 in self.past_bw_ests[agent][sat_id].keys():
@@ -2646,16 +2776,16 @@ class Environment:
 
         # pick bitrate according to MPC
         # first get harmonic mean of last 5 bandwidths
-        start_index = mahimahi_ptr - MPC_PAST_CHUNK_COUNT
+        start_index = mahimahi_ptr - self.last_delay[agent]
         if start_index < 0:
             start_index = 0
 
         past_bws = []
         for index in range(start_index, mahimahi_ptr):
-            past_bws.append(self.cur_satellite[sat_id].data_rate(self.cur_user[agent], index, plus))
+            past_bws.append(self.cur_satellite[sat_id].data_rate_unshared(index, self.cur_user[agent]))
         # Newly possible satellite case
         if all(v == 0.0 for v in past_bws):
-            return self.cur_satellite[sat_id].data_rate(self.cur_user[agent], 0, plus)
+            return self.cur_satellite[sat_id].data_rate_unshared(mahimahi_ptr, self.cur_user[agent])
 
         while past_bws[0] == 0.0:
             past_bws = past_bws[1:]
@@ -2675,9 +2805,9 @@ class Environment:
         if robustness:
             # future bandwidth prediction
             # divide by 1 + max of last 5 (or up to 5) errors
-            error_pos = -MPC_PAST_CHUNK_COUNT
+            error_pos = -self.last_delay[agent]
             if sat_id in self.past_bw_errors[agent].keys() and len(
-                    self.past_bw_errors[agent][sat_id]) < MPC_PAST_CHUNK_COUNT:
+                    self.past_bw_errors[agent][sat_id]) < self.last_delay[agent]:
                 error_pos = -len(self.past_bw_errors[agent][sat_id])
             max_error = float(max(self.past_bw_errors[agent][sat_id][error_pos:]))
             harmonic_bw = harmonic_bw / (1 + max_error)  # robustMPC here
@@ -2711,7 +2841,7 @@ class Environment:
 
         # pick bitrate according to MPC
         # first get harmonic mean of last 5 bandwidths
-        start_index = mahimahi_ptr - MPC_PAST_CHUNK_COUNT
+        start_index = mahimahi_ptr - self.last_delay[agent]
         if start_index < 0:
             start_index = 0
 
@@ -2747,9 +2877,9 @@ class Environment:
         if robustness:
             # future bandwidth prediction
             # divide by 1 + max of last 5 (or up to 5) errors
-            error_pos = -MPC_PAST_CHUNK_COUNT
+            error_pos = -self.last_delay[agent]
             if sat_id in self.past_bw_errors[agent].keys() and len(
-                    self.past_bw_errors[agent][sat_id]) < MPC_PAST_CHUNK_COUNT:
+                    self.past_bw_errors[agent][sat_id]) < self.last_delay[agent]:
                 error_pos = -len(self.past_bw_errors[agent][sat_id])
             max_error = float(max(self.past_bw_errors[agent][sat_id][error_pos:]))
             harmonic_bw = harmonic_bw / (1 + max_error)  # robustMPC here
@@ -2913,5 +3043,3 @@ class Environment:
         self.video_chunk_counter = self.stored_video_chunk_counter
         self.cur_sat_id = self.stored_cur_sat_id
         self.stored_cur_satellite = copy.deepcopy(self.cur_satellite)
-
-

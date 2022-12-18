@@ -9,7 +9,7 @@ M_IN_K = 1000.0
 
 QUALITY_FACTOR = 1
 REBUF_PENALTY = 4.3  # 1 sec rebuffering -> 3 Mbps
-SMOOTH_PENALTY = 1/2
+SMOOTH_PENALTY = 0.5
 DEFAULT_QUALITY = 0  # default video quality without agent
 # small epsilon used in denominator to avoid division by zero
 EPSILON = 1e-16

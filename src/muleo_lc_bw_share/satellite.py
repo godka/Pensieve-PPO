@@ -141,7 +141,7 @@ class Satellite:
         dr_ue_unshared = self.sat_bw[mahimahi_ptr]
         dr_ue_unshared *= user.get_snr_noise()
         # dr_ue_unshared *= np.random.uniform(SNR_NOISE_LOW, SNR_NOISE_HIGH)
-        return dr_ue_unshared
+        return dr_ue_unshared * B_IN_MB / BITS_IN_BYTE
 
     def data_rate_shared(self, user: User, dr_ue_unshared, plus=False):
         """
@@ -208,4 +208,4 @@ class Satellite:
         dr_ue_shared = self.data_rate_shared(user, dr_ue_unshared, plus)
         self.log.debug('Achievable data rate', dr_ue_unshared=dr_ue_unshared, dr_ue_shared=dr_ue_shared,
                        num_conn_ues=self.num_conn_ues)
-        return dr_ue_shared * B_IN_MB / BITS_IN_BYTE
+        return dr_ue_shared

@@ -34,12 +34,15 @@ def load_trace(cooked_trace_folder=COOKED_TRACE_FOLDER, split_condition=None):
                     # Get Satellite ID
                     satellite_id = list(row.keys())[2:]
                     satellite_bw = {int(sat_id): [] for sat_id in satellite_id}
+
+                line_count += 1
+                if line_count < 70 or line_count > 100:
+                    continue
                 for sat_id in satellite_id:
                     # satellite_bw[int(sat_id)].append(float(row[sat_id]))
                     satellite_bw[int(sat_id)].append(float(row[sat_id]) * SCALE_FOR_TEST)
                 cooked_time.append(int(row["time"]))
 
-                line_count += 1
         all_satellite_bw.append(satellite_bw)
         all_cooked_time.append(cooked_time)
         all_file_names.append(os.path.splitext(cooked_file)[0])

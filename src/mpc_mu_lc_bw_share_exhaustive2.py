@@ -73,7 +73,7 @@ size_video6 = [181801, 155580, 139857, 155432, 163442, 126289, 153295, 173849, 1
 
 MPC_TYPE = "DualMPC"
 MPC_TYPE = "DualMPC-Centralization-Exhaustive"
-MPC_TYPE = "DualMPC-Centralization-Reduced"
+# MPC_TYPE = "DualMPC-Centralization-Reduced"
 
 # DualMPC-Centralization
 
@@ -202,7 +202,7 @@ def main():
             # if len(combo_log[agent]) == 1 and agent == net_env.get_first_agent():
             if not combo_log[agent]:
                 do_mpc = True
-            do_mpc = True
+            # do_mpc = True
 
         # the action is from the last decision
         # this is to make the framework similar to the real
