@@ -43,7 +43,7 @@ SCALE_VIDEO_LEN_FOR_TEST = 2
 NUM_AGENTS = None
 
 SAT_STRATEGY = "resource-fair"
-SAT_STRATEGY = "ratio-based"
+# SAT_STRATEGY = "ratio-based"
 
 SNR_MIN = 70
 
@@ -1070,8 +1070,8 @@ class Environment:
                         x0=np.array(op_vars),
                         args=(combos, cur_sat_ids, runner_up_sat_ids, sat_user_nums,
                               tmp_future_sat_user_nums, ho_positions, start_buffers,
-                              video_chunk_remain, cur_download_bws,
-                              next_download_bws, user_info, bw_ratio),
+                              video_chunk_remain, cur_bws,
+                              next_bws, user_info, bw_ratio, None),
                         constraints=constraints,
                         bounds=bounds,
                         method="SLSQP"  # or BFGS
@@ -1140,8 +1140,8 @@ class Environment:
 
                         tmp_bws_sum.append(harmonic_bw)
 
-                        download_time += (self.video_size[chunk_quality][index] / B_IN_MB) \
-                                         / harmonic_bw * BITS_IN_BYTE  # this is MB/MB/s --> seconds
+                        download_time += (self.video_size[chunk_quality][index]) \
+                                         / harmonic_bw / harmonic_bw  # this is MB/MB/s --> seconds
                         if curr_buffer < download_time:
                             curr_rebuffer_time += (download_time - curr_buffer)
                             curr_buffer = 0.0
@@ -1288,63 +1288,6 @@ class Environment:
                     else:
                         combos.append(cur_combo)
 
-                bw_ratio = {}
-                user_info = {}
-                op_vars = []
-                op_vars_index = 0
-                bounds = []
-                constraints = []
-                sat_id_list = []
-                const_array = []
-                for sat_id in tmp_future_sat_user_nums.keys():
-                    user_list = []
-                    is_multi_users = False
-                    for i in range(len(tmp_future_sat_user_nums[sat_id])):
-                        if tmp_future_sat_user_nums[sat_id][i] > 1:
-                            is_multi_users = True
-                            user_list = [*user_list, *future_sat_user_list[sat_id][i]]
-                    if is_multi_users:
-                        user_list = list(set(user_list))
-                        user_info[sat_id] = (op_vars_index, op_vars_index + len(user_list), user_list)
-
-                        op_vars = [*op_vars, *([1 / len(user_list)] * len(user_list))]
-                        bounds = [*bounds, *[(0 + EPSILON, 1 - EPSILON) for _ in range(len(user_list))]]
-                        sat_id_list.append(sat_id)
-
-                        target_array = np.zeros(op_vars_index + len(user_list))
-                        target_array[op_vars_index:op_vars_index + len(user_list)] = 1
-                        op_vars_index += len(user_list)
-
-                        const_array.append(target_array)
-
-                if op_vars:
-                    for i in range(len(const_array)):
-                        data = const_array[i]
-                        if len(const_array[i]) < op_vars_index:
-                            data = np.append(const_array[i], [0] * (op_vars_index - len(const_array[i])))
-
-                        constraint = LinearConstraint(data, lb=1, ub=1)
-
-                        # constraints = [*constraints, {'type': 'eq', 'fun': const}]
-                        constraints.append(constraint)
-
-                    import warnings
-                    warnings.filterwarnings("ignore")
-                    ue_ratio = minimize(
-                        self.objective_function,
-                        x0=np.array(op_vars),
-                        args=(combos, cur_sat_ids, runner_up_sat_ids, sat_user_nums,
-                              tmp_future_sat_user_nums, ho_positions, start_buffers,
-                              video_chunk_remain, cur_download_bws,
-                              next_download_bws, user_info, bw_ratio),
-                        constraints=constraints,
-                        bounds=bounds,
-                        method="SLSQP"  # or BFGS
-                    )
-                    for sat_id in sat_id_list:
-                        user_info[sat_id] = user_info[sat_id] + (ue_ratio.x[user_info[sat_id][0]:user_info[sat_id][1]],)
-                        # user_info[sat_id] = user_info[sat_id] + (np.array([0.5, 0.5]),)
-
                 rewards = []
                 tmp_bws_sum = []
                 for agent_id, combo in enumerate(combos):
@@ -1388,8 +1331,8 @@ class Environment:
 
                         tmp_bws_sum.append(harmonic_bw)
 
-                        download_time += (self.video_size[chunk_quality][index] / B_IN_MB) \
-                                         / harmonic_bw * BITS_IN_BYTE  # this is MB/MB/s --> seconds
+                        download_time += (self.video_size[chunk_quality][index]) \
+                                         / harmonic_bw / PACKET_PAYLOAD_PORTION  # this is MB/MB/s --> seconds
 
                         if curr_buffer < download_time:
                             curr_rebuffer_time += (download_time - curr_buffer)
@@ -2305,7 +2248,7 @@ class Environment:
 
     def objective_function(self, x, combos, cur_sat_ids, runner_up_sat_ids, sat_user_nums,
                            future_sat_user_nums, ho_positions, start_buffers, video_chunk_remain,
-                           cur_download_bws, next_download_bws, user_info, bw_ratio, best_bws):
+                           cur_bws, next_bws, user_info, bw_ratio, best_bws):
         rewards = []
         curr_rebuffer_time = 0
         total_buffer_diff = 0
@@ -2331,25 +2274,27 @@ class Environment:
                 next_future_sat_user_num = future_sat_user_nums[next_sat_id][position]
 
                 now_sat_id = None
-                harmonic_bw = best_bws[agent_id][position]
                 if ho_positions[agent_id] > position:
-                    # now_download_bws = cur_download_bws[agent_id] * cur_sat_user_num
                     if cur_future_sat_user_num > 1:
-                        harmonic_bw *= cur_future_sat_user_num
                         now_sat_id = cur_sat_id
+                        harmonic_bw = cur_bws[agent_id]
+                    else:
+                        harmonic_bw = cur_bws[agent_id] / cur_future_sat_user_num
                 elif ho_positions[agent_id] == position:
-                    # now_download_bws = next_download_bws[agent_id] * next_sat_user_num
                     if next_future_sat_user_num > 1:
-                        harmonic_bw *= next_future_sat_user_num
                         now_sat_id = next_sat_id
+                        harmonic_bw = next_bws[agent_id]
+                    else:
+                        harmonic_bw = next_bws[agent_id] / next_future_sat_user_num
+
                     # Give them a penalty
-                    assert cur_sat_id != next_sat_id
                     download_time += HANDOVER_DELAY
                 else:
-                    # now_download_bws = next_download_bws[agent_id] * next_sat_user_num
                     if next_future_sat_user_num > 1:
-                        harmonic_bw *= next_future_sat_user_num
                         now_sat_id = next_sat_id
+                        harmonic_bw = next_bws[agent_id]
+                    else:
+                        harmonic_bw = next_bws[agent_id] / next_future_sat_user_num
 
                 if now_sat_id:
                     assert now_sat_id in user_info.keys()
