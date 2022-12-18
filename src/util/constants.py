@@ -23,7 +23,7 @@ SNR_NOISE_HIGH = 1
 SNR_NOISE_UNIT = 0.05
 
 
-MPC_FUTURE_CHUNK_COUNT = 3
+MPC_FUTURE_CHUNK_COUNT = 2
 MPC_PAST_CHUNK_COUNT = 5
 
 # Multi-user config in the trace files
