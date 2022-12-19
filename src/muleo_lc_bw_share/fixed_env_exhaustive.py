@@ -1665,17 +1665,25 @@ class Environment:
                     tmp_bws_sum += harmonic_bw
                 tmp_bws.append(bw_log)
 
+            best_bws_list.append(tmp_bws)
+            best_ho_positions_list.append(ho_positions)
+            best_bws_sum_list.append(tmp_bws_sum)
+            future_sat_user_nums_list.append(tmp_future_sat_user_nums)
+            # future_sat_user_list_list.append(tmp_future_sat_user_list)
+            """
             if np.nanmean(best_bws_sum_list[-1]) < np.nanmean(tmp_bws_sum):
                 best_bws_list.append(tmp_bws)
                 best_ho_positions_list.append(ho_positions)
                 best_bws_sum_list.append(tmp_bws_sum)
                 future_sat_user_nums_list.append(tmp_future_sat_user_nums)
+                future_sat_user_list_list.append(tmp_future_sat_user_list)
             elif np.nanmean(best_bws_sum_list[-1]) == np.nanmean(tmp_bws_sum) and sum(best_ho_positions_list[-1]) <= sum(ho_positions):
                 best_bws_list.append(tmp_bws)
                 best_ho_positions_list.append(ho_positions)
                 best_bws_sum_list.append(tmp_bws_sum)
                 future_sat_user_nums_list.append(tmp_future_sat_user_nums)
-
+                future_sat_user_list_list.append(tmp_future_sat_user_list)
+            """
         # print(future_sat_user_nums)
         # print(best_ho_positions)
         best_bws_args = np.argsort(best_bws_sum_list)
