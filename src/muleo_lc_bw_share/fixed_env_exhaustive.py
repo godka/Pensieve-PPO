@@ -11,7 +11,7 @@ import copy
 from muleo_lc_bw_share.satellite import Satellite
 from muleo_lc_bw_share.user import User
 from util.constants import EPSILON, MAX_RATIO, MPC_FUTURE_CHUNK_COUNT, QUALITY_FACTOR, REBUF_PENALTY, SMOOTH_PENALTY, \
-    MPC_PAST_CHUNK_COUNT
+    MPC_PAST_CHUNK_COUNT, HO_NUM
 
 VIDEO_BIT_RATE = [300, 750, 1200, 1850, 2850, 4300]
 M_IN_K = 1000.0
@@ -1116,24 +1116,18 @@ class Environment:
                         if ho_positions[agent_id] > position:
                             if cur_future_sat_user_num > 1:
                                 now_sat_id = cur_sat_id
-                                harmonic_bw = cur_bws[agent_id]
-                            else:
-                                harmonic_bw = cur_bws[agent_id] / cur_future_sat_user_num
+                            harmonic_bw = cur_bws[agent_id]
                         elif ho_positions[agent_id] == position:
                             if next_future_sat_user_num > 1:
                                 now_sat_id = next_sat_id
-                                harmonic_bw = next_bws[agent_id]
-                            else:
-                                harmonic_bw = next_bws[agent_id] / next_future_sat_user_num
+                            harmonic_bw = next_bws[agent_id]
 
                             # Give them a penalty
                             download_time += HANDOVER_DELAY
                         else:
                             if next_future_sat_user_num > 1:
                                 now_sat_id = next_sat_id
-                                harmonic_bw = next_bws[agent_id]
-                            else:
-                                harmonic_bw = next_bws[agent_id] / next_future_sat_user_num
+                            harmonic_bw = next_bws[agent_id]
 
                         if now_sat_id:
                             var_index = user_info[now_sat_id][2].index(agent_id)
@@ -1688,7 +1682,7 @@ class Environment:
         # print(best_ho_positions)
         best_bws_args = np.argsort(best_bws_sum_list)
 
-        for i in range(-5, 0, 1):
+        for i in range(-HO_NUM, 0, 1):
             future_sat_user_nums = future_sat_user_nums_list[best_bws_args[i]]
             best_ho_positions = best_ho_positions_list[best_bws_args[i]]
             for full_combo in chunk_combo_option:
@@ -1963,7 +1957,7 @@ class Environment:
 
         best_bws_args = np.argsort(best_bws_sum_list)
 
-        for i in range(-5, 0, 1):
+        for i in range(-HO_NUM, 0, 1):
             future_sat_user_list = future_sat_user_list_list[best_bws_args[i]]
             future_sat_user_nums = future_sat_user_nums_list[best_bws_args[i]]
             best_ho_positions = best_ho_positions_list[best_bws_args[i]]
@@ -2369,7 +2363,7 @@ class Environment:
 
                 download_time += (self.video_size[chunk_quality][index]) \
                                  / harmonic_bw / PACKET_PAYLOAD_PORTION  # this is MB/MB/s --> seconds
-                curr_rebuffer_time += (download_time - curr_buffer)
+                # curr_rebuffer_time += (download_time - curr_buffer)
                 if curr_buffer < download_time:
                     curr_rebuffer_time += (download_time - curr_buffer)
                     curr_buffer = 0.0

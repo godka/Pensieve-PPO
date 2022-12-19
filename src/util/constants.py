@@ -29,3 +29,5 @@ MPC_PAST_CHUNK_COUNT = 5
 # Multi-user config in the trace files
 NUM_USERS = 10
 MULTI_USER_FOLDER = 'test_multi_user/'
+
+HO_NUM = 10
