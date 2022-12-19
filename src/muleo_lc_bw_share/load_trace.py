@@ -36,8 +36,6 @@ def load_trace(cooked_trace_folder=COOKED_TRACE_FOLDER, split_condition=None):
                     satellite_bw = {int(sat_id): [] for sat_id in satellite_id}
 
                 line_count += 1
-                if line_count < 70 or line_count > 100:
-                    continue
                 for sat_id in satellite_id:
                     # satellite_bw[int(sat_id)].append(float(row[sat_id]))
                     satellite_bw[int(sat_id)].append(float(row[sat_id]) * SCALE_FOR_TEST)

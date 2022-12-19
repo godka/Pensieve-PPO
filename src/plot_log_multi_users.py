@@ -2,7 +2,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
 
-LOG_PATH = './test_results_mpc_exhaustive/log_sim_cent_rss_Hong Kong_2022-9-21-00-00-00'
+LOG_PATH = './test_results_reduced_ratio_20/log_sim_cent_rss_Hong Kong_2022-9-21-09-00-00'
 PLOT_SAMPLES = 300
 
 

@@ -1591,7 +1591,7 @@ class Environment:
         for ho_positions in ho_combo_option:
             tmp_future_sat_user_nums = {}
             tmp_bws = []
-            tmp_bws_sum = 0
+            tmp_bws_sum = []
             impossible_route = False
 
             for sat_id in sat_user_nums.keys():
@@ -1624,16 +1624,12 @@ class Environment:
             for idx in range(self.num_agents):
                 if cur_bws[idx] is None:
                     tmp_bws.append([np.nan])
-                    tmp_bws_sum = 0
+                    tmp_bws_sum.append(np.nan)
                     continue
 
                 cur_sat_id = cur_sat_ids[idx]
                 next_sat_id = runner_up_sat_ids[idx]
 
-                cur_sat_user_num = 1 if sat_user_nums[cur_sat_id] == 0 \
-                    else sat_user_nums[cur_sat_id]
-                next_sat_user_num = 1 if sat_user_nums[next_sat_id] == 0 \
-                    else sat_user_nums[next_sat_id]
                 bw_log = []
                 for position in range(MPC_FUTURE_CHUNK_COUNT):
                     # cur_sat_user_num = sat_user_nums[cur_sat_id]
@@ -1656,12 +1652,12 @@ class Environment:
                         harmonic_bw = next_bws[idx] / next_future_sat_user_num
 
                     bw_log.append(harmonic_bw)
-                    tmp_bws_sum += harmonic_bw
+                    tmp_bws_sum.append(harmonic_bw)
                 tmp_bws.append(bw_log)
 
             best_bws_list.append(tmp_bws)
             best_ho_positions_list.append(ho_positions)
-            best_bws_sum_list.append(tmp_bws_sum)
+            best_bws_sum_list.append(np.mean(tmp_bws_sum))
             future_sat_user_nums_list.append(tmp_future_sat_user_nums)
             # future_sat_user_list_list.append(tmp_future_sat_user_list)
             """
@@ -1858,7 +1854,7 @@ class Environment:
             tmp_future_sat_user_nums = {}
             tmp_future_sat_user_list = {}
             tmp_bws = []
-            tmp_bws_sum = 0
+            tmp_bws_sum = []
             impossible_route = False
 
             for sat_id in sat_user_nums.keys():
@@ -1900,16 +1896,12 @@ class Environment:
             for idx in range(self.num_agents):
                 if cur_bws[idx] is None:
                     tmp_bws.append([np.nan])
-                    tmp_bws_sum = 0
+                    tmp_bws_sum.append(np.nan)
                     continue
 
                 cur_sat_id = cur_sat_ids[idx]
                 next_sat_id = runner_up_sat_ids[idx]
 
-                cur_sat_user_num = 1 if sat_user_nums[cur_sat_id] == 0 \
-                    else sat_user_nums[cur_sat_id]
-                next_sat_user_num = 1 if sat_user_nums[next_sat_id] == 0 \
-                    else sat_user_nums[next_sat_id]
                 bw_log = []
                 for position in range(MPC_FUTURE_CHUNK_COUNT):
                     # cur_sat_user_num = sat_user_nums[cur_sat_id]
@@ -1932,12 +1924,12 @@ class Environment:
                         harmonic_bw = next_bws[idx] / next_future_sat_user_num
 
                     bw_log.append(harmonic_bw)
-                    tmp_bws_sum += harmonic_bw
+                    tmp_bws_sum.append(harmonic_bw)
                 tmp_bws.append(bw_log)
 
             best_bws_list.append(tmp_bws)
             best_ho_positions_list.append(ho_positions)
-            best_bws_sum_list.append(tmp_bws_sum)
+            best_bws_sum_list.append(np.mean(tmp_bws_sum))
             future_sat_user_nums_list.append(tmp_future_sat_user_nums)
             future_sat_user_list_list.append(tmp_future_sat_user_list)
             """
