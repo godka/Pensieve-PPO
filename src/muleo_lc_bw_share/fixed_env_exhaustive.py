@@ -44,7 +44,7 @@ SCALE_VIDEO_LEN_FOR_TEST = 2
 NUM_AGENTS = None
 
 SAT_STRATEGY = "resource-fair"
-SAT_STRATEGY = "ratio-based"
+# SAT_STRATEGY = "ratio-based"
 
 SNR_MIN = 70
 
@@ -1679,8 +1679,9 @@ class Environment:
         best_bws_args = np.argsort(best_bws_sum_list)
         assert len(best_bws_list) == len(best_ho_positions_list) == len(best_bws_sum_list) == len(future_sat_user_nums_list)
         ho_combination_len = HO_NUM
-        if len(best_bws_args) < HO_NUM:
+        if len(best_bws_args) <= HO_NUM:
             ho_combination_len = len(best_bws_args) - 1
+
         for i in range(-ho_combination_len, 0, 1):
             future_sat_user_nums = future_sat_user_nums_list[best_bws_args[i]]
             best_ho_positions = best_ho_positions_list[best_bws_args[i]]
@@ -1953,7 +1954,7 @@ class Environment:
         best_bws_args = np.argsort(best_bws_sum_list)
         assert len(best_bws_list) == len(best_ho_positions_list) == len(best_bws_sum_list) == len(future_sat_user_nums_list)
         ho_combination_len = HO_NUM
-        if len(best_bws_args) < HO_NUM:
+        if len(best_bws_args) <= HO_NUM:
             ho_combination_len = len(best_bws_args) - 1
 
         for i in range(-ho_combination_len, 0, 1):
@@ -2362,9 +2363,9 @@ class Environment:
 
                 download_time += (self.video_size[chunk_quality][index]) \
                                  / harmonic_bw / PACKET_PAYLOAD_PORTION  # this is MB/MB/s --> seconds
-                # curr_rebuffer_time += (download_time - curr_buffer)
+                curr_rebuffer_time += (download_time - curr_buffer)
                 if curr_buffer < download_time:
-                    curr_rebuffer_time += (download_time - curr_buffer)
+                    # curr_rebuffer_time += (download_time - curr_buffer)
                     curr_buffer = 0.0
                 else:
                     curr_buffer -= download_time
