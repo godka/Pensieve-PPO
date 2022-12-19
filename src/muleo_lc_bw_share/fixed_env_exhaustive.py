@@ -44,7 +44,7 @@ SCALE_VIDEO_LEN_FOR_TEST = 2
 NUM_AGENTS = None
 
 SAT_STRATEGY = "resource-fair"
-# SAT_STRATEGY = "ratio-based"
+SAT_STRATEGY = "ratio-based"
 
 SNR_MIN = 70
 
@@ -1677,8 +1677,11 @@ class Environment:
         # print(future_sat_user_nums)
         # print(best_ho_positions)
         best_bws_args = np.argsort(best_bws_sum_list)
-
-        for i in range(-HO_NUM, 0, 1):
+        assert len(best_bws_list) == len(best_ho_positions_list) == len(best_bws_sum_list) == len(future_sat_user_nums_list)
+        ho_combination_len = HO_NUM
+        if len(best_bws_args) < HO_NUM:
+            ho_combination_len = len(best_bws_args) - 1
+        for i in range(-ho_combination_len, 0, 1):
             future_sat_user_nums = future_sat_user_nums_list[best_bws_args[i]]
             best_ho_positions = best_ho_positions_list[best_bws_args[i]]
             for full_combo in chunk_combo_option:
@@ -1948,8 +1951,12 @@ class Environment:
             """
 
         best_bws_args = np.argsort(best_bws_sum_list)
+        assert len(best_bws_list) == len(best_ho_positions_list) == len(best_bws_sum_list) == len(future_sat_user_nums_list)
+        ho_combination_len = HO_NUM
+        if len(best_bws_args) < HO_NUM:
+            ho_combination_len = len(best_bws_args) - 1
 
-        for i in range(-HO_NUM, 0, 1):
+        for i in range(-ho_combination_len, 0, 1):
             future_sat_user_list = future_sat_user_list_list[best_bws_args[i]]
             future_sat_user_nums = future_sat_user_nums_list[best_bws_args[i]]
             best_ho_positions = best_ho_positions_list[best_bws_args[i]]

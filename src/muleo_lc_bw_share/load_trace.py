@@ -36,6 +36,14 @@ def load_trace(cooked_trace_folder=COOKED_TRACE_FOLDER, split_condition=None):
                     satellite_bw = {int(sat_id): [] for sat_id in satellite_id}
 
                 line_count += 1
+                vis_sat_num = 0
+                for sat_id in satellite_id:
+                    if float(row[sat_id]) != 0.0:
+                        vis_sat_num += 1
+                    if vis_sat_num > 2:
+                        break
+                if vis_sat_num > 2:
+                    continue
                 for sat_id in satellite_id:
                     # satellite_bw[int(sat_id)].append(float(row[sat_id]))
                     satellite_bw[int(sat_id)].append(float(row[sat_id]) * SCALE_FOR_TEST)
