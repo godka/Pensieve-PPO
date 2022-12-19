@@ -2362,9 +2362,9 @@ class Environment:
 
                 download_time += (self.video_size[chunk_quality][index]) \
                                  / harmonic_bw / PACKET_PAYLOAD_PORTION  # this is MB/MB/s --> seconds
-                curr_rebuffer_time += (download_time - curr_buffer)
+                # curr_rebuffer_time += (download_time - curr_buffer)
                 if curr_buffer < download_time:
-                    # curr_rebuffer_time += (download_time - curr_buffer)
+                    curr_rebuffer_time += (download_time - curr_buffer)
                     curr_buffer = 0.0
                 else:
                     curr_buffer -= download_time
