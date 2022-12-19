@@ -30,4 +30,4 @@ MPC_PAST_CHUNK_COUNT = 5
 NUM_USERS = 10
 MULTI_USER_FOLDER = 'test_multi_user/'
 
-HO_NUM = 10
+HO_NUM = 20
