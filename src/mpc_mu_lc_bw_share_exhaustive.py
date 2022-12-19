@@ -22,7 +22,7 @@ BITRATE_REWARD = [1, 2, 3, 12, 15, 20]
 TOTAL_VIDEO_CHUNKS = 48
 RANDOM_SEED = 42
 RAND_RANGE = 1000000
-SUMMARY_DIR = 'test_results_reduced_ratio_n4/'
+SUMMARY_DIR = 'test_results_reduced_ratio_rebuf/'
 LOG_FILE = SUMMARY_DIR + 'log_sim_cent'
 TEST_TRACES = './test_tight/'
 SUMMARY_PATH = SUMMARY_DIR + 'summary'
@@ -35,7 +35,7 @@ import argparse
 
 parser = argparse.ArgumentParser(description='PyTorch Synthetic Benchmark',
                                  formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-parser.add_argument('--user', type=int, default=4)
+parser.add_argument('--user', type=int, default=3)
 args = parser.parse_args()
 NUM_AGENTS = args.user
 
