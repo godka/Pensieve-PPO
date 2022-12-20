@@ -22,7 +22,7 @@ BITRATE_REWARD = [1, 2, 3, 12, 15, 20]
 TOTAL_VIDEO_CHUNKS = 48
 RANDOM_SEED = 42
 RAND_RANGE = 1000000
-SUMMARY_DIR = 'test_results_exh_resource_every/'
+SUMMARY_DIR = 'test_results_reduced_resource_every/'
 LOG_FILE = SUMMARY_DIR + 'log_sim_cent'
 TEST_TRACES = './test_tight/'
 SUMMARY_PATH = SUMMARY_DIR + 'summary'
@@ -73,7 +73,7 @@ size_video6 = [181801, 155580, 139857, 155432, 163442, 126289, 153295, 173849, 1
 
 MPC_TYPE = "DualMPC"
 MPC_TYPE = "DualMPC-Centralization-Exhaustive"
-# MPC_TYPE = "DualMPC-Centralization-Reduced"
+MPC_TYPE = "DualMPC-Centralization-Reduced"
 
 # DualMPC-Centralization
 
@@ -96,7 +96,7 @@ def main():
 
     assert len(VIDEO_BIT_RATE) == A_DIM
 
-    all_cooked_time, all_cooked_bw, all_file_names = load_trace.load_trace(TEST_TRACES, NUM_AGENTS)
+    all_cooked_time, all_cooked_bw, all_file_names = load_trace.load_trace(TEST_TRACES)
 
     net_env = env.Environment(all_cooked_time=all_cooked_time,
                               all_cooked_bw=all_cooked_bw,
