@@ -44,7 +44,7 @@ SCALE_VIDEO_LEN_FOR_TEST = 2
 NUM_AGENTS = None
 
 SAT_STRATEGY = "resource-fair"
-SAT_STRATEGY = "ratio-based"
+# SAT_STRATEGY = "ratio-based"
 
 SNR_MIN = 70
 
@@ -347,7 +347,7 @@ class Environment:
         self.next_sat_id[agent] = next_sat_id
         next_sat_user_num = len(self.cur_satellite[next_sat_id].get_ue_list())
 
-        self.last_delay[agent] = int(delay)
+        self.last_delay[agent] = round(delay / M_IN_K)
         """
         if model_type is not None and (agent == 0 or do_mpc) and self.end_of_video[agent] is not True:
             runner_up_sat_ids, ho_stamps, best_combos, best_user_info = self.run_mpc(agent, model_type)

@@ -28,7 +28,7 @@ def load_trace(cooked_trace_folder=COOKED_TRACE_FOLDER, split_condition=None):
         with open(file_path, mode='r') as csv_file:
             csv_reader = csv.DictReader(csv_file)
             line_count = 0
-
+            actual_count = 0
             for row in csv_reader:
                 if line_count == 0:
                     # Get Satellite ID
@@ -48,6 +48,9 @@ def load_trace(cooked_trace_folder=COOKED_TRACE_FOLDER, split_condition=None):
                     # satellite_bw[int(sat_id)].append(float(row[sat_id]))
                     satellite_bw[int(sat_id)].append(float(row[sat_id]) * SCALE_FOR_TEST)
                 cooked_time.append(int(row["time"]))
+                actual_count += 1
+                if actual_count > 50:
+                    break
 
         all_satellite_bw.append(satellite_bw)
         all_cooked_time.append(cooked_time)
