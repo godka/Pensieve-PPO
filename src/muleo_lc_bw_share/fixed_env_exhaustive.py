@@ -44,7 +44,7 @@ SCALE_VIDEO_LEN_FOR_TEST = 2
 NUM_AGENTS = None
 
 SAT_STRATEGY = "resource-fair"
-# SAT_STRATEGY = "ratio-based"
+SAT_STRATEGY = "ratio-based"
 
 SNR_MIN = 70
 
@@ -2363,7 +2363,7 @@ class Environment:
 
                 download_time += (self.video_size[chunk_quality][index]) \
                                  / harmonic_bw / PACKET_PAYLOAD_PORTION  # this is MB/MB/s --> seconds
-                # curr_rebuffer_time += (download_time - curr_buffer)
+                total_buffer_diff += (download_time - curr_buffer)
                 if curr_buffer < download_time:
                     curr_rebuffer_time += (download_time - curr_buffer)
                     curr_buffer = 0.0
@@ -2372,7 +2372,7 @@ class Environment:
                 curr_buffer += VIDEO_CHUNCK_LEN / MILLISECONDS_IN_SECOND
             # total_buffer_diff += curr_buffer #  - start_buffers[agent_id]
             # total_buffer_diff += curr_buffer
-        return curr_rebuffer_time
+        return curr_rebuffer_time + total_buffer_diff
 
     """
     def calculate_cent_mpc(self, robustness=True, only_runner_up=True,
