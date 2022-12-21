@@ -2366,8 +2366,8 @@ class Environment:
                 curr_buffer += VIDEO_CHUNCK_LEN / MILLISECONDS_IN_SECOND
             # total_buffer_diff += curr_buffer #  - start_buffers[agent_id]
             # total_buffer_diff += curr_buffer
-        # return curr_rebuffer_time + total_buffer_diff
-        return total_buffer_diff
+        return curr_rebuffer_time + total_buffer_diff
+        # return total_buffer_diff
 
     """
     def calculate_cent_mpc(self, robustness=True, only_runner_up=True,
