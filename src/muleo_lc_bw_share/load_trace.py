@@ -8,9 +8,9 @@ COOKED_DIS_FOLDER = 'dis/'
 # LEO SETTINGS
 HANDOVER_DELAY = 0.2  # sec
 HANDOVER_WEIGHT = 1
-SCALE_VIDEO_SIZE_FOR_TEST = 30
+SCALE_VIDEO_SIZE_FOR_TEST = 20
 SCALE_VIDEO_LEN_FOR_TEST = 2
-SCALE_FOR_TEST = 1 / SCALE_VIDEO_SIZE_FOR_TEST
+BW_SCALE_FOR_TEST = 1 / SCALE_VIDEO_SIZE_FOR_TEST
 
 
 def load_trace(cooked_trace_folder=COOKED_TRACE_FOLDER, split_condition=None):
@@ -28,6 +28,7 @@ def load_trace(cooked_trace_folder=COOKED_TRACE_FOLDER, split_condition=None):
         with open(file_path, mode='r') as csv_file:
             csv_reader = csv.DictReader(csv_file)
             line_count = 0
+            act_line = 0
             for row in csv_reader:
                 if line_count == 0:
                     # Get Satellite ID
@@ -43,9 +44,10 @@ def load_trace(cooked_trace_folder=COOKED_TRACE_FOLDER, split_condition=None):
                         break
                 if vis_sat_num > 2:
                     continue
+                act_line += 1
                 for sat_id in satellite_id:
                     # satellite_bw[int(sat_id)].append(float(row[sat_id]))
-                    satellite_bw[int(sat_id)].append(float(row[sat_id]) * SCALE_FOR_TEST)
+                    satellite_bw[int(sat_id)].append(float(row[sat_id]) * BW_SCALE_FOR_TEST)
                 cooked_time.append(int(row["time"]))
 
         all_satellite_bw.append(satellite_bw)

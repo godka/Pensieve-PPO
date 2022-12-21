@@ -23,11 +23,13 @@ SNR_NOISE_HIGH = 1
 SNR_NOISE_UNIT = 0.05
 
 
+TOTAL_VIDEO_CHUNCK = 20
+
 MPC_FUTURE_CHUNK_COUNT = 3
 MPC_PAST_CHUNK_COUNT = 5
 
 # Multi-user config in the trace files
-NUM_USERS = 10
+# NUM_USERS = 10
 MULTI_USER_FOLDER = 'test_multi_user/'
 
-HO_NUM = 10
+HO_NUM = 5

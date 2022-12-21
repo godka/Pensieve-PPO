@@ -11,7 +11,7 @@ import copy
 from muleo_lc_bw_share.satellite import Satellite
 from muleo_lc_bw_share.user import User
 from util.constants import EPSILON, MAX_RATIO, MPC_FUTURE_CHUNK_COUNT, QUALITY_FACTOR, REBUF_PENALTY, SMOOTH_PENALTY, \
-    MPC_PAST_CHUNK_COUNT, HO_NUM
+    MPC_PAST_CHUNK_COUNT, HO_NUM, TOTAL_VIDEO_CHUNCK
 
 VIDEO_BIT_RATE = [300, 750, 1200, 1850, 2850, 4300]
 M_IN_K = 1000.0
@@ -22,7 +22,6 @@ BITS_IN_BYTE = 8.0
 RANDOM_SEED = 42
 VIDEO_CHUNCK_LEN = 4000.0  # millisec, every time add this amount to buffer
 BITRATE_LEVELS = 6
-TOTAL_VIDEO_CHUNCK = 48
 BUFFER_THRESH = 60.0 * MILLISECONDS_IN_SECOND  # millisec, max buffer limit
 DRAIN_BUFFER_SLEEP_TIME = 500.0  # millisec
 PACKET_PAYLOAD_PORTION = 0.95
@@ -347,7 +346,7 @@ class Environment:
         self.next_sat_id[agent] = next_sat_id
         next_sat_user_num = len(self.cur_satellite[next_sat_id].get_ue_list())
 
-        self.last_delay[agent] = round(delay / M_IN_K)
+        MPC_PAST_CHUNK_COUNT = round(delay / M_IN_K)
         """
         if model_type is not None and (agent == 0 or do_mpc) and self.end_of_video[agent] is not True:
             runner_up_sat_ids, ho_stamps, best_combos, best_user_info = self.run_mpc(agent, model_type)
@@ -1685,6 +1684,7 @@ class Environment:
         for i in range(-ho_combination_len, 0, 1):
             future_sat_user_nums = future_sat_user_nums_list[best_bws_args[i]]
             best_ho_positions = best_ho_positions_list[best_bws_args[i]]
+
             for full_combo in chunk_combo_option:
                 combos = []
                 # Break at the end of the chunk
@@ -1780,7 +1780,6 @@ class Environment:
         # future chunks length (try 4 if that many remaining)
         video_chunk_remain = [self.video_chunk_remain[i] for i in range(self.num_agents)]
         # last_index = self.get_total_video_chunk() - video_chunk_remain
-
         chunk_combo_option = []
         ho_combo_option = []
         # make chunk combination options
@@ -1800,7 +1799,7 @@ class Environment:
         # cur_download_bws = [self.predict_download_bw(i, True) for i in range(self.num_agents)]
 
         cur_sat_ids = [self.cur_sat_id[i] for i in range(self.num_agents)]
-        runner_up_sat_ids = [self.get_runner_up_sat_id(i, method="harmonic-mean", plus=True)[0] for i in
+        runner_up_sat_ids = [self.get_runner_up_sat_id(i, method="harmonic-mean")[0] for i in
                              range(self.num_agents)]
 
         related_sat_ids = list(set(cur_sat_ids + runner_up_sat_ids))
@@ -1961,6 +1960,7 @@ class Environment:
             future_sat_user_list = future_sat_user_list_list[best_bws_args[i]]
             future_sat_user_nums = future_sat_user_nums_list[best_bws_args[i]]
             best_ho_positions = best_ho_positions_list[best_bws_args[i]]
+
             for full_combo in chunk_combo_option:
                 combos = []
                 # Break at the end of the chunk
@@ -2196,10 +2196,10 @@ class Environment:
                     if method == "harmonic-mean":
                         tmp_next_bw = self.predict_bw(next_sat_id, agent, robustness,
                                                       mahimahi_ptr=self.mahimahi_ptr[agent],
-                                                      plus=False, past_len=self.last_delay[agent])
+                                                      plus=False, past_len=MPC_PAST_CHUNK_COUNT)
                         tmp_cur_bw = self.predict_bw(self.cur_sat_id[agent], agent, robustness,
                                                      mahimahi_ptr=self.mahimahi_ptr[agent], plus=False,
-                                                     past_len=self.last_delay[agent])
+                                                     past_len=MPC_PAST_CHUNK_COUNT)
 
                         next_download_bw = cur_download_bw * tmp_next_bw / tmp_cur_bw
 
@@ -2337,24 +2337,18 @@ class Environment:
                 if ho_positions[agent_id] > position:
                     if cur_future_sat_user_num > 1:
                         now_sat_id = cur_sat_id
-                        harmonic_bw = cur_bws[agent_id]
-                    else:
-                        harmonic_bw = cur_bws[agent_id] / cur_future_sat_user_num
+                    harmonic_bw = cur_bws[agent_id]
                 elif ho_positions[agent_id] == position:
                     if next_future_sat_user_num > 1:
                         now_sat_id = next_sat_id
-                        harmonic_bw = next_bws[agent_id]
-                    else:
-                        harmonic_bw = next_bws[agent_id] / next_future_sat_user_num
+                    harmonic_bw = next_bws[agent_id]
 
                     # Give them a penalty
                     download_time += HANDOVER_DELAY
                 else:
                     if next_future_sat_user_num > 1:
                         now_sat_id = next_sat_id
-                        harmonic_bw = next_bws[agent_id]
-                    else:
-                        harmonic_bw = next_bws[agent_id] / next_future_sat_user_num
+                    harmonic_bw = next_bws[agent_id]
 
                 if now_sat_id:
                     assert now_sat_id in user_info.keys()
@@ -2372,7 +2366,8 @@ class Environment:
                 curr_buffer += VIDEO_CHUNCK_LEN / MILLISECONDS_IN_SECOND
             # total_buffer_diff += curr_buffer #  - start_buffers[agent_id]
             # total_buffer_diff += curr_buffer
-        return curr_rebuffer_time + total_buffer_diff
+        # return curr_rebuffer_time + total_buffer_diff
+        return total_buffer_diff
 
     """
     def calculate_cent_mpc(self, robustness=True, only_runner_up=True,
@@ -2589,7 +2584,7 @@ class Environment:
 
             if method == "harmonic-mean":
                 target_sat_bw = self.predict_bw(sat_id, agent, mahimahi_ptr=mahimahi_ptr,
-                                                plus=plus, past_len=self.last_delay[agent])
+                                                plus=plus, past_len=MPC_PAST_CHUNK_COUNT)
                 real_sat_bw = target_sat_bw  # / (self.get_num_of_user_sat(sat_id) + 1)
             elif method == "holt-winter":
                 target_sat_bw = self.predict_bw_holt_winter(sat_id, agent, num=1)
@@ -2728,7 +2723,7 @@ class Environment:
         # pick bitrate according to MPC
         # first get harmonic mean of last 5 bandwidths
         # past_bws = self.cooked_bw[self.cur_sat_id][start_index: self.mahimahi_ptr]
-        past_bws = self.download_bw[agent][-self.last_delay[agent]:]
+        past_bws = self.download_bw[agent][-MPC_PAST_CHUNK_COUNT:]
         while past_bws[0] == 0.0:
             past_bws = past_bws[1:]
 
@@ -2742,8 +2737,8 @@ class Environment:
         if robustness:
             # future bandwidth prediction
             # divide by 1 + max of last 5 (or up to 5) errors
-            error_pos = -self.last_delay[agent]
-            if len(self.past_download_bw_errors[agent]) < self.last_delay[agent]:
+            error_pos = -MPC_PAST_CHUNK_COUNT
+            if len(self.past_download_bw_errors[agent]) < MPC_PAST_CHUNK_COUNT:
                 error_pos = -len(self.past_download_bw_errors[agent])
             max_error = float(max(self.past_download_bw_errors[agent][error_pos:]))
             harmonic_bw = harmonic_bw / (1 + max_error)  # robustMPC here
@@ -2781,7 +2776,7 @@ class Environment:
 
         # pick bitrate according to MPC
         # first get harmonic mean of last 5 bandwidths
-        start_index = mahimahi_ptr - self.last_delay[agent]
+        start_index = mahimahi_ptr - MPC_PAST_CHUNK_COUNT
         if start_index < 0:
             start_index = 0
 
@@ -2810,9 +2805,9 @@ class Environment:
         if robustness:
             # future bandwidth prediction
             # divide by 1 + max of last 5 (or up to 5) errors
-            error_pos = -self.last_delay[agent]
+            error_pos = -MPC_PAST_CHUNK_COUNT
             if sat_id in self.past_bw_errors[agent].keys() and len(
-                    self.past_bw_errors[agent][sat_id]) < self.last_delay[agent]:
+                    self.past_bw_errors[agent][sat_id]) < MPC_PAST_CHUNK_COUNT:
                 error_pos = -len(self.past_bw_errors[agent][sat_id])
             max_error = float(max(self.past_bw_errors[agent][sat_id][error_pos:]))
             harmonic_bw = harmonic_bw / (1 + max_error)  # robustMPC here
@@ -2846,7 +2841,7 @@ class Environment:
 
         # pick bitrate according to MPC
         # first get harmonic mean of last 5 bandwidths
-        start_index = mahimahi_ptr - self.last_delay[agent]
+        start_index = mahimahi_ptr - MPC_PAST_CHUNK_COUNT
         if start_index < 0:
             start_index = 0
 
@@ -2882,9 +2877,9 @@ class Environment:
         if robustness:
             # future bandwidth prediction
             # divide by 1 + max of last 5 (or up to 5) errors
-            error_pos = -self.last_delay[agent]
+            error_pos = -MPC_PAST_CHUNK_COUNT
             if sat_id in self.past_bw_errors[agent].keys() and len(
-                    self.past_bw_errors[agent][sat_id]) < self.last_delay[agent]:
+                    self.past_bw_errors[agent][sat_id]) < MPC_PAST_CHUNK_COUNT:
                 error_pos = -len(self.past_bw_errors[agent][sat_id])
             max_error = float(max(self.past_bw_errors[agent][sat_id][error_pos:]))
             harmonic_bw = harmonic_bw / (1 + max_error)  # robustMPC here
