@@ -2368,7 +2368,7 @@ class Environment:
 
                 download_time += (self.video_size[chunk_quality][index]) \
                                  / harmonic_bw / PACKET_PAYLOAD_PORTION  # this is MB/MB/s --> seconds
-                total_buffer_diff += (download_time - curr_buffer)
+                total_buffer_diff += (curr_buffer)
                 if curr_buffer < download_time:
                     curr_rebuffer_time += (download_time - curr_buffer)
                     curr_buffer = 0.0
@@ -2377,7 +2377,7 @@ class Environment:
                 curr_buffer += VIDEO_CHUNCK_LEN / MILLISECONDS_IN_SECOND
             # total_buffer_diff += curr_buffer #  - start_buffers[agent_id]
             # total_buffer_diff += curr_buffer
-        return total_buffer_diff
+        return curr_rebuffer_time - total_buffer_diff
         # return total_buffer_diff
 
     """
