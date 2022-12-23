@@ -202,7 +202,7 @@ def main():
             # if len(combo_log[agent]) == 1 and agent == net_env.get_first_agent():
             if not combo_log[agent]:
                 do_mpc = True
-            # do_mpc = True
+            do_mpc = True
 
         # the action is from the last decision
         # this is to make the framework similar to the real

@@ -149,6 +149,7 @@ class Environment:
             runner_up_sat_ids, ho_stamps, best_combos, best_user_info = self.run_mpc(agent, model_type)
 
             # DO handover all-in-one
+            """
             for i in range(len(ho_stamps)):
                 if ho_stamps[i] == 0:
                     is_handover = True
@@ -169,6 +170,7 @@ class Environment:
 
                     self.download_bw[i] = []
                     ho_stamps[i] = -1
+            """
 
             quality = best_combos[agent][0]
             ho_stamp = ho_stamps[agent]
@@ -197,6 +199,7 @@ class Environment:
             # update sat info
             throughput = self.cur_satellite[runner_up_sat_id].data_rate(self.cur_user[agent],
                                                                         self.mahimahi_ptr[agent])
+            assert throughput != 0
             if throughput == 0:
                 runner_up_sat_id, _ = self.get_runner_up_sat_id(agent, method="harmonic-mean", plus=True)
 
@@ -220,11 +223,11 @@ class Environment:
                 self.update_sat_info(sat_id, self.mahimahi_ptr[agent], agent, 1)
                 self.update_sat_info(self.cur_sat_id[agent], self.mahimahi_ptr[agent], agent, -1)
 
+                print("Forced Handover from X to Y: ", self.cur_sat_id[agent], sat_id, )
                 self.switch_sat(agent, sat_id)
                 delay += HANDOVER_DELAY
                 is_handover = True
                 self.download_bw[agent] = []
-                print("Forced Handover")
                 throughput = self.cur_satellite[self.cur_sat_id[agent]].data_rate(self.cur_user[agent],
                                                                                   self.mahimahi_ptr[agent])
 
@@ -1553,6 +1556,7 @@ class Environment:
                                          plus=False, past_len=self.last_delay[agent_id])
             next_bws.append(tmp_next_bw)
             cur_bws.append(tmp_cur_bw)
+
             """
             if cur_download_bws[agent_id] is None:
                 next_download_bws.append(None)
@@ -1680,6 +1684,7 @@ class Environment:
         ho_combination_len = HO_NUM
         if len(best_bws_args) <= HO_NUM:
             ho_combination_len = len(best_bws_args) - 1
+        best_future_sat_user_num = None
 
         for i in range(-ho_combination_len, 0, 1):
             future_sat_user_nums = future_sat_user_nums_list[best_bws_args[i]]
@@ -1766,14 +1771,20 @@ class Environment:
                     best_combos = combos
                     max_rewards = rewards
                     best_ho_position = best_ho_positions
+                    best_future_sat_user_num = future_sat_user_nums
                 elif np.nanmean(rewards) == np.nanmean(max_rewards) and sum(combos[:][0]) >= sum(best_combos[:][0]):
                     # elif np.nanmean(rewards) == np.nanmean(max_rewards) \
                     #         and (rewards[agent] >= max_rewards[agent] or combos[agent][0] >= best_combos[agent][0]):
                     best_combos = combos
                     max_rewards = rewards
                     best_ho_position = best_ho_positions
+                    best_future_sat_user_num = future_sat_user_nums
 
                     # ho_stamps = ho_positions
+        print(best_future_sat_user_num)
+        print(best_ho_position)
+        print(cur_bws)
+        print(next_bws)
         return runner_up_sat_ids, best_ho_position, best_combos, max_rewards
 
     def calculate_mpc_with_handover_exhaustive_ratio_reduced(self, agent):

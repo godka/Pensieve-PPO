@@ -157,7 +157,7 @@ class Satellite:
         agent_id = user.get_agent_id()
 
         num_conn_ues = self.num_conn_ues
-
+        assert plus is False
         if plus:
             num_conn_ues += 1
 
