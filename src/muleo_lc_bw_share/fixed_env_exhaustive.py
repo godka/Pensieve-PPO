@@ -11,7 +11,7 @@ import copy
 from muleo_lc_bw_share.satellite import Satellite
 from muleo_lc_bw_share.user import User
 from util.constants import EPSILON, MAX_RATIO, MPC_FUTURE_CHUNK_COUNT, QUALITY_FACTOR, REBUF_PENALTY, SMOOTH_PENALTY, \
-    MPC_PAST_CHUNK_COUNT, HO_NUM, TOTAL_VIDEO_CHUNCK
+    MPC_PAST_CHUNK_COUNT, HO_NUM, TOTAL_VIDEO_CHUNK
 
 VIDEO_BIT_RATE = [300, 750, 1200, 1850, 2850, 4300]
 M_IN_K = 1000.0
@@ -43,7 +43,7 @@ SCALE_VIDEO_LEN_FOR_TEST = 2
 NUM_AGENTS = None
 
 SAT_STRATEGY = "resource-fair"
-# SAT_STRATEGY = "ratio-based"
+SAT_STRATEGY = "ratio-based"
 
 SNR_MIN = 70
 
@@ -109,7 +109,7 @@ class Environment:
         self.video_chunk_counter = [0 for _ in range(self.num_agents)]
         self.buffer_size = [0 for _ in range(self.num_agents)]
         self.video_chunk_counter_sent = [0 for _ in range(self.num_agents)]
-        self.video_chunk_remain = [TOTAL_VIDEO_CHUNCK for _ in range(self.num_agents)]
+        self.video_chunk_remain = [TOTAL_VIDEO_CHUNK for _ in range(self.num_agents)]
         self.end_of_video = [False for _ in range(self.num_agents)]
         self.next_video_chunk_sizes = [[] for _ in range(self.num_agents)]
         # self.next_sat_bandwidth = [[] for _ in range(self.num_agents)]
@@ -174,6 +174,7 @@ class Environment:
 
             quality = best_combos[agent][0]
             ho_stamp = ho_stamps[agent]
+            runner_up_sat_id = runner_up_sat_ids[agent]
 
         else:
             runner_up_sat_ids, ho_stamps, best_combos, best_user_info = None, None, None, None
@@ -199,7 +200,7 @@ class Environment:
             # update sat info
             throughput = self.cur_satellite[runner_up_sat_id].data_rate(self.cur_user[agent],
                                                                         self.mahimahi_ptr[agent])
-            assert throughput != 0
+            # assert throughput != 0
             if throughput == 0:
                 runner_up_sat_id, _ = self.get_runner_up_sat_id(agent, method="harmonic-mean", plus=True)
 
@@ -321,11 +322,11 @@ class Environment:
         return_buffer_size = self.buffer_size[agent]
 
         self.video_chunk_counter[agent] += 1
-        video_chunk_remain = TOTAL_VIDEO_CHUNCK - self.video_chunk_counter[agent]
+        video_chunk_remain = TOTAL_VIDEO_CHUNK - self.video_chunk_counter[agent]
 
         cur_sat_bw_logs, next_sat_bandwidth, next_sat_id, next_sat_bw_logs, connected_time = self.get_next_sat_info(
             agent, self.mahimahi_ptr[agent])
-        if self.video_chunk_counter[agent] >= TOTAL_VIDEO_CHUNCK or end_of_network:
+        if self.video_chunk_counter[agent] >= TOTAL_VIDEO_CHUNK or end_of_network:
             self.end_of_video[agent] = True
             self.buffer_size[agent] = 0
             self.video_chunk_counter[agent] = 0
@@ -526,7 +527,7 @@ class Environment:
             video_chunk_counter += 1
             avg_bws.append(float(video_chunk_size) / delay / M_IN_K * BITS_IN_BYTE)
 
-            if video_chunk_counter >= TOTAL_VIDEO_CHUNCK or end_of_network:
+            if video_chunk_counter >= TOTAL_VIDEO_CHUNK or end_of_network:
                 end_of_video = True
                 buffer_size = 0
                 video_chunk_counter = 0
@@ -661,7 +662,7 @@ class Environment:
         self.video_chunk_counter[agent] += 1
         avg_bws.append(float(video_chunk_size) / delay / M_IN_K * BITS_IN_BYTE)
 
-        if self.video_chunk_counter[agent] >= TOTAL_VIDEO_CHUNCK or end_of_network:
+        if self.video_chunk_counter[agent] >= TOTAL_VIDEO_CHUNK or end_of_network:
             end_of_video = True
             self.buffer_size[agent] = 0
             self.video_chunk_counter[agent] = 0
@@ -673,7 +674,7 @@ class Environment:
         self.video_chunk_counter = [0 for _ in range(self.num_agents)]
         self.buffer_size = [0 for _ in range(self.num_agents)]
         self.video_chunk_counter_sent = [0 for _ in range(self.num_agents)]
-        self.video_chunk_remain = [TOTAL_VIDEO_CHUNCK for _ in range(self.num_agents)]
+        self.video_chunk_remain = [TOTAL_VIDEO_CHUNK for _ in range(self.num_agents)]
         self.end_of_video = [False for _ in range(self.num_agents)]
         self.next_video_chunk_sizes = [[] for _ in range(self.num_agents)]
         # self.next_sat_bandwidth = [[] for _ in range(self.num_agents)]
@@ -2029,6 +2030,7 @@ class Environment:
                         constraints.append(constraint)
                     import warnings
                     warnings.filterwarnings("ignore")
+                    start_time = time.time()
                     ue_ratio = minimize(
                         self.objective_function,
                         x0=np.array(op_vars),
@@ -2040,6 +2042,7 @@ class Environment:
                         bounds=bounds,
                         method="SLSQP"  # or BFGS
                     )
+                    print(time.time() - start_time)
                     for sat_id in sat_id_list:
                         user_info[sat_id] = user_info[sat_id] + (ue_ratio.x[user_info[sat_id][0]:user_info[sat_id][1]],)
                         # user_info[sat_id] = user_info[sat_id] + (np.array([0.5, 0.5]),)
@@ -2377,7 +2380,7 @@ class Environment:
                 curr_buffer += VIDEO_CHUNCK_LEN / MILLISECONDS_IN_SECOND
             # total_buffer_diff += curr_buffer #  - start_buffers[agent_id]
             # total_buffer_diff += curr_buffer
-        return curr_rebuffer_time - total_buffer_diff
+        return curr_rebuffer_time - total_buffer_diff / 10
         # return total_buffer_diff
 
     """
