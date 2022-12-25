@@ -3,13 +3,18 @@ import structlog
 from muleo_lc_bw_share.user import User
 from util.constants import SUPPORTED_SHARING, EPSILON, SNR_NOISE_LOW, SNR_NOISE_HIGH, B_IN_MB, BITS_IN_BYTE
 import numpy as np
+import copy
 
 SNR_THRESHOLD = 2e-8
 
 
 class Satellite:
     """A base station sending data to connected UEs"""
-    def __init__(self, sat_id, sat_bw, sharing_model):
+
+    def __init__(self, sat_id, sat_bw, sharing_model, conn_use_log=None):
+
+        if conn_use_log is None:
+            conn_use_log = {}
         self.sat_id = sat_id
         self.sat_bw = sat_bw
 
@@ -20,24 +25,27 @@ class Satellite:
         # set constants for SINR and data rate calculation
         # numbers originally from https://sites.google.com/site/lteencyclopedia/lte-radio-link-budgeting-and-rf-planning
         # changed numbers to get shorter range --> simulate smaller map
-        self.bw = 9e6   # in Hz?
-        self.frequency = 2500    # in MHz
-        self.noise = 1e-9   # in mW
+        self.bw = 9e6  # in Hz?
+        self.frequency = 2500  # in MHz
+        self.noise = 1e-9  # in mW
         self.tx_power = 30  # in dBm (was 40)
-        self.conn_ues = []
+        # self.conn_ues = []
+        self.conn_use_log = conn_use_log
         self.height = 15
         self.data_rate_ratio = {}
 
-        # just consider downlink for now; more interesting for most apps anyways
+        # just consider downlink for now; more interesting for most apps anyway
         self.log = structlog.get_logger(sat_id=self.sat_id)
         self.log.info('Satellite init', sharing_model=self.sharing_model)
+
+    def copy_satellite(self):
+        return Satellite(self.sat_id, copy.deepcopy(self.sat_bw), self.sharing_model, copy.deepcopy(self.conn_use_log))
 
     def __repr__(self):
         return str(self.sat_id)
 
-    @property
-    def num_conn_ues(self):
-        return len(self.conn_ues)
+    def num_conn_ues(self, mahimahi_ptr):
+        return len(self.get_ue_list(mahimahi_ptr))
 
     @property
     def total_data_rate(self):
@@ -73,8 +81,17 @@ class Satellite:
     def add_bw(self, sat_bw, user_id):
         self.sat_bw[user_id] = sat_bw
 
-    def add_ue(self, user_id):
-        self.conn_ues.append(user_id)
+    def add_ue(self, user_id, mahimahi_ptr):
+        # print("Add: ", user_id, self.sat_id, mahimahi_ptr)
+        if mahimahi_ptr in self.conn_use_log:
+            self.conn_use_log[mahimahi_ptr].append([True, user_id])
+
+        else:
+            self.conn_use_log[mahimahi_ptr] = [[True, user_id]]
+        ue_list = self.get_ue_list(mahimahi_ptr)
+        return ue_list
+        # self.conn_ues.append(user_id)
+
         """
         if user_id not in self.data_rate_ratio.keys():
             for tmp_id in self.data_rate_ratio.keys():
@@ -84,10 +101,16 @@ class Satellite:
         assert sum(self.data_rate_ratio.values()) <= 1
         """
 
-    def remove_ue(self, user_id):
-        assert user_id in self.conn_ues
-        self.conn_ues.remove(user_id)
+    def remove_ue(self, user_id, mahimahi_ptr):
 
+        # print("Remove: ", user_id, self.sat_id, mahimahi_ptr)
+        # assert user_id in self.conn_ues
+        # self.conn_ues.remove(user_id)
+        if mahimahi_ptr in self.conn_use_log.keys():
+            self.conn_use_log[mahimahi_ptr].append([False, user_id])
+        else:
+            self.conn_use_log[mahimahi_ptr] = [[False, user_id]]
+        self.get_ue_list(mahimahi_ptr)
         """
         if user_id in self.data_rate_ratio.keys():
             removed_ratio = self.data_rate_ratio.pop(user_id)
@@ -96,8 +119,31 @@ class Satellite:
         assert sum(self.data_rate_ratio.values()) <= 1
         """
 
-    def get_ue_list(self):
-        return self.conn_ues
+    def get_ue_list(self, mahimahi_ptr):
+        ue_list = []
+        # self.conn_use_log = {0: [True, 0], 2: [Fals
+
+        for i in sorted(self.conn_use_log.keys()):
+            if mahimahi_ptr < i:
+                break
+            for elem in self.conn_use_log[i]:
+                if elem[0]:
+                    if elem[1] in ue_list:
+                        print(mahimahi_ptr)
+                        print(self.conn_use_log)
+                        print(elem)
+
+                    assert elem[1] not in ue_list
+                    ue_list.append(elem[1])
+                else:
+                    if elem[1] not in ue_list:
+                        print(mahimahi_ptr)
+                        print(self.conn_use_log)
+                        print(elem)
+                    assert elem[1] in ue_list
+                    ue_list.remove(elem[1])
+
+        return ue_list
 
     def set_data_rate_ratio(self, user_id, ratio_list):
         self.data_rate_ratio = {}
@@ -119,7 +165,7 @@ class Satellite:
 
     def received_power(self, distance):
         """Return the received power at a given distance"""
-        return 10**((self.tx_power - self.path_loss(distance)) / 10)
+        return 10 ** ((self.tx_power - self.path_loss(distance)) / 10)
 
     def snr(self, distance):
         """Return the signal-to-noise (SNR) ratio given a UE position."""
@@ -141,9 +187,9 @@ class Satellite:
         dr_ue_unshared = self.sat_bw[mahimahi_ptr]
         dr_ue_unshared *= user.get_snr_noise()
         # dr_ue_unshared *= np.random.uniform(SNR_NOISE_LOW, SNR_NOISE_HIGH)
-        return dr_ue_unshared * B_IN_MB / BITS_IN_BYTE
+        return dr_ue_unshared
 
-    def data_rate_shared(self, user: User, dr_ue_unshared, plus=False):
+    def data_rate_shared(self, user: User, dr_ue_unshared, mahimahi_ptr, plus=False):
         """
         Return the shared data rate the given UE would get based on its unshared data rate and a sharing model.
 
@@ -156,7 +202,7 @@ class Satellite:
         dr_ue_shared = None
         agent_id = user.get_agent_id()
 
-        num_conn_ues = self.num_conn_ues
+        num_conn_ues = self.num_conn_ues(mahimahi_ptr)
         assert plus is False
         if plus:
             num_conn_ues += 1
@@ -170,7 +216,8 @@ class Satellite:
         elif self.sharing_model == 'ratio-based':
             # split data rate by all already connected UEs incl. this UE
             # assert agent_id in self.data_rate_ratio
-            if agent_id not in self.data_rate_ratio.keys() or set(self.data_rate_ratio.keys()) != set(self.conn_ues):
+            if agent_id not in self.data_rate_ratio.keys() or set(self.data_rate_ratio.keys()) != set(
+                    self.get_ue_list(mahimahi_ptr)):
                 dr_ue_shared = dr_ue_unshared / num_conn_ues
             else:
                 if len(self.data_rate_ratio.keys()) < num_conn_ues:
@@ -205,7 +252,11 @@ class Satellite:
             mahimahi_ptr = 0
         dr_ue_unshared = self.data_rate_unshared(mahimahi_ptr, user)
         # final, shared data rate depends on sharing model
-        dr_ue_shared = self.data_rate_shared(user, dr_ue_unshared, plus)
+        dr_ue_shared = self.data_rate_shared(user, dr_ue_unshared, mahimahi_ptr, plus)
         self.log.debug('Achievable data rate', dr_ue_unshared=dr_ue_unshared, dr_ue_shared=dr_ue_shared,
                        num_conn_ues=self.num_conn_ues)
         return dr_ue_shared
+
+    def is_visible(self, mahimahi_ptr):
+        return True if self.sat_bw[mahimahi_ptr] != 0 else False
+

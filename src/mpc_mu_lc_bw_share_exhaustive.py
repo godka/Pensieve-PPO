@@ -2,7 +2,7 @@ import numpy as np
 import structlog
 
 from muleo_lc_bw_share import load_trace
-from muleo_lc_bw_share import fixed_env_exhaustive as env
+from muleo_lc_bw_share import fixed_env_exhaustive_old_221223 as env
 import matplotlib.pyplot as plt
 import itertools
 import os
@@ -19,7 +19,6 @@ A_DIM = 6
 ACTOR_LR_RATE = 0.0001
 CRITIC_LR_RATE = 0.001
 BITRATE_REWARD = [1, 2, 3, 12, 15, 20]
-TOTAL_VIDEO_CHUNKS = 48
 RANDOM_SEED = 42
 RAND_RANGE = 1000000
 SUMMARY_DIR = 'test_results_reduced_ratio/'
@@ -73,7 +72,7 @@ size_video6 = [181801, 155580, 139857, 155432, 163442, 126289, 153295, 173849, 1
 
 MPC_TYPE = "DualMPC"
 MPC_TYPE = "DualMPC-Centralization-Exhaustive"
-MPC_TYPE = "DualMPC-Centralization-Reduced"
+# MPC_TYPE = "DualMPC-Centralization-Reduced"
 
 # DualMPC-Centralization
 

@@ -3,13 +3,13 @@ SUPPORTED_SHARING = {'max-cap', 'resource-fair', 'ratio-based'}
 VIDEO_BIT_RATE = [300,750,1200,1850,2850,4300]  # Kbps
 BITRATE_REWARD = [1, 2, 3, 12, 15, 20]
 BUFFER_NORM_FACTOR = 10.0
-CHUNK_TIL_VIDEO_END_CAP = 48.0
-TOTAL_VIDEO_CHUNKS = 48
+CHUNK_TIL_VIDEO_END_CAP = 20
+TOTAL_VIDEO_CHUNKS = 20
 M_IN_K = 1000.0
 
 QUALITY_FACTOR = 1
 REBUF_PENALTY = 4.3  # 1 sec rebuffering -> 3 Mbps
-SMOOTH_PENALTY = 1
+SMOOTH_PENALTY = 1/2
 DEFAULT_QUALITY = 0  # default video quality without agent
 # small epsilon used in denominator to avoid division by zero
 EPSILON = 1e-16
@@ -23,9 +23,7 @@ SNR_NOISE_HIGH = 1
 SNR_NOISE_UNIT = 0.005
 
 
-TOTAL_VIDEO_CHUNK = 20
-
-MPC_FUTURE_CHUNK_COUNT = 3
+MPC_FUTURE_CHUNK_COUNT = 2
 MPC_PAST_CHUNK_COUNT = 5
 
 # Multi-user config in the trace files
