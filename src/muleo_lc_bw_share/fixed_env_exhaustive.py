@@ -131,6 +131,7 @@ class Environment:
                     self.video_size[bitrate].append(int(line.split()[0]))
 
         self.last_delay = [MPC_PAST_CHUNK_COUNT for _ in range(self.num_agents)]
+        self.unexpected_change = True
 
     @property
     def active_agents_list(self):
@@ -145,7 +146,8 @@ class Environment:
         assert quality >= 0
         assert quality < BITRATE_LEVELS
 
-        if model_type is not None and (agent == 0 or do_mpc) and self.end_of_video[agent] is not True:
+        if model_type is not None and (agent == 0 or do_mpc or self.unexpected_change) and self.end_of_video[agent] is not True:
+            self.unexpected_change = False
             runner_up_sat_ids, ho_stamps, best_combos, best_user_info = self.run_mpc(agent, model_type)
             self.prev_best_combos = copy.deepcopy(best_combos)
             # DO handover all-in-one
@@ -200,13 +202,15 @@ class Environment:
             # update sat info
             assert runner_up_sat_id != self.cur_sat_id[agent]
             do_handover = False
-            if not self.cur_satellite[runner_up_sat_id].is_visible(self.mahimahi_ptr[agent]):
+
+            if runner_up_sat_id is not None and not self.cur_satellite[runner_up_sat_id].is_visible(self.mahimahi_ptr[agent]):
                 sat_id = self.get_best_sat_id(agent, self.mahimahi_ptr[agent])
                 if sat_id != self.cur_sat_id[agent]:
                     runner_up_sat_id = sat_id
                     do_handover = True
             else:
-                do_handover = True
+                if runner_up_sat_id is not None:
+                    do_handover = True
 
             if do_handover:
                 self.update_sat_info(self.cur_sat_id[agent], self.mahimahi_ptr[agent], agent, -1)
@@ -237,6 +241,7 @@ class Environment:
                 delay += HANDOVER_DELAY
                 is_handover = True
                 self.download_bw[agent] = []
+                self.unexpected_change = True
                 throughput = self.cur_satellite[self.cur_sat_id[agent]].data_rate(self.cur_user[agent],
                                                                                   self.mahimahi_ptr[
                                                                                       agent]) * B_IN_MB / BITS_IN_BYTE
@@ -865,12 +870,12 @@ class Environment:
             runner_up_sat_ids, ho_stamps, best_combos, max_rewards, best_user_info = self.qoe_v3(agent)
             if best_user_info:
                 for sat_id in best_user_info:
-                    self.cur_satellite[sat_id].set_data_rate_ratio(best_user_info[sat_id][2], best_user_info[sat_id][3])
+                    self.cur_satellite[sat_id].set_data_rate_ratio(best_user_info[sat_id][2], best_user_info[sat_id][3], self.mahimahi_ptr[agent])
         elif model_type == "DualMPC-Centralization-Reduced":
             runner_up_sat_ids, ho_stamps, best_combos, max_rewards, best_user_info = self.qoe_v3(agent, reduced=True)
             if best_user_info:
                 for sat_id in best_user_info:
-                    self.cur_satellite[sat_id].set_data_rate_ratio(best_user_info[sat_id][2], best_user_info[sat_id][3])
+                    self.cur_satellite[sat_id].set_data_rate_ratio(best_user_info[sat_id][2], best_user_info[sat_id][3], self.mahimahi_ptr[agent])
 
         else:
             print("Cannot happen!")
@@ -1965,9 +1970,10 @@ class Environment:
                 const_array = []
                 for sat_id in related_sat_ids:
                     user_list = []
+                    """
                     for agent_id in range(len(cur_sat_ids)):
-                        if sat_id == cur_sat_ids[agent_id]:
-                            #  and best_ho_positions[agent_id] != 0:
+                        if sat_id == cur_sat_ids[agent_id]:#
+                            # and best_ho_positions[agent_id] != 0:
                             assert agent_id not in user_list
                             user_list.append(agent_id)
                     for agent_id in range(len(runner_up_sat_ids)):
@@ -1977,6 +1983,8 @@ class Environment:
                             user_list.append(agent_id)
                     if len(user_list) <= 1:
                         continue
+                    """
+                    user_list = [0, 1, 2]
                     user_list.sort()
                     user_info[sat_id] = (op_vars_index, op_vars_index + len(user_list), user_list)
 
@@ -2051,7 +2059,7 @@ class Environment:
                     if best_ho_positions[agent_id] > position_list[agent_id]:
                         now_sat_id = cur_sat_ids[agent_id]
                         user_list = sat_copy[now_sat_id].get_ue_list(mahimahi_ptr[agent_id])
-                        assert agent_id in user_list
+
                         harmonic_bw = cur_bws[agent_id]
 
                     elif best_ho_positions[agent_id] == position_list[agent_id]:
@@ -2060,7 +2068,7 @@ class Environment:
                         sat_copy[now_sat_id].add_ue(agent_id, mahimahi_ptr[agent_id])
 
                         user_list = sat_copy[now_sat_id].get_ue_list(mahimahi_ptr[agent_id])
-                        assert agent_id in user_list
+
                         harmonic_bw = next_bws[agent_id]
                         # Give them a penalty
                         # harmonic_bw *= (1 - HANDOVER_DELAY)
@@ -2068,19 +2076,23 @@ class Environment:
                     else:
                         now_sat_id = runner_up_sat_ids[agent_id]
                         user_list = sat_copy[now_sat_id].get_ue_list(mahimahi_ptr[agent_id])
-                        assert agent_id in user_list
+
                         harmonic_bw = next_bws[agent_id]
 
+                    assert agent_id in user_list
                     if len(user_list) > 1:
-                        var_index = user_info[now_sat_id][2].index(agent_id)
-                        """
-                        if 0.1 > user_info[now_sat_id][3][var_index]:
-                            print(now_sat_id)
-                            print(agent_id)
-                            print(user_info)
-                        """
-                        # assert 0.1 < user_info[now_sat_id][3][var_index]
-                        harmonic_bw *= user_info[now_sat_id][3][var_index]
+                        try:
+                            var_index = user_info[now_sat_id][2].index(agent_id)
+                            """
+                            if 0.1 > user_info[now_sat_id][3][var_index]:
+                                print(now_sat_id)
+                                print(agent_id)
+                                print(user_info)
+                            """
+                            # assert 0.1 < user_info[now_sat_id][3][var_index]
+                            harmonic_bw *= user_info[now_sat_id][3][var_index]
+                        except KeyError:
+                            harmonic_bw /= len(user_list)
 
                     tmp_bws_sum.append(harmonic_bw)
                     assert harmonic_bw != 0
@@ -2130,7 +2142,7 @@ class Environment:
 
         # return runner_up_sat_ids[agent], ho_stamps[agent], best_combos[agent], max_rewards[agent]
         # print(future_sat_user_nums, cur_sat_ids, runner_up_sat_ids, best_ho_positions, best_combos, max_rewards, best_user_info)
-        print(cur_sat_ids, runner_up_sat_ids, self.mahimahi_ptr[agent], best_ho_position, best_user_info)
+        print(cur_sat_ids, runner_up_sat_ids, self.mahimahi_ptr, agent, best_ho_position, best_user_info)
         # print(future_sat_user_nums)
         # print(runner_up_sat_ids, best_ho_positions, best_combos, max_rewards, best_user_info)
 
@@ -2360,13 +2372,12 @@ class Environment:
                 harmonic_bw = next_bws[agent_id]
 
             if len(user_list) > 1:
-                assert now_sat_id in user_info.keys()
+                # assert now_sat_id in user_info.keys()
                 try:
                     var_index = user_info[now_sat_id][0] + user_info[now_sat_id][2].index(agent_id)
                     harmonic_bw *= x[var_index]
-                except ValueError:
-                    assert False
-                    #harmonic_bw /= len(user_list)
+                except KeyError:
+                    harmonic_bw /= len(user_list)
 
             assert harmonic_bw != 0
             position_list[agent_id] += 1
@@ -2386,7 +2397,7 @@ class Environment:
             # 10~140 - 0~100 - 0~130
             # 10~140 - 0~100 - 0~130
         curr_rebuffer_time = np.sum(curr_rebuffer_time)
-        return curr_rebuffer_time * 10 + total_buffer_diff
+        return total_buffer_diff
         # return total_buffer_diff
 
     """

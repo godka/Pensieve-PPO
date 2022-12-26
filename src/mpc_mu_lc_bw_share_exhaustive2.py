@@ -21,14 +21,12 @@ CRITIC_LR_RATE = 0.001
 BITRATE_REWARD = [1, 2, 3, 12, 15, 20]
 RANDOM_SEED = 42
 RAND_RANGE = 1000000
-SUMMARY_DIR = 'test_results_exhaustive_reduced_ratio/'
+SUMMARY_DIR = 'test_results_exhaustive_reduced_20x/'
 LOG_FILE = SUMMARY_DIR + 'log_sim_cent'
 TEST_TRACES = './test_tight/'
 SUMMARY_PATH = SUMMARY_DIR + 'summary'
 # log in format of time_stamp bit_rate buffer_size rebuffer_time chunk_size download_time reward
 # NN_MODEL = './models/nn_model_ep_5900.ckpt'
-
-CHUNK_COMBO_OPTIONS = []
 
 import argparse
 
@@ -134,8 +132,6 @@ def main():
     end_of_video = False
 
     # make chunk combination options
-    for combo in itertools.product([0, 1, 2, 3, 4, 5], repeat=5):
-        CHUNK_COMBO_OPTIONS.append(combo)
     ho_stamps_log = [MPC_FUTURE_CHUNK_COUNT for _ in range(NUM_AGENTS)]
     combo_log = [[DEFAULT_QUALITY] for _ in range(NUM_AGENTS)]
     next_sat_log = [None for _ in range(NUM_AGENTS)]
@@ -191,16 +187,15 @@ def main():
             end_of_video = False
             continue
         else:
-            bit_rate[agent] = combo_log[agent].pop(0)
+            if combo_log[agent]:
+                bit_rate[agent] = combo_log[agent].pop(0)
+            else:
+                do_mpc = True
             ho_point = ho_stamps_log[agent]
             ho_stamps_log[agent] -= 1
-            if np.isnan(bit_rate[agent]):
-                bit_rate[agent] = DEFAULT_QUALITY
 
             # np.delete(combo_log[agent], 0)
             # if len(combo_log[agent]) == 1 and agent == net_env.get_first_agent():
-            if not combo_log[agent]:
-                do_mpc = True
             # do_mpc = True
 
         # the action is from the last decision

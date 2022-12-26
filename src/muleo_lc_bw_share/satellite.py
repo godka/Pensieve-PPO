@@ -11,10 +11,13 @@ SNR_THRESHOLD = 2e-8
 class Satellite:
     """A base station sending data to connected UEs"""
 
-    def __init__(self, sat_id, sat_bw, sharing_model, conn_use_log=None):
+    def __init__(self, sat_id, sat_bw, sharing_model, conn_use_log=None, data_rate_ratio_log=None):
 
         if conn_use_log is None:
             conn_use_log = {}
+        if data_rate_ratio_log is None:
+            data_rate_ratio_log = {}
+
         self.sat_id = sat_id
         self.sat_bw = sat_bw
 
@@ -30,16 +33,20 @@ class Satellite:
         self.noise = 1e-9  # in mW
         self.tx_power = 30  # in dBm (was 40)
         # self.conn_ues = []
+
         self.conn_use_log = conn_use_log
+        self.data_rate_ratio_log = data_rate_ratio_log
+
         self.height = 15
-        self.data_rate_ratio = {}
+        # self.data_rate_ratio = {}
 
         # just consider downlink for now; more interesting for most apps anyway
         self.log = structlog.get_logger(sat_id=self.sat_id)
         self.log.info('Satellite init', sharing_model=self.sharing_model)
 
     def copy_satellite(self):
-        return Satellite(self.sat_id, copy.deepcopy(self.sat_bw), self.sharing_model, copy.deepcopy(self.conn_use_log))
+        return Satellite(self.sat_id, copy.deepcopy(self.sat_bw), self.sharing_model, copy.deepcopy(self.conn_use_log),
+                         copy.deepcopy(self.data_rate_ratio_log))
 
     def __repr__(self):
         return str(self.sat_id)
@@ -121,50 +128,46 @@ class Satellite:
 
     def get_ue_list(self, mahimahi_ptr):
         ue_list = []
-        # self.conn_use_log = {0: [True, 0], 2: [Fals
 
         for i in sorted(self.conn_use_log.keys()):
             if mahimahi_ptr < i:
                 break
             for elem in self.conn_use_log[i]:
                 if elem[0]:
-                    if elem[1] in ue_list:
-                        print(mahimahi_ptr)
-                        print(self.conn_use_log)
-                        print(elem)
-
                     assert elem[1] not in ue_list
                     ue_list.append(elem[1])
                 else:
-                    if elem[1] not in ue_list:
-                        print(mahimahi_ptr)
-                        print(self.conn_use_log)
-                        print(elem)
                     assert elem[1] in ue_list
                     ue_list.remove(elem[1])
 
         return ue_list
 
+    def get_cur_data_rate(self, mahimahi_ptr):
+        recent_log = {}
+        for i in sorted(self.data_rate_ratio_log.keys()):
+            if mahimahi_ptr < i:
+                break
+            recent_log = self.data_rate_ratio_log[i]
+        return recent_log
+
     def get_conn_use_log(self):
         return self.conn_use_log
 
-    def set_data_rate_ratio(self, user_id, ratio_list):
-        self.data_rate_ratio = {}
+    def set_data_rate_ratio(self, user_id, ratio_list, mahimahi_ptr):
+        data_rate_ratio = {}
         index = 0
         remained_ratio = 0
         for uid in user_id:
             if ratio_list[index] < 0.1:
                 remained_ratio += ratio_list[index]
             else:
-                self.data_rate_ratio[uid] = ratio_list[index]
+                data_rate_ratio[uid] = ratio_list[index]
             index += 1
-        for ratio in self.data_rate_ratio:
-            ratio += remained_ratio / len(self.data_rate_ratio)
+        for uid in data_rate_ratio.keys():
+            data_rate_ratio[uid] += remained_ratio / len(data_rate_ratio.keys())
 
-        print(self.sat_id, self.data_rate_ratio)
-
-    def get_data_rate_ratio(self):
-        return self.data_rate_ratio
+        self.data_rate_ratio_log[mahimahi_ptr] = data_rate_ratio
+        print(mahimahi_ptr, self.sat_id, data_rate_ratio)
 
     def path_loss(self, distance, ue_height=1.5):
         """Return path loss in dBm to a UE at a given position. Calculation using Okumura Hata, suburban indoor"""
@@ -227,24 +230,25 @@ class Satellite:
         elif self.sharing_model == 'ratio-based':
             # split data rate by all already connected UEs incl. this UE
             # assert agent_id in self.data_rate_ratio
-            if agent_id not in self.data_rate_ratio.keys() or set(self.data_rate_ratio.keys()) != set(
+            data_rate_ratio = self.get_cur_data_rate(mahimahi_ptr)
+            if agent_id not in data_rate_ratio.keys() or set(data_rate_ratio.keys()) != set(
                     self.get_ue_list(mahimahi_ptr)):
                 dr_ue_shared = dr_ue_unshared / num_conn_ues
             else:
-                if len(self.data_rate_ratio.keys()) < num_conn_ues:
+                if len(data_rate_ratio.keys()) < num_conn_ues:
                     assert False
-                    dr_ue_unshared -= dr_ue_unshared / num_conn_ues * (num_conn_ues - len(self.data_rate_ratio.keys()))
-                    dr_ue_shared = dr_ue_unshared * self.data_rate_ratio[agent_id]
+                    dr_ue_unshared -= dr_ue_unshared / num_conn_ues * (num_conn_ues - len(data_rate_ratio.keys()))
+                    dr_ue_shared = dr_ue_unshared * data_rate_ratio[agent_id]
 
-                elif len(self.data_rate_ratio.keys()) == num_conn_ues:
-                    dr_ue_shared = dr_ue_unshared * self.data_rate_ratio[agent_id]
+                elif len(data_rate_ratio.keys()) == num_conn_ues:
+                    dr_ue_shared = dr_ue_unshared * data_rate_ratio[agent_id]
                 else:
                     assert False
                     more_ratio = 0
-                    for user_id in self.data_rate_ratio.keys():
+                    for user_id in data_rate_ratio.keys():
                         if user_id not in self.conn_ues and user_id != agent_id:
-                            more_ratio += self.data_rate_ratio[user_id]
-                    dr_ue_shared = dr_ue_unshared * (self.data_rate_ratio[agent_id] + more_ratio / num_conn_ues)
+                            more_ratio += data_rate_ratio[user_id]
+                    dr_ue_shared = dr_ue_unshared * (data_rate_ratio[agent_id] + more_ratio / num_conn_ues)
         else:
             print("Wrong")
             exit(1)

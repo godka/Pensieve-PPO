@@ -21,7 +21,7 @@ CRITIC_LR_RATE = 0.001
 BITRATE_REWARD = [1, 2, 3, 12, 15, 20]
 RANDOM_SEED = 42
 RAND_RANGE = 1000000
-SUMMARY_DIR = 'test_results_exhaustive_res/'
+SUMMARY_DIR = 'test_results_exhaustive_reduced_10x/'
 LOG_FILE = SUMMARY_DIR + 'log_sim_cent'
 TEST_TRACES = './test_tight/'
 SUMMARY_PATH = SUMMARY_DIR + 'summary'
@@ -72,7 +72,7 @@ size_video6 = [181801, 155580, 139857, 155432, 163442, 126289, 153295, 173849, 1
 
 MPC_TYPE = "DualMPC"
 MPC_TYPE = "DualMPC-Centralization-Exhaustive"
-# MPC_TYPE = "DualMPC-Centralization-Reduced"
+MPC_TYPE = "DualMPC-Centralization-Reduced"
 
 # DualMPC-Centralization
 
@@ -185,24 +185,17 @@ def main():
             log_file = open(log_path, 'w')
 
             ho_stamps_log = [MPC_FUTURE_CHUNK_COUNT for _ in range(NUM_AGENTS)]
-            ho_point = MPC_FUTURE_CHUNK_COUNT
             combo_log = [[DEFAULT_QUALITY] for _ in range(NUM_AGENTS)]
             next_sat_log = [None for _ in range(NUM_AGENTS)]
             end_of_video = False
             continue
         else:
-            bit_rate[agent] = combo_log[agent].pop(0)
+            if combo_log[agent]:
+                bit_rate[agent] = combo_log[agent].pop(0)
+            else:
+                do_mpc = True
             ho_point = ho_stamps_log[agent]
             ho_stamps_log[agent] -= 1
-            if np.isnan(bit_rate[agent]):
-                bit_rate[agent] = DEFAULT_QUALITY
-
-            # np.delete(combo_log[agent], 0)
-            # if len(combo_log[agent]) == 1 and agent == net_env.get_first_agent():
-            if not combo_log[agent]:
-                do_mpc = True
-            # do_mpc = True
-
         # the action is from the last decision
         # this is to make the framework similar to the real
         delay, sleep_time, buffer_size, rebuf, \
