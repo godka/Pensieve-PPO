@@ -993,7 +993,7 @@ class Environment:
                 cur_sat_id = cur_sat_ids[idx]
                 next_sat_id = runner_up_sat_ids[idx]
 
-                if cur_sat_id == next_sat_id and ho_point != MPC_FUTURE_CHUNK_COUNT:
+                if (cur_sat_id == next_sat_id or next_sat_id is None) and ho_point != MPC_FUTURE_CHUNK_COUNT:
                     impossible_route = True
                     break
 
@@ -1221,6 +1221,7 @@ class Environment:
         for sat_id in list(runner_up_sat_ids):
             if sat_id not in num_of_sats.keys():
                 num_of_sats[sat_id] = 0
+
         start_buffers = [self.buffer_size[i] / MILLISECONDS_IN_SECOND for i in range(self.num_agents)]
 
         next_download_bws = []
@@ -1255,7 +1256,7 @@ class Environment:
                 cur_sat_id = cur_sat_ids[idx]
                 next_sat_id = runner_up_sat_ids[idx]
 
-                if cur_sat_id == next_sat_id and ho_point != MPC_FUTURE_CHUNK_COUNT:
+                if (cur_sat_id == next_sat_id or next_sat_id is None) and ho_point != MPC_FUTURE_CHUNK_COUNT:
                     impossible_route = True
                     break
 
@@ -1610,7 +1611,7 @@ class Environment:
                 cur_sat_id = cur_sat_ids[idx]
                 next_sat_id = runner_up_sat_ids[idx]
 
-                if cur_sat_id == next_sat_id and ho_point != MPC_FUTURE_CHUNK_COUNT:
+                if (cur_sat_id == next_sat_id or next_sat_id is None) and ho_point != MPC_FUTURE_CHUNK_COUNT:
                     impossible_route = True
                     break
 
@@ -1787,10 +1788,7 @@ class Environment:
                     best_future_sat_user_num = future_sat_user_nums
 
                     # ho_stamps = ho_positions
-        print(best_future_sat_user_num)
-        print(best_ho_position)
-        print(cur_bws)
-        print(next_bws)
+
         return runner_up_sat_ids, best_ho_position, best_combos, max_rewards
 
     def calculate_mpc_with_handover_exhaustive_ratio_reduced(self, agent):
@@ -1888,7 +1886,7 @@ class Environment:
                 cur_sat_id = cur_sat_ids[idx]
                 next_sat_id = runner_up_sat_ids[idx]
 
-                if cur_sat_id == next_sat_id and ho_point != MPC_FUTURE_CHUNK_COUNT:
+                if (cur_sat_id == next_sat_id or next_sat_id is None) and ho_point != MPC_FUTURE_CHUNK_COUNT:
                     impossible_route = True
                     break
 
@@ -2765,6 +2763,8 @@ class Environment:
 
     def predict_bw(self, sat_id, agent, robustness=True, plus=False, mahimahi_ptr=None, past_len=None):
         curr_error = 0
+        if sat_id is None:
+            return 0
         if mahimahi_ptr is None:
             mahimahi_ptr = self.mahimahi_ptr[agent]
 

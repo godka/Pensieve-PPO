@@ -145,12 +145,23 @@ class Satellite:
 
         return ue_list
 
+    def get_conn_use_log(self):
+        return self.conn_use_log
+
     def set_data_rate_ratio(self, user_id, ratio_list):
         self.data_rate_ratio = {}
         index = 0
+        remained_ratio = 0
         for uid in user_id:
-            self.data_rate_ratio[uid] = ratio_list[index]
+            if ratio_list[index] < 0.1:
+                remained_ratio += ratio_list[index]
+            else:
+                self.data_rate_ratio[uid] = ratio_list[index]
             index += 1
+        for ratio in self.data_rate_ratio:
+            ratio += remained_ratio / len(self.data_rate_ratio)
+
+        print(self.sat_id, self.data_rate_ratio)
 
     def get_data_rate_ratio(self):
         return self.data_rate_ratio
