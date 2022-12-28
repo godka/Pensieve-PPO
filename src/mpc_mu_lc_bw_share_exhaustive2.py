@@ -2,7 +2,7 @@ import numpy as np
 import structlog
 
 from muleo_lc_bw_share import load_trace
-from muleo_lc_bw_share import fixed_env_exhaustive as env
+from muleo_lc_bw_share import fixed_env_exhaustive_old_221223 as env
 import matplotlib.pyplot as plt
 import itertools
 import os
@@ -78,6 +78,13 @@ structlog.configure(
     wrapper_class=structlog.make_filtering_bound_logger(logging.WARNING),
 )
 
+#
+# network count 0
+# -0.5041767870206649
+# network count 1
+# 0.5787350418702075
+# network count 2
+# 0.1782378265623161
 
 def get_chunk_size(quality, index):
     if index < 0 or index > 48:

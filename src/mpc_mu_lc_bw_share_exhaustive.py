@@ -2,7 +2,7 @@ import numpy as np
 import structlog
 
 from muleo_lc_bw_share import load_trace
-from muleo_lc_bw_share import fixed_env_exhaustive as env
+from muleo_lc_bw_share import fixed_env_exhaustive_old_221223 as env
 import matplotlib.pyplot as plt
 import itertools
 import os
@@ -21,7 +21,7 @@ CRITIC_LR_RATE = 0.001
 BITRATE_REWARD = [1, 2, 3, 12, 15, 20]
 RANDOM_SEED = 42
 RAND_RANGE = 1000000
-SUMMARY_DIR = 'test_results_exhaustive_reduced_10x/'
+SUMMARY_DIR = 'test_results_exhaustive_reduced_01/'
 LOG_FILE = SUMMARY_DIR + 'log_sim_cent'
 TEST_TRACES = './test_tight/'
 SUMMARY_PATH = SUMMARY_DIR + 'summary'
@@ -167,6 +167,7 @@ def main():
             print("network count", video_count)
             print(sum(tmp_results) / len(tmp_results))
             summary_file = open(SUMMARY_PATH, 'a')
+            summary_file.write('\n')
             summary_file.write(str(best_user_infos))
             summary_file.write('\n')
             summary_file.write(str(sum(tmp_results) / len(tmp_results)))

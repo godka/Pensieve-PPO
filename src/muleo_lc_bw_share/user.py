@@ -1,7 +1,7 @@
 import structlog
 
 from util.constants import SUPPORTED_SHARING, EPSILON, SNR_NOISE_LOW, SNR_NOISE_HIGH, B_IN_MB, BITS_IN_BYTE, \
-    SNR_NOISE_UNIT, TOTAL_VIDEO_CHUNKS
+    SNR_NOISE_UNIT, TOTAL_VIDEO_CHUNKS, MPC_FUTURE_CHUNK_COUNT
 import numpy as np
 
 SNR_THRESHOLD = 2e-8
@@ -45,9 +45,11 @@ class User:
         self.snr_noise = TMP_SNR[snr_min][self.agent_id]
         self.index = -1
 
+        self.download_log = {}
+
         # just consider downlink for now; more interesting for most apps anyways
-        self.log = structlog.get_logger(sat_id=self.agent_id)
-        self.log.info('User init', agent_id=self.agent_id)
+        self.log = structlog.get_logger(agent_id=self.agent_id)
+        self.log.debug('User init', agent_id=self.agent_id)
 
     def __repr__(self):
         return str(self.agent_id)
@@ -85,6 +87,44 @@ class User:
 
     def get_agent_id(self):
         return self.agent_id
+
+    def update_download(self, mahimahi_ptr, sat_id, video_chunk_remain, quality, last_quality, buf_size):
+        self.download_log[mahimahi_ptr] = [sat_id, video_chunk_remain, quality, last_quality, buf_size]
+
+    def get_related_download_logs(self, mahimahi_ptr, target_mahimahi_ptr):
+        self.log.info('download_log', download_log=self.download_log)
+        if not self.download_log:
+            return [None] * 6
+        final_logs = []
+        video_chunk_remain = None
+        sat_id = None
+        last_quality = None
+        buf_size = None
+        first_mahimahi_ptr = None
+        min_idx = None
+        ptr_list = sorted(self.download_log.keys())
+        for ptr in range(len(ptr_list)):
+            if ptr > target_mahimahi_ptr:
+                break
+            min_idx = ptr
+        if min_idx is None or np.abs(mahimahi_ptr - ptr_list[min_idx]) > np.abs(mahimahi_ptr - target_mahimahi_ptr):
+            return [None] * 6
+        if min_idx != 0:
+            last_quality = self.download_log[ptr_list[min_idx-1]][3]
+
+        if video_chunk_remain is None:
+            video_chunk_remain = self.download_log[ptr_list[min_idx]][1]
+        if sat_id is None:
+            sat_id = self.download_log[ptr_list[min_idx]][0]
+        if buf_size is None:
+            buf_size = self.download_log[ptr_list[min_idx]][4]
+        if first_mahimahi_ptr is None:
+            first_mahimahi_ptr = ptr_list[min_idx]
+
+        for i in range(min_idx, len(ptr_list)):
+            final_logs.append(self.download_log[ptr_list[i]])
+
+        return first_mahimahi_ptr, sat_id, video_chunk_remain, final_logs, last_quality, buf_size
 
 """
 snr_noise = [np.random.uniform(SNR_NOISE_LOW, 1)]

@@ -1,7 +1,7 @@
 import structlog
 
 from muleo_lc_bw_share.user import User
-from util.constants import SUPPORTED_SHARING, EPSILON, SNR_NOISE_LOW, SNR_NOISE_HIGH, B_IN_MB, BITS_IN_BYTE
+from util.constants import SUPPORTED_SHARING, EPSILON, SNR_NOISE_LOW, SNR_NOISE_HIGH, B_IN_MB, BITS_IN_BYTE, BIG_EPSILON
 import numpy as np
 import copy
 
@@ -42,14 +42,17 @@ class Satellite:
 
         # just consider downlink for now; more interesting for most apps anyway
         self.log = structlog.get_logger(sat_id=self.sat_id)
-        self.log.info('Satellite init', sharing_model=self.sharing_model)
+        self.log.debug('Satellite init', sharing_model=self.sharing_model)
 
-    def copy_satellite(self):
-        return Satellite(self.sat_id, copy.deepcopy(self.sat_bw), self.sharing_model, copy.deepcopy(self.conn_use_log),
-                         copy.deepcopy(self.data_rate_ratio_log))
+    def copy_satellite(self, mahimahi_ptr):
+        return Satellite(self.sat_id, copy.deepcopy(self.sat_bw), self.sharing_model, self.get_conn_use_log(mahimahi_ptr),
+                         self.get_data_rate_ratio_log(mahimahi_ptr))
 
     def __repr__(self):
         return str(self.sat_id)
+
+    def get_bw(self):
+        return self.sat_bw
 
     def num_conn_ues(self, mahimahi_ptr):
         return len(self.get_ue_list(mahimahi_ptr))
@@ -89,10 +92,11 @@ class Satellite:
         self.sat_bw[user_id] = sat_bw
 
     def add_ue(self, user_id, mahimahi_ptr):
+        self.log.debug("Add_ue", conn_use_log=self.conn_use_log, user_id=user_id, mahimahi_ptr=mahimahi_ptr)
+
         # print("Add: ", user_id, self.sat_id, mahimahi_ptr)
         if mahimahi_ptr in self.conn_use_log:
             self.conn_use_log[mahimahi_ptr].append([True, user_id])
-
         else:
             self.conn_use_log[mahimahi_ptr] = [[True, user_id]]
         ue_list = self.get_ue_list(mahimahi_ptr)
@@ -109,7 +113,7 @@ class Satellite:
         """
 
     def remove_ue(self, user_id, mahimahi_ptr):
-
+        self.log.debug("remove_ue", conn_use_log=self.conn_use_log, user_id=user_id, mahimahi_ptr=mahimahi_ptr)
         # print("Remove: ", user_id, self.sat_id, mahimahi_ptr)
         # assert user_id in self.conn_ues
         # self.conn_ues.remove(user_id)
@@ -142,23 +146,40 @@ class Satellite:
 
         return ue_list
 
+    def get_data_rate_ratio_log(self, mahimahi_ptr):
+        recent_log = {}
+        for i in sorted(self.data_rate_ratio_log.keys()):
+            if mahimahi_ptr < i:
+                break
+            recent_log[i] = self.data_rate_ratio_log[i]
+
+        return recent_log
+
+    def get_conn_use_log(self, mahimahi_ptr):
+        recent_log = {}
+        for i in sorted(self.conn_use_log.keys()):
+            if mahimahi_ptr < i:
+                break
+            recent_log[i] = self.conn_use_log[i]
+
+        return recent_log
+
     def get_cur_data_rate(self, mahimahi_ptr):
+        self.log.debug("rate", log=self.data_rate_ratio_log, ptr=mahimahi_ptr)
         recent_log = {}
         for i in sorted(self.data_rate_ratio_log.keys()):
             if mahimahi_ptr < i:
                 break
             recent_log = self.data_rate_ratio_log[i]
-        return recent_log
 
-    def get_conn_use_log(self):
-        return self.conn_use_log
+        return recent_log
 
     def set_data_rate_ratio(self, user_id, ratio_list, mahimahi_ptr):
         data_rate_ratio = {}
         index = 0
         remained_ratio = 0
         for uid in user_id:
-            if ratio_list[index] < 0.1:
+            if ratio_list[index] < EPSILON + BIG_EPSILON:
                 remained_ratio += ratio_list[index]
             else:
                 data_rate_ratio[uid] = ratio_list[index]
@@ -167,7 +188,7 @@ class Satellite:
             data_rate_ratio[uid] += remained_ratio / len(data_rate_ratio.keys())
 
         self.data_rate_ratio_log[mahimahi_ptr] = data_rate_ratio
-        print(mahimahi_ptr, self.sat_id, data_rate_ratio)
+        return self.data_rate_ratio_log[mahimahi_ptr]
 
     def path_loss(self, distance, ue_height=1.5):
         """Return path loss in dBm to a UE at a given position. Calculation using Okumura Hata, suburban indoor"""
@@ -198,6 +219,7 @@ class Satellite:
         # snr = self.snr(distance)
         # dr_ue_unshared = self.bw * np.log2(1 + snr)
         # For test
+
         dr_ue_unshared = self.sat_bw[mahimahi_ptr]
         dr_ue_unshared *= user.get_snr_noise()
         # dr_ue_unshared *= np.random.uniform(SNR_NOISE_LOW, SNR_NOISE_HIGH)
@@ -268,6 +290,7 @@ class Satellite:
         dr_ue_unshared = self.data_rate_unshared(mahimahi_ptr, user)
         # final, shared data rate depends on sharing model
         dr_ue_shared = self.data_rate_shared(user, dr_ue_unshared, mahimahi_ptr, plus)
+
         self.log.debug('Achievable data rate', dr_ue_unshared=dr_ue_unshared, dr_ue_shared=dr_ue_shared,
                        num_conn_ues=self.num_conn_ues)
         return dr_ue_shared
