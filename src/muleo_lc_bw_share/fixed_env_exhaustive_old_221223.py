@@ -2533,12 +2533,12 @@ class Environment:
         if curr_rebuffer_time:
             return curr_rebuffer_time * 100
         else:
-            if min(total_buffer_diff) < 5:
+            if sum(total_buffer_diff) / len(total_buffer_diff) < 6:
+                return 10
+            elif sum(total_buffer_diff) / len(total_buffer_diff) < 10:
                 return 5
-            elif min(total_buffer_diff) < 10:
-                return 0
             else:
-                return min(total_buffer_diff)
+                return 8
         # return total_buffer_diff
 
     """
