@@ -180,7 +180,7 @@ class Environment:
             ho_stamps[agent] -= 1
             runner_up_sat_id = runner_up_sat_ids[agent]
         else:
-            runner_up_sat_ids, ho_stamps, best_combos, best_user_info, final_rate = None, None, None, None
+            runner_up_sat_ids, ho_stamps, best_combos, best_user_info, final_rate = None, None, None, None, None
 
         # update noise of agent SNR
         self.cur_user[agent].update_snr_noise()
