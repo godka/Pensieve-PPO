@@ -1,9 +1,6 @@
-# Pensieve PPO
+# Joint Decision Models for Bitrates and Handovers
 
-### Update
-*Dec. 28, 2021: we have upgraded Pensieve-PPO with several state-of-the-art technologies, such as Dual-Clip PPO and adaptive entropy decay.*
-
-## About Pensive-PPO
+## RL Models (PPO)
 
 This is an easy TensorFlow implementation of Pensieve [1]. 
 We trained Pensieve via PPO rather than A3C.
@@ -18,35 +15,28 @@ python train.py
 
 instead. Results will be evaluated on the test set (from HSDPA) every 300 epochs.
 
-## Tensorboard
+### ~~MPC (MRSS)~~
+???
+
+### ~~The Reference Model~~
+This model is the initial PPO model that is applied to the Pensieve problem.
+The location of this model is `src/rl_reference` and you can run the model in that folder as follows: `
+python3 train.py`.
+
+### Tensorboard
 
 During the training process, we can leverage Tensorboard for monitoring current status.
 
 ```
-tensorboard --logdir=./
+python -m tensorboard.main --logdir [Results folder]
 ```
 
-## Pretrained Model
-
-Furthermore, we have also added the pretrained model in https://github.com/godka/Pensieve-PPO/tree/master/src/pretrain
-
-The model improves 7.03% (0.924->0.989) on average QoE compared with the original Pensieve model [1].
-The detailed performance are shown as follows.
-
-<p align="center">
-    <img src="src/out-br.png" width="33%"><img src="src/out-sr.png" width="33%"><img src="src/out-bs.png" width="33%">
-</p>
-
-Feel free to let me know if you have any questions.
-
-## More Reinforcement Learning Algorithms
-
-More implementation please refer to:
-
-DQN: https://github.com/godka/Pensieve-PPO/tree/dqn
-
-SAC: https://github.com/godka/Pensieve-PPO/tree/SAC or https://github.com/godka/Pensieve-SAC
-
-[1] Mao H, Netravali R, Alizadeh M. Neural adaptive video streaming with pensieve[C]//Proceedings of the Conference of the ACM Special Interest Group on Data Communication. ACM, 2017: 197-210.
+## MPC Models
 
 
+## [Reference]
+### Folders
+* `sat_data/`: contains the satellite traces
+* `video_data/`: contains the sample videos' chunk size
+### Updates
+* Dec. 28, 2022 (KJ Park): Summarized the codes and wrote the Readme.
