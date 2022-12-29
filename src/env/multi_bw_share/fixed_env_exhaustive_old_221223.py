@@ -2478,7 +2478,7 @@ class Environment:
             if combo == [np.nan] * MPC_FUTURE_CHUNK_COUNT:
                 rewards.append(np.nan)
                 continue
-            curr_buffer = start_buffers[agent_id] * 0.8
+            curr_buffer = start_buffers[agent_id] * 0.9
             last_index = int(CHUNK_TIL_VIDEO_END_CAP - video_chunk_remain[agent_id])
 
             cur_sat_id = cur_sat_ids[agent_id]
