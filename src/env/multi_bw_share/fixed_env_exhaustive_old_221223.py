@@ -40,7 +40,7 @@ SCALE_VIDEO_LEN_FOR_TEST = 2
 NUM_AGENTS = None
 
 SAT_STRATEGY = "resource-fair"
-SAT_STRATEGY = "ratio-based"
+# SAT_STRATEGY = "ratio-based"
 
 SNR_MIN = 70
 
@@ -402,7 +402,7 @@ class Environment:
         else:
             runner_up_sat_ids, ho_stamps, best_combos, best_user_info = None, None, None, None
         """
-        if ho_stamp == 1 and self.end_of_video[agent] is not True:
+        if None and ho_stamp == 1 and self.end_of_video[agent] is not True:
             is_handover = True
             self.delay[agent] = HANDOVER_DELAY
             # self.connection[self.cur_sat_id[agent]] = -1
