@@ -23,7 +23,7 @@ RANDOM_SEED = 42
 RAND_RANGE = 1000000
 SUMMARY_DIR = 'test_results_exhaustive_reduced_07buf/'
 LOG_FILE = SUMMARY_DIR + 'log_sim_cent'
-TEST_TRACES = 'data/sat_data/test/'
+TEST_TRACES = 'data/sat_data/test_tight/'
 SUMMARY_PATH = SUMMARY_DIR + 'summary'
 # log in format of time_stamp bit_rate buffer_size rebuffer_time chunk_size download_time reward
 # NN_MODEL = './models/nn_model_ep_5900.ckpt'
@@ -77,7 +77,7 @@ MPC_TYPE = "DualMPC-Centralization-Reduced"
 # DualMPC-Centralization
 
 structlog.configure(
-    wrapper_class=structlog.make_filtering_bound_logger(logging.WARNING),
+    wrapper_class=structlog.make_filtering_bound_logger(logging.INFO),
 )
 
 
@@ -191,6 +191,10 @@ def main():
             end_of_video = False
             continue
         else:
+            # Priority on handover
+            if 0 in ho_stamps_log:
+                agent = ho_stamps_log.index(0)
+
             if combo_log[agent]:
                 bit_rate[agent] = combo_log[agent].pop(0)
             else:

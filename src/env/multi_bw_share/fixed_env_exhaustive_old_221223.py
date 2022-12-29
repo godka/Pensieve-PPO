@@ -858,7 +858,7 @@ class Environment:
         self.cur_sat_id[agent] = cur_sat_id
 
     def run_mpc(self, agent, model_type):
-        final_rate = None
+        final_rate = {}
         if model_type == "ManifoldMPC":
             is_handover, new_sat_id, bit_rate = self.qoe_v2(
                 agent, only_runner_up=False)
@@ -872,12 +872,12 @@ class Environment:
             runner_up_sat_ids, ho_stamps, best_combos, max_rewards, best_user_info = self.qoe_v3(agent)
             if best_user_info:
                 for sat_id in best_user_info:
-                    final_rate = self.cur_satellite[sat_id].set_data_rate_ratio(best_user_info[sat_id][2], best_user_info[sat_id][3], self.mahimahi_ptr[agent])
+                    final_rate[sat_id] = self.cur_satellite[sat_id].set_data_rate_ratio(best_user_info[sat_id][2], best_user_info[sat_id][3], self.mahimahi_ptr[agent])
         elif model_type == "DualMPC-Centralization-Reduced":
             runner_up_sat_ids, ho_stamps, best_combos, max_rewards, best_user_info = self.qoe_v3(agent, reduced=True)
             if best_user_info:
                 for sat_id in best_user_info:
-                    final_rate = self.cur_satellite[sat_id].set_data_rate_ratio(best_user_info[sat_id][2], best_user_info[sat_id][3], self.mahimahi_ptr[agent])
+                    final_rate[sat_id] = self.cur_satellite[sat_id].set_data_rate_ratio(best_user_info[sat_id][2], best_user_info[sat_id][3], self.mahimahi_ptr[agent])
 
         else:
             print("Cannot happen!")

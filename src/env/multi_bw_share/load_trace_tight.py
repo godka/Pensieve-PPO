@@ -12,7 +12,6 @@ SCALE_VIDEO_SIZE_FOR_TEST = 20
 SCALE_VIDEO_LEN_FOR_TEST = 2
 BW_SCALE_FOR_TEST = 1 / SCALE_VIDEO_SIZE_FOR_TEST
 
-
 def load_trace(cooked_trace_folder=COOKED_TRACE_FOLDER, split_condition=None):
     cooked_files = os.listdir(cooked_trace_folder)
     all_satellite_bw = []

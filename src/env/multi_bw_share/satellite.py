@@ -188,7 +188,8 @@ class Satellite:
             data_rate_ratio[uid] += remained_ratio / len(data_rate_ratio.keys())
 
         self.data_rate_ratio_log[mahimahi_ptr] = data_rate_ratio
-        return self.data_rate_ratio_log[mahimahi_ptr]
+        self.log.info("set_data", user_id=user_id, ratio_list=ratio_list, data_rate_ratio=data_rate_ratio)
+        return data_rate_ratio
 
     def path_loss(self, distance, ue_height=1.5):
         """Return path loss in dBm to a UE at a given position. Calculation using Okumura Hata, suburban indoor"""
