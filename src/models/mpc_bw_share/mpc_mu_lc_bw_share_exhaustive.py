@@ -1,6 +1,10 @@
 import numpy as np
 import structlog
+import sys, path
+directory = path.path(__file__).abspath()
 
+# setting path
+sys.path.append(directory.parent.parent)
 from env.multi_bw_share import fixed_env_exhaustive_old_221223 as env, load_trace_tight as load_trace
 import itertools
 import os
