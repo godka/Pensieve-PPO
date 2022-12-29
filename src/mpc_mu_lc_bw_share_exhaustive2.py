@@ -203,6 +203,8 @@ def main():
             ho_point = ho_stamps_log[agent]
             if ho_stamps_log[agent] == 0 or ho_stamps_log[agent] == 1:
                 ho_stamps_log[agent] = -1
+            else:
+                ho_stamps_log[agent] -= 1
         # the action is from the last decision
         # this is to make the framework similar to the real
         delay, sleep_time, buffer_size, rebuf, \
