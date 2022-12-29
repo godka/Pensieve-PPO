@@ -402,6 +402,36 @@ class Environment:
         else:
             runner_up_sat_ids, ho_stamps, best_combos, best_user_info = None, None, None, None
         """
+        if ho_stamp == 1 and self.end_of_video[agent] is not True:
+            is_handover = True
+            self.delay[agent] = HANDOVER_DELAY
+            # self.connection[self.cur_sat_id[agent]] = -1
+            # self.connection[new_sat_id] = agent
+            # update sat info
+            # assert runner_up_sat_id != self.cur_sat_id[agent]
+            do_handover = False
+
+            if (runner_up_sat_id == self.cur_sat_id[agent]) or \
+                    (runner_up_sat_id is not None and not self.cur_satellite[runner_up_sat_id].is_visible(self.mahimahi_ptr[agent])):
+                sat_id = self.get_best_sat_id(agent, self.mahimahi_ptr[agent])
+                if sat_id != self.cur_sat_id[agent]:
+                    runner_up_sat_id = sat_id
+                    do_handover = True
+            else:
+                if runner_up_sat_id is not None:
+                    do_handover = True
+
+            if do_handover:
+                self.update_sat_info(self.cur_sat_id[agent], self.mahimahi_ptr[agent], agent, -1)
+                self.update_sat_info(runner_up_sat_id, self.mahimahi_ptr[agent], agent, 1)
+                self.prev_sat_id[agent] = self.cur_sat_id[agent]
+                self.cur_sat_id[agent] = runner_up_sat_id
+                self.download_bw[agent] = []
+
+            throughput = self.cur_satellite[self.cur_sat_id[agent]].data_rate(self.cur_user[agent], self.mahimahi_ptr[
+                agent]) * B_IN_MB / BITS_IN_BYTE
+            assert throughput != 0
+
         return delay, \
                sleep_time, \
                return_buffer_size / MILLISECONDS_IN_SECOND, \
