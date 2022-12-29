@@ -3,8 +3,9 @@ import structlog
 import sys
 import pathlib
 import os
-sys.path.append(pathlib.Path(__file__).parent.parent.parent)
-
+print(pathlib.Path(__file__).absolute().parent.parent.parent)
+# print(pathlib.Path(__file__).abspath())
+# sys.path.append(pathlib.Path(__file__).absolute()parent.parent.parent.absolute())
 from env.multi_bw_share import fixed_env_exhaustive_old_221223 as env, load_trace_tight as load_trace
 import itertools
 import logging
