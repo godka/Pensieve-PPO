@@ -21,7 +21,7 @@ CRITIC_LR_RATE = 0.001
 BITRATE_REWARD = [1, 2, 3, 12, 15, 20]
 RANDOM_SEED = 42
 RAND_RANGE = 1000000
-SUMMARY_DIR = 'test_results_ratio_07buf_03e_w_ho_priority_w_ho_after/'
+SUMMARY_DIR = 'test_results_ratio_07buf_03e_w_ho_priority/'
 LOG_FILE = SUMMARY_DIR + 'log_sim_cent'
 TEST_TRACES = 'data/sat_data/test_tight/'
 SUMMARY_PATH = SUMMARY_DIR + 'summary'
@@ -203,7 +203,7 @@ def main():
 
             ho_point = ho_stamps_log[agent]
 
-            if ho_stamps_log[agent] == 0 or ho_stamps_log[agent] == 1:
+            if None and ho_stamps_log[agent] == 0 or ho_stamps_log[agent] == 1:
                 ho_stamps_log[agent] = -1
             else:
                 ho_stamps_log[agent] -= 1
