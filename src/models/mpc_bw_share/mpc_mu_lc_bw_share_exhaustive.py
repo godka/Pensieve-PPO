@@ -2,11 +2,11 @@ import numpy as np
 import structlog
 import sys
 import pathlib
-print(pathlib.Path(__file__).parent.parent.parent)
+import os
+os.path.append(pathlib.Path(__file__).parent.parent.parent)
 
 from env.multi_bw_share import fixed_env_exhaustive_old_221223 as env, load_trace_tight as load_trace
 import itertools
-import os
 import logging
 
 from util.constants import VIDEO_BIT_RATE, BUFFER_NORM_FACTOR, CHUNK_TIL_VIDEO_END_CAP, M_IN_K, REBUF_PENALTY, \
