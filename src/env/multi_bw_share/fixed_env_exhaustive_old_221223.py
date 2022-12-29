@@ -199,10 +199,11 @@ class Environment:
             # self.connection[self.cur_sat_id[agent]] = -1
             # self.connection[new_sat_id] = agent
             # update sat info
-            assert runner_up_sat_id != self.cur_sat_id[agent]
+            # assert runner_up_sat_id != self.cur_sat_id[agent]
             do_handover = False
 
-            if runner_up_sat_id is not None and not self.cur_satellite[runner_up_sat_id].is_visible(self.mahimahi_ptr[agent]):
+            if (runner_up_sat_id == self.cur_sat_id[agent]) or \
+                    (runner_up_sat_id is not None and not self.cur_satellite[runner_up_sat_id].is_visible(self.mahimahi_ptr[agent])):
                 sat_id = self.get_best_sat_id(agent, self.mahimahi_ptr[agent])
                 if sat_id != self.cur_sat_id[agent]:
                     runner_up_sat_id = sat_id
@@ -1854,7 +1855,8 @@ class Environment:
                     max_rewards = rewards
                     best_ho_position = best_ho_positions
                     best_future_sat_user_num = future_sat_user_nums
-                elif np.nanmean(rewards) == np.nanmean(max_rewards) and sum(combos[:][0]) >= sum(best_combos[:][0]):
+                elif np.nanmean(rewards) == np.nanmean(max_rewards) \
+                     and (sum(combos[:][0]) >= sum(best_combos[:][0]) or sum(best_ho_positions) > sum(best_ho_position)):
                     # elif np.nanmean(rewards) == np.nanmean(max_rewards) \
                     #         and (rewards[agent] >= max_rewards[agent] or combos[agent][0] >= best_combos[agent][0]):
                     best_combos = combos
@@ -2272,7 +2274,8 @@ class Environment:
                     best_user_info = user_info
                     best_ho_position = best_ho_positions
 
-                elif np.nanmean(rewards) == np.nanmean(max_rewards) and sum(combos[:][0]) >= sum(best_combos[:][0]):
+                elif np.nanmean(rewards) == np.nanmean(max_rewards) \
+                        and (sum(combos[:][0]) >= sum(best_combos[:][0]) or sum(best_ho_positions) > sum(best_ho_position)):
                     # elif np.nanmean(rewards) == np.nanmean(max_rewards) \
                     #         and (rewards[agent] >= max_rewards[agent] or combos[agent][0] >= best_combos[agent][0]):
                     best_combos = combos
@@ -2475,7 +2478,7 @@ class Environment:
             if combo == [np.nan] * MPC_FUTURE_CHUNK_COUNT:
                 rewards.append(np.nan)
                 continue
-            curr_buffer = start_buffers[agent_id]
+            curr_buffer = start_buffers[agent_id] * 0.8
             last_index = int(CHUNK_TIL_VIDEO_END_CAP - video_chunk_remain[agent_id])
 
             cur_sat_id = cur_sat_ids[agent_id]
@@ -2528,15 +2531,8 @@ class Environment:
             total_buffer_diff.append(curr_buffer)
             # total_buffer_diff += curr_buffer #  - start_buffers[agent_id]
             # total_buffer_diff += curr_buffer
-        if curr_rebuffer_time:
-            return curr_rebuffer_time * 100
-        else:
-            if sum(total_buffer_diff) / len(total_buffer_diff) < 6:
-                return 10
-            elif sum(total_buffer_diff) / len(total_buffer_diff) < 10:
-                return 5
-            else:
-                return 8
+        return curr_rebuffer_time
+
         # return total_buffer_diff
 
     """

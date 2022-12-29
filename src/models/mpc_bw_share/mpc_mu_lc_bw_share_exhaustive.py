@@ -1,7 +1,7 @@
 import numpy as np
 import structlog
 
-from env.multi_bw_share import fixed_env_exhaustive_old_221223 as env, load_trace_tight
+from env.multi_bw_share import fixed_env_exhaustive_old_221223 as env, load_trace_tight as load_trace
 import itertools
 import os
 import logging
@@ -19,9 +19,9 @@ CRITIC_LR_RATE = 0.001
 BITRATE_REWARD = [1, 2, 3, 12, 15, 20]
 RANDOM_SEED = 42
 RAND_RANGE = 1000000
-SUMMARY_DIR = 'test_results_exhaustive_reduced_01/'
+SUMMARY_DIR = 'test_results_exhaustive_reduced_08buf/'
 LOG_FILE = SUMMARY_DIR + 'log_sim_cent'
-TEST_TRACES = './test_tight/'
+TEST_TRACES = '../../data/sat_data/test/'
 SUMMARY_PATH = SUMMARY_DIR + 'summary'
 # log in format of time_stamp bit_rate buffer_size rebuffer_time chunk_size download_time reward
 # NN_MODEL = './models/nn_model_ep_5900.ckpt'
