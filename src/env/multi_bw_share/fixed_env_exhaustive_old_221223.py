@@ -40,9 +40,10 @@ SCALE_VIDEO_LEN_FOR_TEST = 2
 NUM_AGENTS = None
 
 SAT_STRATEGY = "resource-fair"
-# SAT_STRATEGY = "ratio-based"
+SAT_STRATEGY = "ratio-based"
 
 SNR_MIN = 70
+BUF_RATIO = 0.7
 
 
 class Environment:
@@ -2508,7 +2509,7 @@ class Environment:
             if combo == [np.nan] * MPC_FUTURE_CHUNK_COUNT:
                 rewards.append(np.nan)
                 continue
-            curr_buffer = start_buffers[agent_id] * 1
+            curr_buffer = start_buffers[agent_id] * BUF_RATIO
             last_index = int(CHUNK_TIL_VIDEO_END_CAP - video_chunk_remain[agent_id])
 
             cur_sat_id = cur_sat_ids[agent_id]
