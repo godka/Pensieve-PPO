@@ -21,7 +21,7 @@ CRITIC_LR_RATE = 0.001
 BITRATE_REWARD = [1, 2, 3, 12, 15, 20]
 RANDOM_SEED = 42
 RAND_RANGE = 1000000
-SUMMARY_DIR = 'test_results_res_w_ho_priority_w_ho_after/'
+SUMMARY_DIR = 'test_results_res_w_ho_priority_w_ho_after_all/'
 LOG_FILE = SUMMARY_DIR + 'log_sim_cent'
 TEST_TRACES = 'data/sat_data/test_tight/'
 SUMMARY_PATH = SUMMARY_DIR + 'summary'
@@ -207,7 +207,7 @@ def main():
                 ho_stamps_log[agent] = -1
             else:
                 ho_stamps_log[agent] -= 1
-            # do_mpc = True
+            do_mpc = True
         # the action is from the last decision
         # this is to make the framework similar to the real
         delay, sleep_time, buffer_size, rebuf, \
