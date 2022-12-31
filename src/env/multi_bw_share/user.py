@@ -92,7 +92,7 @@ class User:
         self.download_log[mahimahi_ptr] = [sat_id, video_chunk_remain, quality, last_quality, buf_size]
 
     def get_related_download_logs(self, mahimahi_ptr, target_mahimahi_ptr):
-        self.log.info('download_log', download_log=self.download_log)
+        self.log.debug('download_log', download_log=self.download_log)
         if not self.download_log:
             return [None] * 6
         final_logs = []

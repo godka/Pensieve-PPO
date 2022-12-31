@@ -150,7 +150,7 @@ class Environment:
             runner_up_sat_ids, ho_stamps, best_combos, best_user_info, final_rate = self.run_mpc(agent, model_type)
             self.prev_best_combos = copy.deepcopy(best_combos)
             # DO handover all-in-one
-            """
+
             for i in range(len(ho_stamps)):
                 if ho_stamps[i] == 0:
                     is_handover = True
@@ -159,19 +159,26 @@ class Environment:
                     # self.connection[self.cur_sat_id[i]] = -1
                     # self.connection[new_sat_id] = i
                     # update sat info
-                    throughput = self.cur_satellite[runner_up_sat_id].data_rate(self.cur_user[i],
-                                                                                self.mahimahi_ptr[i])
-                    if throughput == 0:
-                        runner_up_sat_id, _ = self.get_runner_up_sat_id(i, method="harmonic-mean", plus=True)
+                    do_handover = False
 
-                    self.update_sat_info(self.cur_sat_id[i], self.mahimahi_ptr[i], i, -1)
-                    self.update_sat_info(runner_up_sat_id, self.mahimahi_ptr[i], i, 1)
-                    self.prev_sat_id[i] = self.cur_sat_id[i]
-                    self.cur_sat_id[i] = runner_up_sat_id
+                    if runner_up_sat_id and runner_up_sat_id != self.cur_sat_id[i] and self.cur_satellite[
+                        runner_up_sat_id].is_visible(self.mahimahi_ptr[i]):
+                        do_handover = True
+                    else:
+                        self.unexpected_change = True
 
-                    self.download_bw[i] = []
+                    if do_handover:
+                        self.update_sat_info(self.cur_sat_id[i], self.mahimahi_ptr[i], i, -1)
+                        self.update_sat_info(runner_up_sat_id, self.mahimahi_ptr[i], i, 1)
+                        self.prev_sat_id[i] = self.cur_sat_id[i]
+                        self.cur_sat_id[i] = runner_up_sat_id
+                        self.download_bw[i] = []
+
+                    throughput = self.cur_satellite[self.cur_sat_id[i]].data_rate(self.cur_user[i],
+                                                                                      self.mahimahi_ptr[
+                                                                                          i]) * B_IN_MB / BITS_IN_BYTE
+                    assert throughput != 0
                     ho_stamps[i] = -1
-            """
 
             quality = best_combos[agent][0]
             ho_stamp = ho_stamps[agent]
@@ -202,15 +209,11 @@ class Environment:
             # assert runner_up_sat_id != self.cur_sat_id[agent]
             do_handover = False
 
-            if (runner_up_sat_id == self.cur_sat_id[agent]) or \
-                    (runner_up_sat_id is not None and not self.cur_satellite[runner_up_sat_id].is_visible(self.mahimahi_ptr[agent])):
-                sat_id = self.get_best_sat_id(agent, self.mahimahi_ptr[agent])
-                if sat_id != self.cur_sat_id[agent]:
-                    runner_up_sat_id = sat_id
-                    do_handover = True
+            if runner_up_sat_id and runner_up_sat_id != self.cur_sat_id[agent] and self.cur_satellite[
+                runner_up_sat_id].is_visible(self.mahimahi_ptr[agent]):
+                do_handover = True
             else:
-                if runner_up_sat_id is not None:
-                    do_handover = True
+                self.unexpected_change = True
 
             if do_handover:
                 self.update_sat_info(self.cur_sat_id[agent], self.mahimahi_ptr[agent], agent, -1)
@@ -222,6 +225,8 @@ class Environment:
             throughput = self.cur_satellite[self.cur_sat_id[agent]].data_rate(self.cur_user[agent], self.mahimahi_ptr[
                 agent]) * B_IN_MB / BITS_IN_BYTE
             assert throughput != 0
+
+        # Do All users' handover
 
         self.last_quality[agent] = quality
 
@@ -411,15 +416,10 @@ class Environment:
             # assert runner_up_sat_id != self.cur_sat_id[agent]
             do_handover = False
 
-            if (runner_up_sat_id == self.cur_sat_id[agent]) or \
-                    (runner_up_sat_id is not None and not self.cur_satellite[runner_up_sat_id].is_visible(self.mahimahi_ptr[agent])):
-                sat_id = self.get_best_sat_id(agent, self.mahimahi_ptr[agent])
-                if sat_id != self.cur_sat_id[agent]:
-                    runner_up_sat_id = sat_id
-                    do_handover = True
+            if runner_up_sat_id and runner_up_sat_id != self.cur_sat_id[agent] and self.cur_satellite[runner_up_sat_id].is_visible(self.mahimahi_ptr[agent]):
+                do_handover = True
             else:
-                if runner_up_sat_id is not None:
-                    do_handover = True
+                self.unexpected_change = True
 
             if do_handover:
                 self.update_sat_info(self.cur_sat_id[agent], self.mahimahi_ptr[agent], agent, -1)
@@ -1797,7 +1797,7 @@ class Environment:
         for i in range(-ho_combination_len, 0, 1):
             future_sat_user_nums = future_sat_user_nums_list[best_bws_args[i]]
             best_ho_positions = best_ho_positions_list[best_bws_args[i]]
-            self.log.info("HO COMBO", best_ho_positions=best_ho_positions, future_sat_user_list=future_sat_user_nums)
+            self.log.debug("HO COMBO", best_ho_positions=best_ho_positions, future_sat_user_list=future_sat_user_nums)
 
             for full_combo in chunk_combo_option:
                 combos = []
@@ -2144,7 +2144,7 @@ class Environment:
             future_sat_user_list = future_sat_user_list_list[best_bws_args[i]]
             future_sat_user_nums = future_sat_user_nums_list[best_bws_args[i]]
             best_ho_positions = best_ho_positions_list[best_bws_args[i]]
-            self.log.info("HO COMBO", best_ho_positions=best_ho_positions, future_sat_user_list=future_sat_user_list)
+            self.log.debug("HO COMBO", best_ho_positions=best_ho_positions, future_sat_user_list=future_sat_user_list)
             for full_combo in chunk_combo_option:
                 self.log.debug("CHUNK COMBO", full_combo=full_combo)
                 combos = []

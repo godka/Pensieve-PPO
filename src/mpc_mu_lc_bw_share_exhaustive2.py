@@ -77,7 +77,7 @@ MPC_TYPE = "DualMPC-Centralization-Reduced"
 # DualMPC-Centralization
 
 structlog.configure(
-    wrapper_class=structlog.make_filtering_bound_logger(logging.WARNING),
+    wrapper_class=structlog.make_filtering_bound_logger(logging.INFO),
 )
 
 
@@ -200,11 +200,14 @@ def main():
                 bit_rate[agent] = combo_log[agent].pop(0)
             else:
                 do_mpc = True
+
             ho_point = ho_stamps_log[agent]
+
             if ho_stamps_log[agent] == 0 or ho_stamps_log[agent] == 1:
                 ho_stamps_log[agent] = -1
             else:
                 ho_stamps_log[agent] -= 1
+            # do_mpc = True
         # the action is from the last decision
         # this is to make the framework similar to the real
         delay, sleep_time, buffer_size, rebuf, \
@@ -289,6 +292,11 @@ def main():
 
     # print(results, sum(results))
     print(sum(results) / len(results))
+
+    summary_file = open(SUMMARY_PATH, 'a')
+    summary_file.write('\n')
+    summary_file.write(str(sum(results) / len(results)))
+    summary_file.close()
 
 
 if __name__ == '__main__':
