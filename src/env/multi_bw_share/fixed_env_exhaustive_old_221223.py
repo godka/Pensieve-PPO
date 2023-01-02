@@ -40,10 +40,11 @@ SCALE_VIDEO_LEN_FOR_TEST = 2
 NUM_AGENTS = None
 
 SAT_STRATEGY = "resource-fair"
-SAT_STRATEGY = "ratio-based"
+# SAT_STRATEGY = "ratio-based"
 
 SNR_MIN = 70
-BUF_RATIO = 0.7
+
+BUF_RATIO = 0.9
 
 
 class Environment:
@@ -146,7 +147,7 @@ class Environment:
 
         assert quality >= 0
         assert quality < BITRATE_LEVELS
-        if model_type is not None and (agent == 0 or do_mpc or self.unexpected_change) and self.end_of_video[agent] is not True:
+        if model_type is not None and (agent == 0 or do_mpc or ho_stamp == 0 or self.unexpected_change) and self.end_of_video[agent] is not True:
             self.unexpected_change = False
             runner_up_sat_ids, ho_stamps, best_combos, best_user_info, final_rate = self.run_mpc(agent, model_type)
             self.prev_best_combos = copy.deepcopy(best_combos)
@@ -2517,6 +2518,7 @@ class Environment:
 
             if next_sat_id is None:
                 next_sat_id = cur_sat_id
+
             for position in range(0, len(combo)):
                 # 0, 1, 2 -> 0, 2, 4
                 chunk_quality = combo[position]

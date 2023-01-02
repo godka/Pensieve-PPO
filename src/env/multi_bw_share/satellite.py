@@ -92,7 +92,7 @@ class Satellite:
         self.sat_bw[user_id] = sat_bw
 
     def add_ue(self, user_id, mahimahi_ptr):
-        self.log.debug("Add_ue", conn_use_log=self.conn_use_log, user_id=user_id, mahimahi_ptr=mahimahi_ptr)
+        self.log.info("Add_ue", conn_use_log=self.conn_use_log, user_id=user_id, mahimahi_ptr=mahimahi_ptr)
 
         # print("Add: ", user_id, self.sat_id, mahimahi_ptr)
         if mahimahi_ptr in self.conn_use_log:
@@ -292,8 +292,8 @@ class Satellite:
         # final, shared data rate depends on sharing model
         dr_ue_shared = self.data_rate_shared(user, dr_ue_unshared, mahimahi_ptr, plus)
 
-        self.log.debug('Achievable data rate', dr_ue_unshared=dr_ue_unshared, dr_ue_shared=dr_ue_shared,
-                       num_conn_ues=self.num_conn_ues)
+        self.log.info('Achievable data rate', mahimahi_ptr=mahimahi_ptr, dr_ue_unshared=dr_ue_unshared, dr_ue_shared=dr_ue_shared,
+                       num_conn_ues=self.num_conn_ues(mahimahi_ptr), user_list=self.get_ue_list(mahimahi_ptr))
         return dr_ue_shared
 
     def is_visible(self, mahimahi_ptr):
