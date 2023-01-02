@@ -21,7 +21,7 @@ CRITIC_LR_RATE = 0.001
 BITRATE_REWARD = [1, 2, 3, 12, 15, 20]
 RANDOM_SEED = 42
 RAND_RANGE = 1000000
-SUMMARY_DIR = 'test_results_ratio_70buf_02e_all/'
+SUMMARY_DIR = 'test_results_ratio_70buf_02e/'
 LOG_FILE = SUMMARY_DIR + 'log_sim_cent'
 TEST_TRACES = 'data/sat_data/test_tight/'
 SUMMARY_PATH = SUMMARY_DIR + 'summary'
@@ -191,11 +191,11 @@ def main():
             end_of_video = False
             continue
         else:
-            """
+
             # Priority on handover
             if 0 in ho_stamps_log:
                 agent = ho_stamps_log.index(0)
-            """
+
             if combo_log[agent]:
                 bit_rate[agent] = combo_log[agent].pop(0)
             else:

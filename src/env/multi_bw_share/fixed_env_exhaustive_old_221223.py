@@ -147,7 +147,7 @@ class Environment:
 
         assert quality >= 0
         assert quality < BITRATE_LEVELS
-        if model_type is not None and (agent == 0 or do_mpc or ho_stamp == 0 or self.unexpected_change) and self.end_of_video[agent] is not True:
+        if model_type is not None and (agent == 0 or do_mpc or self.unexpected_change) and self.end_of_video[agent] is not True:
             self.unexpected_change = False
             runner_up_sat_ids, ho_stamps, best_combos, best_user_info, final_rate = self.run_mpc(agent, model_type)
             self.prev_best_combos = copy.deepcopy(best_combos)
@@ -180,11 +180,12 @@ class Environment:
                                                                                       self.mahimahi_ptr[
                                                                                           i]) * B_IN_MB / BITS_IN_BYTE
                     assert throughput != 0
-                    ho_stamps[i] = -1
+                if ho_stamps[i] != MPC_FUTURE_CHUNK_COUNT:
+                    ho_stamps[i] -= 1
 
             quality = best_combos[agent][0]
             ho_stamp = ho_stamps[agent]
-            ho_stamps[agent] -= 1
+
             runner_up_sat_id = runner_up_sat_ids[agent]
         else:
             runner_up_sat_ids, ho_stamps, best_combos, best_user_info, final_rate = None, None, None, None, None
@@ -2042,7 +2043,7 @@ class Environment:
             tmp_bws = []
             tmp_bws_sum = []
             impossible_route = False
-            if ho_positions.count(0) >= 2:
+            if 1 in ho_positions:
                 continue
 
             for sat_id in sat_user_nums.keys():
