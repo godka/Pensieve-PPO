@@ -44,7 +44,7 @@ SAT_STRATEGY = "resource-fair"
 
 SNR_MIN = 70
 
-BUF_RATIO = 0.9
+BUF_RATIO = 0.7
 
 
 class Environment:
@@ -180,8 +180,7 @@ class Environment:
                                                                                       self.mahimahi_ptr[
                                                                                           i]) * B_IN_MB / BITS_IN_BYTE
                     assert throughput != 0
-                if ho_stamps[i] != MPC_FUTURE_CHUNK_COUNT:
-                    ho_stamps[i] -= 1
+                    ho_stamps[i] = -1
 
             quality = best_combos[agent][0]
             ho_stamp = ho_stamps[agent]
@@ -1703,9 +1702,10 @@ class Environment:
             tmp_bws_sum = []
             impossible_route = False
 
-            if ho_positions.count(0) >= 2:
+            # if ho_positions.count(0) >= 2:
+            #    continue
+            if 1 in ho_positions:
                 continue
-
             for sat_id in sat_user_nums.keys():
                 tmp_future_sat_user_nums[sat_id] = np.array([sat_user_nums[sat_id]] * MPC_FUTURE_CHUNK_COUNT)
 
@@ -1898,6 +1898,8 @@ class Environment:
                     best_future_sat_user_num = future_sat_user_nums
 
                     # ho_stamps = ho_positions
+        self.log.info("final decision", mahimahi_ptr=self.mahimahi_ptr[agent],
+                      best_ho_position=best_ho_position, best_combos=best_combos)
 
         return runner_up_sat_ids, best_ho_position, best_combos, max_rewards
 

@@ -292,7 +292,7 @@ class Satellite:
         # final, shared data rate depends on sharing model
         dr_ue_shared = self.data_rate_shared(user, dr_ue_unshared, mahimahi_ptr, plus)
 
-        self.log.info('Achievable data rate', mahimahi_ptr=mahimahi_ptr, dr_ue_unshared=dr_ue_unshared, dr_ue_shared=dr_ue_shared,
+        self.log.debug('Achievable data rate', mahimahi_ptr=mahimahi_ptr, dr_ue_unshared=dr_ue_unshared, dr_ue_shared=dr_ue_shared,
                        num_conn_ues=self.num_conn_ues(mahimahi_ptr), user_list=self.get_ue_list(mahimahi_ptr))
         return dr_ue_shared
 
