@@ -92,7 +92,7 @@ class Satellite:
         self.sat_bw[user_id] = sat_bw
 
     def add_ue(self, user_id, mahimahi_ptr):
-        self.log.info("Add_ue", conn_use_log=self.conn_use_log, user_id=user_id, mahimahi_ptr=mahimahi_ptr)
+        self.log.debug("Add_ue", conn_use_log=self.conn_use_log, user_id=user_id, mahimahi_ptr=mahimahi_ptr)
 
         # print("Add: ", user_id, self.sat_id, mahimahi_ptr)
         if mahimahi_ptr in self.conn_use_log:
@@ -188,7 +188,7 @@ class Satellite:
             data_rate_ratio[uid] += remained_ratio / len(data_rate_ratio.keys())
 
         self.data_rate_ratio_log[mahimahi_ptr] = data_rate_ratio
-        self.log.info("set_data", user_id=user_id, ratio_list=ratio_list, data_rate_ratio=data_rate_ratio)
+        self.log.debug("set_data", user_id=user_id, ratio_list=ratio_list, data_rate_ratio=data_rate_ratio)
         return data_rate_ratio
 
     def path_loss(self, distance, ue_height=1.5):
