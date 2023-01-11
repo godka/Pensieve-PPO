@@ -47,6 +47,8 @@ class User:
 
         self.download_log = {}
 
+        self.sat_log = {}
+
         # just consider downlink for now; more interesting for most apps anyways
         self.log = structlog.get_logger(agent_id=self.agent_id)
         self.log.debug('User init', agent_id=self.agent_id)
@@ -69,6 +71,20 @@ class User:
 
     def get_snr_log(self):
         return self.snr_noise
+
+    def update_sat_log(self, sat_id, mahimahi_ptr):
+        self.sat_log[mahimahi_ptr] = sat_id
+
+    def get_conn_sat_id(self, mahimahi_ptr):
+        self.log.debug("get_conn_sat_id", log=self.sat_log, ptr=mahimahi_ptr)
+        sat_id = None
+        for i in sorted(self.sat_log.keys()):
+            if mahimahi_ptr < i:
+                break
+            sat_id = self.sat_log[i]
+
+
+        return sat_id
 
     def update_snr_noise(self):
         """

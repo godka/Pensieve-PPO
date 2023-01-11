@@ -121,7 +121,9 @@ class Satellite:
             self.conn_use_log[mahimahi_ptr].append([False, user_id])
         else:
             self.conn_use_log[mahimahi_ptr] = [[False, user_id]]
+
         self.get_ue_list(mahimahi_ptr)
+
         """
         if user_id in self.data_rate_ratio.keys():
             removed_ratio = self.data_rate_ratio.pop(user_id)
@@ -254,6 +256,7 @@ class Satellite:
             # split data rate by all already connected UEs incl. this UE
             # assert agent_id in self.data_rate_ratio
             data_rate_ratio = self.get_cur_data_rate(mahimahi_ptr)
+
             if agent_id not in data_rate_ratio.keys() or set(data_rate_ratio.keys()) != set(
                     self.get_ue_list(mahimahi_ptr)):
                 dr_ue_shared = dr_ue_unshared / num_conn_ues
@@ -264,6 +267,7 @@ class Satellite:
                     dr_ue_shared = dr_ue_unshared * data_rate_ratio[agent_id]
 
                 elif len(data_rate_ratio.keys()) == num_conn_ues:
+                    self.log.debug('Rated bw', dr_ue_unshared=dr_ue_unshared, data_rate_ratio=data_rate_ratio, agent_id=agent_id)
                     dr_ue_shared = dr_ue_unshared * data_rate_ratio[agent_id]
                 else:
                     assert False
