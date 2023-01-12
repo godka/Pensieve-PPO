@@ -6,6 +6,7 @@ from models.rl_multi_bw_share.ppo_spec import ppo_implicit as network
 import tensorflow.compat.v1 as tf
 import structlog
 import logging
+
 os.environ['CUDA_VISIBLE_DEVICES'] = '-1'
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 
@@ -61,7 +62,6 @@ def testing(epoch, nn_model, log_file):
     log.info('python test_implicit.py ', nn_model=nn_model + ' ' + str(USERS))
     os.system('python test_implicit.py ' + nn_model + ' ' + str(USERS))
     log.info('End testing')
-
 
     # append test performance to the log
     rewards, entropies = [], []

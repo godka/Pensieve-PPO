@@ -189,7 +189,6 @@ class Environment:
         is_handover = False
 
         if ho_stamp == 0:
-            exit(1)
             is_handover = True
             delay += HANDOVER_DELAY
             # self.connection[self.cur_sat_id[agent]] = -1
@@ -219,11 +218,6 @@ class Environment:
 
         self.last_quality[agent] = quality
 
-        if self.video_chunk_counter[agent] != 0:
-            self.cur_user[agent].update_download(self.mahimahi_ptr[agent],
-                                                 self.cur_sat_id[agent], TOTAL_VIDEO_CHUNKS - self.video_chunk_counter[agent],
-                                                 quality, self.last_quality[agent],
-                                                 self.buffer_size[agent] / MILLISECONDS_IN_SECOND)
         while True:  # download video chunk over mahimahi
             throughput = self.cur_satellite[self.cur_sat_id[agent]].data_rate(self.cur_user[agent],
                                                                               self.mahimahi_ptr[

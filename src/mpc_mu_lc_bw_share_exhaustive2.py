@@ -21,7 +21,7 @@ CRITIC_LR_RATE = 0.001
 BITRATE_REWARD = [1, 2, 3, 12, 15, 20]
 RANDOM_SEED = 42
 RAND_RANGE = 1000000
-SUMMARY_DIR = 'test_results_exh_10buf_03e/'
+SUMMARY_DIR = 'test_results_exh_70buf_01e/'
 LOG_FILE = SUMMARY_DIR + 'log_sim_cent'
 TEST_TRACES = 'data/sat_data/test_tight/'
 SUMMARY_PATH = SUMMARY_DIR + 'summary'
@@ -218,7 +218,7 @@ def main():
         runner_up_sat_ids, ho_stamps, best_combos, best_user_info \
             = net_env.get_video_chunk(bit_rate[agent], agent, MPC_TYPE, next_sat_log[agent], ho_point, do_mpc)
 
-        if agent == 0 or do_mpc is True:
+        if best_combos:
             do_mpc = False
 
             ho_stamps_log = ho_stamps

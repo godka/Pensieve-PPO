@@ -12,7 +12,7 @@ REBUF_PENALTY = 4.3  # 1 sec rebuffering -> 3 Mbps
 SMOOTH_PENALTY = 1
 DEFAULT_QUALITY = 0  # default video quality without agent
 # small epsilon used in denominator to avoid division by zero
-EPSILON = 0.3
+EPSILON = 0.1
 BIG_EPSILON = 0.001
 MIN_RATIO = 0.1
 MAX_RATIO = 0.9
@@ -24,7 +24,7 @@ SNR_NOISE_HIGH = 1
 SNR_NOISE_UNIT = 0.005
 
 
-MPC_FUTURE_CHUNK_COUNT = 3
+MPC_FUTURE_CHUNK_COUNT = 2
 MPC_PAST_CHUNK_COUNT = 5
 
 # Multi-user config in the trace files

@@ -180,6 +180,9 @@ class Satellite:
         data_rate_ratio = {}
         index = 0
         remained_ratio = 0
+        if not user_id:
+            self.data_rate_ratio_log[mahimahi_ptr] = data_rate_ratio
+            return data_rate_ratio
         for uid in user_id:
             if ratio_list[index] < EPSILON + BIG_EPSILON:
                 remained_ratio += ratio_list[index]

@@ -218,7 +218,7 @@ def main():
         runner_up_sat_ids, ho_stamps, best_combos, best_user_info \
             = net_env.get_video_chunk(bit_rate[agent], agent, MPC_TYPE, next_sat_log[agent], ho_point, do_mpc)
 
-        if agent == 0 or do_mpc is True:
+        if best_combos:
             do_mpc = False
 
             ho_stamps_log = ho_stamps

@@ -38,7 +38,6 @@ class ABREnv():
 
         self.is_handover = False
 
-
         np.random.seed(random_seed)
         all_cooked_time, all_cooked_bw, _ = load_trace.load_trace()
         self.net_env = abrenv.Environment(all_cooked_time=all_cooked_time,
@@ -154,6 +153,7 @@ class ABREnv():
     def step(self, action, agent):
         bit_rate = int(action) % A_DIM
         sat = int(action) // A_DIM
+        # 0 -> select current satellite // 1 -> select another satellite
         # the action is from the last decision
         # this is to make the framework similar to the real
         delay, sleep_time, self.buffer_size[agent], rebuf, video_chunk_size, next_video_chunk_sizes, \
