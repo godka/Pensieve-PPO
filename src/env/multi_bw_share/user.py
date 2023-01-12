@@ -83,7 +83,6 @@ class User:
                 break
             sat_id = self.sat_log[i]
 
-
         return sat_id
 
     def update_snr_noise(self):
