@@ -166,8 +166,9 @@ class Environment:
                         break
 
             if do_handover:
-                for sat_id in best_user_info:
-                    final_rate[sat_id] = self.cur_satellite[sat_id].set_data_rate_ratio(best_user_info[sat_id][2], best_user_info[sat_id][3], self.mahimahi_ptr[agent])
+                if best_user_info:
+                    for sat_id in best_user_info:
+                        final_rate[sat_id] = self.cur_satellite[sat_id].set_data_rate_ratio(best_user_info[sat_id][2], best_user_info[sat_id][3], self.mahimahi_ptr[agent])
 
                 for i in range(self.num_agents):
                     runner_up_sat_id = runner_up_sat_ids[i]
