@@ -265,15 +265,15 @@ class Satellite:
                 dr_ue_shared = dr_ue_unshared / num_conn_ues
             else:
                 if len(data_rate_ratio.keys()) < num_conn_ues:
-                    assert False
+                    # assert False
                     dr_ue_unshared -= dr_ue_unshared / num_conn_ues * (num_conn_ues - len(data_rate_ratio.keys()))
                     dr_ue_shared = dr_ue_unshared * data_rate_ratio[agent_id]
 
                 elif len(data_rate_ratio.keys()) == num_conn_ues:
-                    self.log.debug('Rated bw', dr_ue_unshared=dr_ue_unshared, data_rate_ratio=data_rate_ratio, agent_id=agent_id)
+                    self.log.info('Rated bw', dr_ue_unshared=dr_ue_unshared, data_rate_ratio=data_rate_ratio, agent_id=agent_id)
                     dr_ue_shared = dr_ue_unshared * data_rate_ratio[agent_id]
                 else:
-                    assert False
+                    # assert False
                     more_ratio = 0
                     for user_id in data_rate_ratio.keys():
                         if user_id not in self.conn_ues and user_id != agent_id:

@@ -12,7 +12,7 @@ REBUF_PENALTY = 4.3  # 1 sec rebuffering -> 3 Mbps
 SMOOTH_PENALTY = 1
 DEFAULT_QUALITY = 0  # default video quality without agent
 # small epsilon used in denominator to avoid division by zero
-EPSILON = 0.1
+EPSILON = 0.3
 BIG_EPSILON = 0.001
 MIN_RATIO = 0.1
 MAX_RATIO = 0.9

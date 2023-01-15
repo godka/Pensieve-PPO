@@ -134,7 +134,7 @@ class Environment:
         self.unexpected_change = True
 
         self.log = structlog.get_logger()
-
+ 
     @property
     def active_agents_list(self):
         agent_list = []
@@ -152,10 +152,12 @@ class Environment:
 
         if model_type is not None and (agent == 0 or do_mpc or self.unexpected_change) and self.end_of_video[agent] is not True:
             self.unexpected_change = False
-            runner_up_sat_ids, ho_stamps, best_combos, best_user_info, final_rate = self.run_mpc(agent, model_type)
+            cur_sat_ids, runner_up_sat_ids, ho_stamps, best_combos, best_user_info, final_rate = self.run_mpc(agent, model_type)
 
             self.prev_best_combos = copy.deepcopy(best_combos)
             # DO handover all-in-one
+            if self.cur_sat_id != cur_sat_ids:
+                self.unexpected_change = True
             do_handover = True
             for i in range(self.num_agents):
                 if ho_stamps[i] == 0:
@@ -165,7 +167,6 @@ class Environment:
                         do_handover = False
                         self.unexpected_change = True
                         break
-                    # Hard assumption
 
             if do_handover:
                 self.log.info("Do update", cur_sat_ids=self.cur_sat_id, runner_up_sat_ids=runner_up_sat_ids)
@@ -176,18 +177,18 @@ class Environment:
                     for sat_id in list(set(self.cur_sat_id + runner_up_sat_ids)):
                         if sat_id is None:
                             continue
-                        final_rate[sat_id] = self.cur_satellite[sat_id].set_data_rate_ratio(None, None, self.mahimahi_ptr[agent])
+                        self.cur_satellite[sat_id].set_data_rate_ratio(None, None, self.mahimahi_ptr[agent])
 
                 for i in range(self.num_agents):
                     runner_up_sat_id = runner_up_sat_ids[i]
                     if ho_stamps[i] == 0:
-
                         if self.cur_sat_id[i] != runner_up_sat_id:
                             is_handover = True
                             ho_stamps[i] = -1
                             self.delay[i] = HANDOVER_DELAY
-                            self.update_sat_info(self.cur_sat_id[i], self.mahimahi_ptr[i], i, -1)
-                            self.update_sat_info(runner_up_sat_id, self.mahimahi_ptr[i], i, 1)
+
+                            self.update_sat_info(self.cur_sat_id[i], self.last_mahimahi_time[i], i, -1)
+                            self.update_sat_info(runner_up_sat_id, self.last_mahimahi_time[i], i, 1)
                             self.prev_sat_id[i] = self.cur_sat_id[i]
                             self.cur_sat_id[i] = runner_up_sat_id
                             self.download_bw[i] = []
@@ -236,8 +237,8 @@ class Environment:
             if do_handover:
                 is_handover = True
                 delay += HANDOVER_DELAY
-                self.update_sat_info(self.cur_sat_id[agent], self.mahimahi_ptr[agent], agent, -1)
-                self.update_sat_info(runner_up_sat_id, self.mahimahi_ptr[agent], agent, 1)
+                self.update_sat_info(self.cur_sat_id[agent], self.last_mahimahi_time[agent], agent, -1)
+                self.update_sat_info(runner_up_sat_id, self.last_mahimahi_time[agent], agent, 1)
                 self.prev_sat_id[agent] = self.cur_sat_id[agent]
                 self.cur_sat_id[agent] = runner_up_sat_id
                 self.download_bw[agent] = []
@@ -273,8 +274,8 @@ class Environment:
                               next_bw=self.cooked_bw[
                                   sat_id][self.mahimahi_ptr[agent] - 3:self.mahimahi_ptr[agent] + 3]
                               )
-                self.update_sat_info(self.cur_sat_id[agent], self.mahimahi_ptr[agent], agent, -1)
-                self.update_sat_info(sat_id, self.mahimahi_ptr[agent], agent, 1)
+                self.update_sat_info(self.cur_sat_id[agent], self.last_mahimahi_time[agent], agent, -1)
+                self.update_sat_info(sat_id, self.last_mahimahi_time[agent], agent, 1)
 
                 self.switch_sat(agent, sat_id)
                 delay += HANDOVER_DELAY
@@ -366,8 +367,8 @@ class Environment:
                     assert sat_id != self.cur_sat_id[agent]
                     self.log.info("Forced Handover2", cur_sat_id=self.cur_sat_id[agent], sat_id=sat_id,
                                   mahimahi_ptr=self.mahimahi_ptr[agent], agent=agent)
-                    self.update_sat_info(sat_id, self.mahimahi_ptr[agent], agent, 1)
-                    self.update_sat_info(self.cur_sat_id[agent], self.mahimahi_ptr[agent], agent, -1)
+                    self.update_sat_info(sat_id, self.last_mahimahi_time[agent], agent, 1)
+                    self.update_sat_info(self.cur_sat_id[agent], self.last_mahimahi_time[agent], agent, -1)
                     self.switch_sat(agent, sat_id)
                     is_handover = True
 
@@ -391,7 +392,7 @@ class Environment:
             self.end_of_video[agent] = True
             self.buffer_size[agent] = 0
             self.video_chunk_counter[agent] = 0
-            self.update_sat_info(self.cur_sat_id[agent], self.mahimahi_ptr[agent], agent, -1)
+            self.update_sat_info(self.cur_sat_id[agent], self.last_mahimahi_time[agent], agent, -1)
 
             # Refresh satellite info
             # self.connection[self.cur_sat_id[agent]] = -1
@@ -453,8 +454,8 @@ class Environment:
                 self.delay[agent] = HANDOVER_DELAY
 
                 if do_handover:
-                    self.update_sat_info(self.cur_sat_id[agent], self.mahimahi_ptr[agent], agent, -1)
-                    self.update_sat_info(runner_up_sat_id, self.mahimahi_ptr[agent], agent, 1)
+                    self.update_sat_info(self.cur_sat_id[agent], self.last_mahimahi_time[agent], agent, -1)
+                    self.update_sat_info(runner_up_sat_id, self.last_mahimahi_time[agent], agent, 1)
                     self.prev_sat_id[agent] = self.cur_sat_id[agent]
                     self.cur_sat_id[agent] = runner_up_sat_id
                     self.download_bw[agent] = []
@@ -943,14 +944,14 @@ class Environment:
             is_handover, new_sat_id, bit_rate = self.qoe_v2(
                 agent, centralized=True)
         elif model_type == "DualMPC-Centralization-Exhaustive":
-            runner_up_sat_ids, ho_stamps, best_combos, max_rewards, best_user_info = self.qoe_v3(agent)
+            cur_ids, runner_up_sat_ids, ho_stamps, best_combos, max_rewards, best_user_info = self.qoe_v3(agent)
         elif model_type == "DualMPC-Centralization-Reduced":
-            runner_up_sat_ids, ho_stamps, best_combos, max_rewards, best_user_info = self.qoe_v3(agent, reduced=True)
+            cur_ids, runner_up_sat_ids, ho_stamps, best_combos, max_rewards, best_user_info = self.qoe_v3(agent, reduced=True)
 
         else:
             print("Cannot happen!")
             exit(-1)
-        return runner_up_sat_ids, ho_stamps, best_combos, best_user_info, final_rate
+        return cur_ids, runner_up_sat_ids, ho_stamps, best_combos, best_user_info, final_rate
 
     def qoe_v2(self, agent, only_runner_up=True, centralized=False):
         is_handover = False
@@ -974,25 +975,25 @@ class Environment:
         best_user_info = None
         if reduced:
             if SAT_STRATEGY == "resource-fair":
-                runner_up_sat_ids, ho_stamps, best_combos, max_rewards = self.calculate_mpc_with_handover_exhaustive_reduced(
+                cur_ids, runner_up_sat_ids, ho_stamps, best_combos, max_rewards = self.calculate_mpc_with_handover_exhaustive_reduced(
                     agent)
             else:
-                runner_up_sat_ids, ho_stamps, best_combos, max_rewards, best_user_info = self.calculate_mpc_with_handover_exhaustive_ratio_reduced(
+                cur_ids, runner_up_sat_ids, ho_stamps, best_combos, max_rewards, best_user_info = self.calculate_mpc_with_handover_exhaustive_ratio_reduced(
                     agent)
         else:
             # runner_up_sat_ids, ho_stamps, best_combos, max_rewards= self.calculate_mpc_with_handover_exhaustive_reduced(agent)
             if SAT_STRATEGY == "resource-fair":
-                runner_up_sat_ids, ho_stamps, best_combos, max_rewards = self.calculate_mpc_with_handover_exhaustive(
+                cur_ids, runner_up_sat_ids, ho_stamps, best_combos, max_rewards = self.calculate_mpc_with_handover_exhaustive(
                     agent)
             else:
-                runner_up_sat_ids, ho_stamps, best_combos, max_rewards, best_user_info = self.calculate_mpc_with_handover_exhaustive_ratio(
+                cur_ids, runner_up_sat_ids, ho_stamps, best_combos, max_rewards, best_user_info = self.calculate_mpc_with_handover_exhaustive_ratio(
                     agent)
 
         # runner_up_sat_ids, ho_stamps, best_combos, max_rewards = self.calculate_mpc_with_handover_exhaustive_oracle(agent)
 
         # print(time.time()-start_time)
         # print(runner_up_sat_ids, ho_stamps, best_combos, max_rewards)
-        return runner_up_sat_ids, ho_stamps, best_combos, max_rewards, best_user_info
+        return cur_ids, runner_up_sat_ids, ho_stamps, best_combos, max_rewards, best_user_info
 
     def calculate_mpc_with_handover_exhaustive_ratio(self, agent):
         # future chunks length (try 4 if that many remaining)
@@ -1126,8 +1127,8 @@ class Environment:
         tmp_future_sat_user_list = None
 
         for ho_positions in ho_combo_option:
-            # if 1 in ho_positions or [0] * self.num_agents == ho_positions:
-            if 1 in ho_positions:
+            if 1 in ho_positions or [0] * self.num_agents == ho_positions:
+            # if 1 in ho_positions:
                 continue
             tmp_future_sat_user_nums = {}
             tmp_future_sat_user_list = {}
@@ -1454,8 +1455,8 @@ class Environment:
 
         sat_user_nums = num_of_sats
         for ho_positions in ho_combo_option:
-            # if 1 in ho_positions or [0] * self.num_agents == ho_positions:
-            if 1 in ho_positions:
+            if 1 in ho_positions or [0] * self.num_agents == ho_positions:
+            # if 1 in ho_positions:
                 continue
             tmp_future_sat_user_nums = {}
             tmp_bws = []
@@ -1871,7 +1872,8 @@ class Environment:
 
             # if ho_positions.count(0) >= 2:
             #    continue
-            if 1 in ho_positions:
+            if 1 in ho_positions or [0] * self.num_agents == ho_positions:
+            # if 1 in ho_positions:
                  continue
 
             for sat_id in sat_user_nums.keys():
@@ -2054,7 +2056,7 @@ class Environment:
         self.log.info("final decision", mahimahi_ptr=self.mahimahi_ptr[agent],
                       best_ho_position=best_ho_position, best_combos=best_combos)
 
-        return runner_up_sat_ids, best_ho_position, best_combos, max_rewards
+        return cur_sat_ids, runner_up_sat_ids, best_ho_position, best_combos, max_rewards
 
     def calculate_mpc_with_handover_exhaustive_ratio_reduced(self, agent):
         # future chunks length (try 4 if that many remaining)
@@ -2202,7 +2204,8 @@ class Environment:
             tmp_bws = []
             tmp_bws_sum = []
             impossible_route = False
-            if 1 in ho_positions:
+            if 1 in ho_positions or [0] * self.num_agents == ho_positions:
+            # if 1 in ho_positions:
                  continue
 
             for sat_id in sat_user_nums.keys():
@@ -2620,7 +2623,7 @@ class Environment:
         # print(future_sat_user_nums)
         # print(runner_up_sat_ids, best_ho_positions, best_combos, max_rewards, best_user_info)
 
-        return runner_up_sat_ids, best_ho_position, best_combos, max_rewards, best_user_info
+        return cur_sat_ids, runner_up_sat_ids, best_ho_position, best_combos, max_rewards, best_user_info
 
     def calculate_mpc_with_handover(self, agent, robustness=True, only_runner_up=True,
                                     method="harmonic-mean", centralized=True):
@@ -3522,8 +3525,8 @@ class Environment:
             self.log.debug("set_satellite", cur_sat_id=self.cur_sat_id[agent], next_sat_id=sat_id,
                           mahimahi_ptr=self.mahimahi_ptr[agent], agent=agent)
 
-            self.update_sat_info(sat_id, self.mahimahi_ptr[agent], agent, 1)
-            self.update_sat_info(self.cur_sat_id[agent], self.mahimahi_ptr[agent], agent, -1)
+            self.update_sat_info(sat_id, self.last_mahimahi_time[agent], agent, 1)
+            self.update_sat_info(self.cur_sat_id[agent], self.last_mahimahi_time[agent], agent, -1)
             self.prev_sat_id[agent] = self.cur_sat_id[agent]
             self.cur_sat_id[agent] = sat_id
             self.download_bw[agent] = []
