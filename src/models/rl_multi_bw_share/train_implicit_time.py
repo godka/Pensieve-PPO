@@ -59,8 +59,8 @@ def testing(epoch, nn_model, log_file):
     if not os.path.exists(TEST_LOG_FOLDER):
         os.makedirs(TEST_LOG_FOLDER)
     # run test script
-    log.info('python test_implicit.py ', nn_model=nn_model + ' ' + str(USERS))
-    os.system('python test_implicit.py ' + nn_model + ' ' + str(USERS))
+    log.info('python test_implicit_time.py ', nn_model=nn_model + ' ' + str(USERS))
+    os.system('python test_implicit_time.py ' + nn_model + ' ' + str(USERS))
     log.info('End testing')
 
     # append test performance to the log
@@ -204,7 +204,7 @@ def agent(agent_id, net_params_queue, exp_queue):
             
             for step in range(TRAIN_SEQ_LEN):
                 agent = env.get_first_agent()
-                log.info("agent", agent=agent)
+                log.debug("agent", agent=agent)
                 
                 if agent == -1:
                     break

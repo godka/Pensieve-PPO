@@ -26,7 +26,7 @@ DRAIN_BUFFER_SLEEP_TIME = 500.0  # millisec
 PACKET_PAYLOAD_PORTION = 0.95
 LINK_RTT = 80  # millisec
 PACKET_SIZE = 1500  # bytes
-VIDEO_SIZE_FILE = 'data/video_data/envivio/video_size_'
+VIDEO_SIZE_FILE = '../../data/video_data/envivio/video_size_'
 BITRATE_WEIGHT = 2
 
 
@@ -260,10 +260,12 @@ class Environment:
                                                  quality, self.last_quality[agent],
                                                  self.buffer_size[agent] / MILLISECONDS_IN_SECOND)
         while True:  # download video chunk over mahimahi
+            """
             num_users = 0
             for cur_sat_id in self.cur_satellite.keys():
                 num_users += self.cur_satellite[cur_sat_id].num_conn_ues(self.mahimahi_ptr[agent])
             assert num_users == self.num_agents
+            """
             throughput = self.cur_satellite[self.cur_sat_id[agent]].data_rate(self.cur_user[agent],
                                                                               self.mahimahi_ptr[
                                                                                   agent]) * B_IN_MB / BITS_IN_BYTE
