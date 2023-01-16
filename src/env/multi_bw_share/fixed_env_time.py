@@ -40,11 +40,14 @@ SCALE_VIDEO_LEN_FOR_TEST = 2
 NUM_AGENTS = None
 
 SAT_STRATEGY = "resource-fair"
-SAT_STRATEGY = "ratio-based"
+# SAT_STRATEGY = "ratio-based"
+
+ADAPTIVE_BUF = True
 
 SNR_MIN = 70
 
 BUF_RATIO = 0.7
+BUF_RATIO_COMBO = 0.7
 
 
 class Environment:
@@ -131,7 +134,7 @@ class Environment:
                     self.video_size[bitrate].append(int(line.split()[0]))
 
         self.last_delay = [MPC_PAST_CHUNK_COUNT for _ in range(self.num_agents)]
-        self.unexpected_change = True
+        self.unexpected_change = False
 
         self.log = structlog.get_logger()
  
@@ -151,8 +154,8 @@ class Environment:
         is_handover = False
 
         if model_type is not None and (agent == 0 or do_mpc or self.unexpected_change) and self.end_of_video[agent] is not True:
-            self.unexpected_change = False
             cur_sat_ids, runner_up_sat_ids, ho_stamps, best_combos, best_user_info, final_rate = self.run_mpc(agent, model_type)
+            self.unexpected_change = False
 
             self.prev_best_combos = copy.deepcopy(best_combos)
             # DO handover all-in-one
@@ -1980,7 +1983,10 @@ class Environment:
                         rewards.append(np.nan)
                         continue
                     curr_rebuffer_time = 0
-                    curr_buffer = start_buffers[agent_id]
+                    if ADAPTIVE_BUF and self.unexpected_change:
+                        curr_buffer = start_buffers[agent_id] * BUF_RATIO_COMBO
+                    else:
+                        curr_buffer = start_buffers[agent_id]
                     bitrate_sum = 0
                     smoothness_diff = 0
 
@@ -2449,7 +2455,10 @@ class Environment:
                         rewards.append(np.nan)
                         continue
                     curr_rebuffer_time = 0
-                    curr_buffer = start_buffers[agent_id]
+                    if ADAPTIVE_BUF and self.unexpected_change:
+                        curr_buffer = start_buffers[agent_id] * BUF_RATIO_COMBO
+                    else:
+                        curr_buffer = start_buffers[agent_id]
                     bitrate_sum = 0
                     smoothness_diff = 0
 
@@ -2529,7 +2538,10 @@ class Environment:
                             rewards.append(np.nan)
                             continue
                         curr_rebuffer_time = 0
-                        curr_buffer = start_buffers[agent_id]
+                        if ADAPTIVE_BUF and self.unexpected_change:
+                            curr_buffer = start_buffers[agent_id] * BUF_RATIO_COMBO
+                        else:
+                            curr_buffer = start_buffers[agent_id]
                         bitrate_sum = 0
                         smoothness_diff = 0
 
