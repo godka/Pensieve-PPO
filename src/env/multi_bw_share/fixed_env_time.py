@@ -40,7 +40,7 @@ SCALE_VIDEO_LEN_FOR_TEST = 2
 NUM_AGENTS = None
 
 SAT_STRATEGY = "resource-fair"
-# SAT_STRATEGY = "ratio-based"
+SAT_STRATEGY = "ratio-based"
 
 ADAPTIVE_BUF = True
 
@@ -153,7 +153,7 @@ class Environment:
 
         is_handover = False
 
-        if model_type is not None and (agent == 0 or do_mpc or self.unexpected_change) and self.end_of_video[agent] is not True:
+        if model_type is not None and "v2" in model_type and (agent == 0 or do_mpc or self.unexpected_change) and self.end_of_video[agent] is not True:
             cur_sat_ids, runner_up_sat_ids, ho_stamps, best_combos, best_user_info, final_rate = self.run_mpc(agent, model_type)
             self.unexpected_change = False
 
@@ -210,6 +210,13 @@ class Environment:
             ho_stamp = ho_stamps[agent]
 
             runner_up_sat_id = runner_up_sat_ids[agent]
+        elif model_type is not None and "v1" in model_type:
+            is_handover, new_sat_id, bit_rate = self.run_mpc_v1(agent, model_type)
+            if is_handover:
+                ho_stamp = 0
+            quality = bit_rate
+            runner_up_sat_ids, ho_stamps, best_combos, best_user_info, final_rate = None, None, None, None, None
+
         else:
             runner_up_sat_ids, ho_stamps, best_combos, best_user_info, final_rate = None, None, None, None, None
 
@@ -273,7 +280,7 @@ class Environment:
                 # Do the forced handover
                 # Connect the satellite that has the best serving time
                 sat_id = self.get_best_sat_id(agent, self.mahimahi_ptr[agent])
-                self.log.info("Forced Handover1", cur_sat_id=self.cur_sat_id[agent], next_sat_id=sat_id,
+                self.log.debug("Forced Handover1", cur_sat_id=self.cur_sat_id[agent], next_sat_id=sat_id,
                               mahimahi_ptr=self.mahimahi_ptr[agent], agent=agent,
                               cur_bw=self.cooked_bw[self.cur_sat_id[agent]][self.mahimahi_ptr[agent]-3:self.mahimahi_ptr[agent]+3],
                               next_bw=self.cooked_bw[
@@ -370,7 +377,7 @@ class Environment:
                     # Connect the satellite that has the best serving time
                     sat_id = self.get_best_sat_id(agent, self.mahimahi_ptr[agent])
                     assert sat_id != self.cur_sat_id[agent]
-                    self.log.info("Forced Handover2", cur_sat_id=self.cur_sat_id[agent], sat_id=sat_id,
+                    self.log.debug("Forced Handover2", cur_sat_id=self.cur_sat_id[agent], sat_id=sat_id,
                                   mahimahi_ptr=self.mahimahi_ptr[agent], agent=agent)
                     self.update_sat_info(sat_id, self.last_mahimahi_time[agent], agent, 1)
                     self.update_sat_info(self.cur_sat_id[agent], self.last_mahimahi_time[agent], agent, -1)
@@ -447,7 +454,7 @@ class Environment:
         else:
             runner_up_sat_ids, ho_stamps, best_combos, best_user_info = None, None, None, None
         """
-        if ho_stamp == 1 and self.end_of_video[agent] is not True:
+        if model_type is not None and "v1" in model_type and ho_stamp == 1 and self.end_of_video[agent] is not True:
             do_handover = True
             if runner_up_sat_id is None or not self.cur_satellite[runner_up_sat_id].is_visible(self.mahimahi_ptr[agent]):
                 self.log.info("Do not update2", cur_sat_ids=self.cur_sat_id, runner_up_sat_id=runner_up_sat_id)
@@ -479,7 +486,7 @@ class Environment:
                video_chunk_remain, \
                is_handover, self.get_num_of_user_sat(self.mahimahi_ptr[agent], sat_id="all"), \
                next_sat_bandwidth, next_sat_bw_logs, cur_sat_user_num, next_sat_user_num, cur_sat_bw_logs, connected_time, \
-               self.cur_sat_id[agent], runner_up_sat_ids, ho_stamps, best_combos, final_rate
+               self.cur_sat_id[agent], runner_up_sat_ids, ho_stamps, best_combos, final_rate, quality
 
     def get_video_chunk_oracle(self, quality, agent, mahimahi_ptr, ho_stamp, cur_sat_id, next_sat_id,
                                future_sat_user_nums):
@@ -658,7 +665,7 @@ class Environment:
                 # Connect the satellite that has the best serving time
                 # runner_up_sat_id, _ = self.get_runner_up_sat_id(agent, method="harmonic-mean")
                 next_sat_id = self.get_best_sat_id(agent, self.mahimahi_ptr[agent])
-                self.log.info("Forced Handover1", cur_sat_id=self.cur_sat_id[agent], next_sat_id=next_sat_id,
+                self.log.debug("Forced Handover1", cur_sat_id=self.cur_sat_id[agent], next_sat_id=next_sat_id,
                               mahimahi_ptr=self.mahimahi_ptr[agent], agent=agent,
                               cur_bw=self.cooked_bw[self.cur_sat_id[agent]][self.mahimahi_ptr[agent]-3:self.mahimahi_ptr[agent]+3],
                               next_bw=self.cooked_bw[
@@ -755,7 +762,7 @@ class Environment:
                     self.update_sat_info(self.cur_sat_id[agent], self.mahimahi_ptr[agent], agent, -1)
                     self.switch_sat(agent, sat_id)
                     is_handover = True
-                    self.log.info("Forced Handover2", cur_sat_id=self.cur_sat_id[agent], sat_id=sat_id,
+                    self.log.debug("Forced Handover2", cur_sat_id=self.cur_sat_id[agent], sat_id=sat_id,
                                   mahimahi_ptr=self.mahimahi_ptr[agent], agent=agent)
                     throughput = self.cur_satellite[self.cur_sat_id[agent]].data_rate(self.cur_user[agent],
                                                                                       self.mahimahi_ptr[agent])* B_IN_MB / BITS_IN_BYTE
@@ -937,20 +944,29 @@ class Environment:
 
         self.cur_sat_id[agent] = cur_sat_id
 
-    def run_mpc(self, agent, model_type):
-        final_rate = {}
-        if model_type == "ManifoldMPC":
+    def run_mpc_v1(self, agent, model_type):
+        if model_type == "ManifoldMPC-v1":
             is_handover, new_sat_id, bit_rate = self.qoe_v2(
                 agent, only_runner_up=False)
-        elif model_type == "DualMPC":
+        elif model_type == "DualMPC-v1":
             is_handover, new_sat_id, bit_rate = self.qoe_v2(
                 agent, only_runner_up=True)
-        elif model_type == "DualMPC-Centralization":
+        elif model_type == "DualMPC-Centralization-v1":
             is_handover, new_sat_id, bit_rate = self.qoe_v2(
                 agent, centralized=True)
-        elif model_type == "DualMPC-Centralization-Exhaustive":
+        return is_handover, new_sat_id, bit_rate
+
+    def run_mpc(self, agent, model_type):
+        final_rate = {}
+        cur_ids = None
+        runner_up_sat_ids = None
+        ho_stamps = None
+        best_combos = None
+        best_user_info = None
+
+        if model_type == "DualMPC-Centralization-Exhaustive-v2":
             cur_ids, runner_up_sat_ids, ho_stamps, best_combos, max_rewards, best_user_info = self.qoe_v3(agent)
-        elif model_type == "DualMPC-Centralization-Reduced":
+        elif model_type == "DualMPC-Centralization-Reduced-v2":
             cur_ids, runner_up_sat_ids, ho_stamps, best_combos, max_rewards, best_user_info = self.qoe_v3(agent, reduced=True)
 
         else:
@@ -2663,10 +2679,13 @@ class Environment:
         if future_chunk_length == 0:
             return ho_sat_id, ho_stamp, best_combo, max_reward
 
-        cur_user_num = self.get_num_of_user_sat(self.cur_sat_id[agent])
+        cur_user_num = self.get_num_of_user_sat(self.mahimahi_ptr[agent], self.cur_sat_id[agent])
         cur_download_bw, runner_up_sat_id = None, None
         if method == "harmonic-mean":
-            cur_download_bw = self.predict_download_bw(agent, True)
+            # cur_download_bw = self.predict_download_bw(agent, True)
+            cur_download_bw = self.predict_bw(self.cur_sat_id[agent], agent, True,
+                            mahimahi_ptr=self.mahimahi_ptr[agent],
+                            plus=False, past_len=self.last_delay[agent])
             runner_up_sat_id, _ = self.get_runner_up_sat_id(
                 agent, method="harmonic-mean")
         elif method == "holt-winter":
@@ -2703,12 +2722,14 @@ class Environment:
                     if method == "harmonic-mean":
                         tmp_next_bw = self.predict_bw(next_sat_id, agent, robustness,
                                                       mahimahi_ptr=self.mahimahi_ptr[agent],
-                                                      plus=False, past_len=MPC_PAST_CHUNK_COUNT)
+                                                      plus=True, past_len=self.last_delay[agent])
                         tmp_cur_bw = self.predict_bw(self.cur_sat_id[agent], agent, robustness,
                                                      mahimahi_ptr=self.mahimahi_ptr[agent], plus=False,
-                                                     past_len=MPC_PAST_CHUNK_COUNT)
+                                                     past_len=self.last_delay[agent])
 
-                        next_download_bw = cur_download_bw * tmp_next_bw / tmp_cur_bw
+                        # next_download_bw = cur_download_bw * tmp_next_bw / tmp_cur_bw
+                        next_download_bw = tmp_next_bw
+                        cur_download_bw = tmp_cur_bw
 
                     elif method == "holt-winter":
                         # next_harmonic_bw = self.predict_bw_holt_winter(next_sat_id, mahimahi_ptr, num=1)
@@ -2750,11 +2771,10 @@ class Environment:
                                     harmonic_bw = next_download_bw
 
                                 download_time += (self.video_size[chunk_quality][index] / B_IN_MB) \
-                                                 / harmonic_bw * BITS_IN_BYTE  # this is MB/MB/s --> seconds
+                                                 / harmonic_bw * BITS_IN_BYTE / PACKET_PAYLOAD_PORTION  # this is MB/MB/s --> seconds
 
                                 if curr_buffer < download_time:
-                                    curr_rebuffer_time += (download_time -
-                                                           curr_buffer)
+                                    curr_rebuffer_time += (download_time - curr_buffer)
                                     curr_buffer = 0.0
                                 else:
                                     curr_buffer -= download_time
@@ -2783,7 +2803,7 @@ class Environment:
                                                                         self.cur_sat_id[agent], next_sat_id)
                                     # reward += qoe_log["reward"]
 
-                            next_user_num = self.get_num_of_user_sat(next_sat_id)
+                            next_user_num = self.get_num_of_user_sat(self.mahimahi_ptr[agent], next_sat_id)
 
                             if reward > max_reward:
                                 best_combo = combo
@@ -2811,6 +2831,7 @@ class Environment:
                                              "cur_sat_id": self.cur_sat_id[agent]}
 
         self.user_qoe_log[agent] = best_case
+
         return ho_sat_id, ho_stamp, best_combo, max_reward
 
     def objective_function(self, x, combos, cur_sat_ids, runner_up_sat_ids, sat_user_nums,
@@ -3165,7 +3186,7 @@ class Environment:
         for combo in itertools.product(list(range(int(BITRATE_LEVELS / BITRATE_WEIGHT))),
                                        repeat=MPC_FUTURE_CHUNK_COUNT):
             chunk_combo_option.append(list([BITRATE_WEIGHT * x for x in combo]))
-        cur_user_num = self.get_num_of_user_sat(self.cur_sat_id[agent])
+        cur_user_num = self.get_num_of_user_sat(self.mahimahi_ptr[agent], self.cur_sat_id[agent])
         future_chunk_length = MPC_FUTURE_CHUNK_COUNT
         if video_chunk_remain < MPC_FUTURE_CHUNK_COUNT:
             future_chunk_length = video_chunk_remain

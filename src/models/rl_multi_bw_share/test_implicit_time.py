@@ -23,7 +23,7 @@ REBUF_PENALTY = 4.3  # 1 sec rebuffering -> 3 Mbps
 SMOOTH_PENALTY = 1
 DEFAULT_QUALITY = 1  # default video quality without agent
 RANDOM_SEED = 42
-TEST_TRACES = '../../data/sat_data/test/'
+TEST_TRACES = '../../data/sat_data/test_tight/'
 NN_MODEL = sys.argv[1]
 NUM_AGENTS = int(sys.argv[2])
 
@@ -31,7 +31,7 @@ LOG_FILE = './test_results_imp' + str(NUM_AGENTS) + '/log_sim_ppo'
 
 # A_SAT = NUM_AGENTS
 structlog.configure(
-    wrapper_class=structlog.make_filtering_bound_logger(logging.DEBUG),
+    wrapper_class=structlog.make_filtering_bound_logger(logging.INFO),
 )
 
 log = structlog.get_logger()
@@ -131,7 +131,7 @@ def main():
             # this is to make the framework similar to the real
             delay, sleep_time, buffer_size, rebuf, \
             video_chunk_size, next_video_chunk_sizes, \
-            end_of_video, video_chunk_remain, is_handover, num_of_user_sat, next_sat_bandwidth, next_sat_bw_logs, \
+            end_of_video, video_chunk_remain, is_handover, _, next_sat_bandwidth, next_sat_bw_logs, \
             cur_sat_user_num, next_sat_user_num, cur_sat_bw_logs, connected_time, cur_sat_id, _, _, _, _ = \
                 net_env.get_video_chunk(bit_rate[agent], agent, model_type=None)
 

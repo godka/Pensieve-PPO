@@ -225,7 +225,7 @@ class Environment:
             if throughput == 0.0:
                 # Connect the satellite that has the best serving time
                 sat_id = self.get_best_sat_id(agent, self.mahimahi_ptr[agent])
-                self.log.info("Forced Handover1", cur_sat_id=self.cur_sat_id[agent], next_sat_id=sat_id,
+                self.log.debug("Forced Handover1", cur_sat_id=self.cur_sat_id[agent], next_sat_id=sat_id,
                               mahimahi_ptr=self.mahimahi_ptr[agent], agent=agent,
                               cur_bw=self.cooked_bw[self.cur_sat_id[agent]][self.mahimahi_ptr[agent]-3:self.mahimahi_ptr[agent]+3],
                               next_bw=self.cooked_bw[
@@ -323,7 +323,7 @@ class Environment:
                     # Connect the satellite that has the best serving time
                     sat_id = self.get_best_sat_id(agent, self.mahimahi_ptr[agent])
                     assert sat_id != self.cur_sat_id[agent]
-                    self.log.info("Forced Handover2", cur_sat_id=self.cur_sat_id[agent], sat_id=sat_id,
+                    self.log.debug("Forced Handover2", cur_sat_id=self.cur_sat_id[agent], sat_id=sat_id,
                                   mahimahi_ptr=self.mahimahi_ptr[agent], agent=agent)
                     self.update_sat_info(sat_id, self.mahimahi_ptr[agent], agent, 1)
                     self.update_sat_info(self.cur_sat_id[agent], self.mahimahi_ptr[agent], agent, -1)
