@@ -42,7 +42,7 @@ SCALE_VIDEO_LEN_FOR_TEST = 2
 NUM_AGENTS = None
 
 SAT_STRATEGY = "resource-fair"
-# SAT_STRATEGY = "ratio-based"
+SAT_STRATEGY = "ratio-based"
 
 ADAPTIVE_BUF = False
 
@@ -1894,10 +1894,12 @@ class Environment:
             impossible_route = False
 
             for idx, ho_p in enumerate(ho_positions):
-                if agent != idx and ho_p == 0:
+                if agent != idx and (ho_p != MPC_FUTURE_CHUNK_COUNT):
                     impossible_route = True
+                    break
             if [0] * self.num_agents == ho_positions or 1 in ho_positions:
                  impossible_route = True
+
 
             if impossible_route:
                 continue
@@ -2138,10 +2140,281 @@ class Environment:
                 best_future_sat_user_num = future_sat_user_nums
         return best_combos, max_rewards, best_ho_position, best_future_sat_user_num
 
+    def calculate_inner_reward_ratio(self, chunk_combo_option, future_chunk_length, first_last_quality, video_chunk_remain,
+                                                  start_buffers, cur_bws, next_bws, future_sat_user_nums,
+                               cur_sat_ids, runner_up_sat_ids, best_ho_positions, future_sat_user_list, sat_user_nums):
+        for full_combo in chunk_combo_option:
+            self.log.debug("CHUNK COMBO", full_combo=full_combo)
+            max_rewards = [-10000000 for _ in range(self.num_agents)]
+            best_combos_list = []
+            best_bws_list = []
+            best_bws_sum_list = []
+            best_ho_positions_list = []
+
+            best_combos_list.append([[self.last_quality[i]] for i in range(self.num_agents)])
+            best_bws_list.append([[-10000000] * MPC_FUTURE_CHUNK_COUNT for _ in range(self.num_agents)])
+            best_bws_sum_list.append(-10000000)
+            best_ho_positions_list.append({})
+
+            best_ho_position = None
+            combos = []
+            # Break at the end of the chunk
+
+            for agent_id in range(self.num_agents):
+                cur_combo = full_combo[
+                            MPC_FUTURE_CHUNK_COUNT * agent_id:
+                            MPC_FUTURE_CHUNK_COUNT * agent_id + future_chunk_length[agent_id]]
+                # if cur_download_bws[agent_id] is None and cur_combo != [DEFAULT_QUALITY] * MPC_FUTURE_CHUNK_COUNT:
+                #     wrong_format = True
+                #     break
+                if cur_bws[agent_id] is None:
+                    combos.append([np.nan] * MPC_FUTURE_CHUNK_COUNT)
+                else:
+                    combos.append(cur_combo)
+
+            user_info = {}
+            for sat_id in future_sat_user_nums.keys():
+                bw_ratio = {}
+                op_vars = []
+                op_vars_index = 0
+                bounds = []
+                constraints = []
+                sat_id_list = []
+                const_array = []
+                user_list = []
+                is_multi_users = False
+                for i in range(len(future_sat_user_nums[sat_id])):
+                    if future_sat_user_nums[sat_id][i] > 1:
+                        is_multi_users = True
+                    user_list = [*user_list, *future_sat_user_list[sat_id][i]]
+                if is_multi_users:
+                    user_list = list(set(user_list))
+                    assert len(user_list) > 1
+                    user_info[sat_id] = (op_vars_index, op_vars_index + len(user_list), user_list)
+
+                    op_vars = [1 / len(user_list)] * len(user_list)
+                    bounds = [*bounds, *[(0 + EPSILON, 1 - EPSILON) for _ in range(len(user_list))]]
+                    sat_id_list.append(sat_id)
+
+                    target_array = np.zeros(op_vars_index + len(user_list))
+                    target_array[op_vars_index:op_vars_index + len(user_list)] = 1
+
+                    op_vars_index += len(user_list)
+
+                    const_array.append(target_array)
+                    for i in range(len(const_array)):
+                        data = const_array[i]
+                        if len(const_array[i]) < op_vars_index:
+                            data = np.append(const_array[i], [0] * (op_vars_index - len(const_array[i])))
+
+                        constraint = LinearConstraint(data, lb=1, ub=1)
+
+                        # constraints = [*constraints, {'type': 'eq', 'fun': const}]
+                        constraints.append(constraint)
+                    import warnings
+                    warnings.filterwarnings("ignore")
+                    # print(combos, best_ho_positions, user_info)
+                    ue_ratio = minimize(
+                        self.objective_function,
+                        x0=np.array(op_vars),
+                        args=(combos, cur_sat_ids, runner_up_sat_ids, sat_user_nums,
+                              future_sat_user_nums, best_ho_positions, start_buffers,
+                              video_chunk_remain, cur_bws,
+                              next_bws, user_info, bw_ratio, None),
+                        constraints=constraints,
+                        bounds=bounds,
+                        method="SLSQP",  # or BFGS
+                        # options={'max_iter': 100}
+                    )
+                    for sat_id in sat_id_list:
+                        user_info[sat_id] = user_info[sat_id] + (ue_ratio.x[user_info[sat_id][0]:user_info[sat_id][1]],)
+
+            rewards = []
+            for agent_id, combo in enumerate(combos):
+                if combo == [np.nan] * MPC_FUTURE_CHUNK_COUNT:
+                    rewards.append(np.nan)
+                    continue
+                curr_rebuffer_time = 0
+                if ADAPTIVE_BUF and self.unexpected_change:
+                    curr_buffer = start_buffers[agent_id] * BUF_RATIO_COMBO
+                else:
+                    curr_buffer = start_buffers[agent_id]
+                bitrate_sum = 0
+                smoothness_diff = 0
+
+                last_quality = first_last_quality[agent_id]
+                last_index = int(CHUNK_TIL_VIDEO_END_CAP - video_chunk_remain[agent_id])
+                # linear optimization
+                # constraint = LinearConstraint(np.ones(self.num_agents), lb=best_bws, ub=best_bws)
+                cur_sat_id = cur_sat_ids[agent_id]
+                next_sat_id = runner_up_sat_ids[agent_id]
+
+                for position in range(0, len(combo)):
+                    # 0, 1, 2 -> 0, 2, 4
+                    chunk_quality = combo[position]
+                    index = last_index + position  # e.g., if last chunk is 3, then first iter is 3+0+1=4
+                    download_time = 0
+
+                    # cur_sat_user_num = sat_user_nums[cur_sat_id]
+                    # next_sat_user_num = sat_user_nums[next_sat_id]
+                    if best_ho_positions[agent_id] > position:
+                        cur_future_sat_user_num = future_sat_user_nums[cur_sat_id][position]
+                        harmonic_bw = cur_bws[agent_id] / cur_future_sat_user_num
+
+                    elif best_ho_positions[agent_id] == position:
+                        next_future_sat_user_num = future_sat_user_nums[next_sat_id][position]
+                        harmonic_bw = next_bws[agent_id] / next_future_sat_user_num
+
+                        # Give them a penalty
+                        download_time += HANDOVER_DELAY
+                    else:
+                        next_future_sat_user_num = future_sat_user_nums[next_sat_id][position]
+                        harmonic_bw = next_bws[agent_id] / next_future_sat_user_num
+                    # assert harmonic_bw != 0
+                    if harmonic_bw == 0:
+                        harmonic_bw = EPSILON
+                    download_time += (self.video_size[chunk_quality][index] / B_IN_MB) \
+                                     / harmonic_bw * BITS_IN_BYTE / PACKET_PAYLOAD_PORTION  # this is MB/MB/s --> seconds
+
+                    if curr_buffer < download_time:
+                        curr_rebuffer_time += (download_time - curr_buffer)
+                        curr_buffer = 0.0
+                    else:
+                        curr_buffer -= download_time
+                    curr_buffer += VIDEO_CHUNCK_LEN / MILLISECONDS_IN_SECOND
+
+                    # bitrate_sum += VIDEO_BIT_RATE[chunk_quality]
+                    # smoothness_diffs += abs(VIDEO_BIT_RATE[chunk_quality] - VIDEO_BIT_RATE[last_quality])
+                    bitrate_sum += VIDEO_BIT_RATE[chunk_quality]
+                    smoothness_diff += abs(
+                        VIDEO_BIT_RATE[chunk_quality] - VIDEO_BIT_RATE[last_quality])
+                    last_quality = chunk_quality
+                # compute reward for this combination (one reward per 5-chunk combo)
+
+                # bitrates are in Mbits/s, rebuffer in seconds, and smoothness_diffs in Mbits/s
+
+                # 10~140 - 0~100 - 0~130
+                rewards.append(bitrate_sum * QUALITY_FACTOR / M_IN_K - (REBUF_PENALTY * curr_rebuffer_time) \
+                               - SMOOTH_PENALTY * smoothness_diff / M_IN_K)
+
+            if np.nanmean(rewards) > np.nanmean(max_rewards):
+                best_combos = combos
+                max_rewards = rewards
+                best_ho_position = best_ho_positions
+                best_user_info = {}
+            elif np.nanmean(rewards) == np.nanmean(max_rewards) \
+                    and (sum(combos[:][0]) >= sum(best_combos[:][0]) or sum(best_ho_positions) > sum(best_ho_position)):
+                # elif np.nanmean(rewards) == np.nanmean(max_rewards) \
+                #         and (rewards[agent] >= max_rewards[agent] or combos[agent][0] >= best_combos[agent][0]):
+                best_combos = combos
+                max_rewards = rewards
+                best_ho_position = best_ho_positions
+                best_user_info = {}
+
+            if user_info:
+                rewards = []
+                for agent_id, combo in enumerate(combos):
+                    if combo == [np.nan] * MPC_FUTURE_CHUNK_COUNT:
+                        rewards.append(np.nan)
+                        continue
+                    curr_rebuffer_time = 0
+                    if ADAPTIVE_BUF and self.unexpected_change:
+                        curr_buffer = start_buffers[agent_id] * BUF_RATIO_COMBO
+                    else:
+                        curr_buffer = start_buffers[agent_id]
+                    bitrate_sum = 0
+                    smoothness_diff = 0
+
+                    last_quality = first_last_quality[agent_id]
+                    last_index = int(CHUNK_TIL_VIDEO_END_CAP - video_chunk_remain[agent_id])
+                    # linear optimization
+                    # constraint = LinearConstraint(np.ones(self.num_agents), lb=best_bws, ub=best_bws)
+
+                    cur_sat_id = cur_sat_ids[agent_id]
+                    next_sat_id = runner_up_sat_ids[agent_id]
+
+                    for position in range(0, len(combo)):
+                        # 0, 1, 2 -> 0, 2, 4
+                        chunk_quality = combo[position]
+                        index = last_index + position  # e.g., if last chunk is 3, then first iter is 3+0+1=4
+                        download_time = 0
+
+                        # cur_sat_user_num = sat_user_nums[cur_sat_id]
+                        # next_sat_user_num = sat_user_nums[next_sat_id]
+                        now_sat_id = None
+                        if best_ho_positions[agent_id] > position:
+                            cur_future_sat_user_num = future_sat_user_nums[cur_sat_id][position]
+                            if cur_future_sat_user_num > 1:
+                                now_sat_id = cur_sat_id
+                            harmonic_bw = cur_bws[agent_id]
+                        elif best_ho_positions[agent_id] == position:
+                            next_future_sat_user_num = future_sat_user_nums[next_sat_id][position]
+                            if next_future_sat_user_num > 1:
+                                now_sat_id = next_sat_id
+                            harmonic_bw = next_bws[agent_id]
+
+                            # Give them a penalty
+                            download_time += HANDOVER_DELAY
+                        else:
+                            next_future_sat_user_num = future_sat_user_nums[next_sat_id][position]
+                            if next_future_sat_user_num > 1:
+                                now_sat_id = next_sat_id
+                            harmonic_bw = next_bws[agent_id]
+                        if harmonic_bw == 0:
+                            harmonic_bw = EPSILON
+                        if now_sat_id:
+                            var_index = user_info[now_sat_id][2].index(agent_id)
+                            harmonic_bw *= user_info[now_sat_id][3][var_index]
+
+                        # assert harmonic_bw != 0
+                        download_time += (self.video_size[chunk_quality][index] / B_IN_MB) \
+                                         / harmonic_bw * BITS_IN_BYTE / PACKET_PAYLOAD_PORTION  # this is MB/MB/s --> seconds
+
+                        if curr_buffer < download_time:
+                            curr_rebuffer_time += (download_time - curr_buffer)
+                            curr_buffer = 0.0
+                        else:
+                            curr_buffer -= download_time
+                        curr_buffer += VIDEO_CHUNCK_LEN / MILLISECONDS_IN_SECOND
+
+                        # bitrate_sum += VIDEO_BIT_RATE[chunk_quality]
+                        # smoothness_diffs += abs(VIDEO_BIT_RATE[chunk_quality] - VIDEO_BIT_RATE[last_quality])
+                        bitrate_sum += VIDEO_BIT_RATE[chunk_quality]
+                        smoothness_diff += abs(
+                            VIDEO_BIT_RATE[chunk_quality] - VIDEO_BIT_RATE[last_quality])
+                        last_quality = chunk_quality
+                    # compute reward for this combination (one reward per 5-chunk combo)
+
+                    # bitrates are in Mbits/s, rebuffer in seconds, and smoothness_diffs in Mbits/s
+
+                    # 10~140 - 0~100 - 0~130
+                    rewards.append(bitrate_sum * QUALITY_FACTOR / M_IN_K - (REBUF_PENALTY * curr_rebuffer_time) \
+                                   - SMOOTH_PENALTY * smoothness_diff / M_IN_K)
+
+                if np.nanmean(rewards) > np.nanmean(max_rewards):
+                    best_combos = combos
+                    max_rewards = rewards
+                    # ho_stamps = ho_positions
+                    best_user_info = user_info
+                    best_ho_position = best_ho_positions
+
+                elif np.nanmean(rewards) == np.nanmean(max_rewards) \
+                        and (
+                        sum(combos[:][0]) >= sum(best_combos[:][0]) or sum(best_ho_positions) > sum(best_ho_position)):
+                    # elif np.nanmean(rewards) == np.nanmean(max_rewards) \
+                    #         and (rewards[agent] >= max_rewards[agent] or combos[agent][0] >= best_combos[agent][0]):
+                    best_combos = combos
+                    max_rewards = rewards
+                    # ho_stamps = ho_positions
+                    best_user_info = user_info
+                    best_ho_position = best_ho_positions
+        return best_combos, max_rewards, best_ho_position, best_user_info
+
     def calculate_mpc_with_handover_exhaustive_ratio_reduced(self, agent):
         # future chunks length (try 4 if that many remaining)
         video_chunk_remain = [self.video_chunk_remain[i] for i in range(self.num_agents)]
         # last_index = self.get_total_video_chunk() - video_chunk_remain
+
         chunk_combo_option = []
         ho_combo_option = []
         # make chunk combination options
@@ -2393,299 +2666,22 @@ class Environment:
             best_ho_positions = best_ho_positions_list[best_bws_args[i]]
             self.log.debug("HO COMBO", best_ho_positions=best_ho_positions, future_sat_user_list=future_sat_user_list)
 
-            for full_combo in chunk_combo_option:
-                self.log.debug("CHUNK COMBO", full_combo=full_combo)
-                combos = []
-                # Break at the end of the chunk
+            mp_inputs = []
+            other_vars = [future_chunk_length, first_last_quality, video_chunk_remain,
+                          start_buffers, cur_bws, next_bws, future_sat_user_nums,
+                          cur_sat_ids, runner_up_sat_ids, best_ho_positions, future_sat_user_list, sat_user_nums]
+            chunk_combo_option_list = np.array_split(chunk_combo_option, INNER_PROCESS_NUMS)
+            for idx in range(INNER_PROCESS_NUMS):
+                mp_inputs.append([chunk_combo_option_list[idx].tolist(), *other_vars])
 
-                for agent_id in range(self.num_agents):
-                    cur_combo = full_combo[
-                                MPC_FUTURE_CHUNK_COUNT * agent_id:
-                                MPC_FUTURE_CHUNK_COUNT * agent_id + future_chunk_length[agent_id]]
-                    # if cur_download_bws[agent_id] is None and cur_combo != [DEFAULT_QUALITY] * MPC_FUTURE_CHUNK_COUNT:
-                    #     wrong_format = True
-                    #     break
-                    if cur_bws[agent_id] is None:
-                        combos.append([np.nan] * MPC_FUTURE_CHUNK_COUNT)
-                    else:
-                        combos.append(cur_combo)
-                """
-                bw_ratio = {}
-                user_info = {}
-                op_vars = []
-                op_vars_index = 0
-                bounds = []
-                constraints = []
-                sat_id_list = []
-                const_array = []
-                for sat_id in future_sat_user_nums.keys():
-                    user_list = []
-                    is_multi_users = False
-                    for i in range(len(future_sat_user_nums[sat_id])):
-                        if future_sat_user_nums[sat_id][i] > 1:
-                            is_multi_users = True
-                        user_list = [*user_list, *future_sat_user_list[sat_id][i]]
-                    if is_multi_users:
-                        user_list = list(set(user_list))
-                        assert len(user_list) > 1
-                        user_info[sat_id] = (op_vars_index, op_vars_index + len(user_list), user_list)
-
-                        op_vars = [*op_vars, *([1 / len(user_list)] * len(user_list))]
-                        bounds = [*bounds, *[(0 + EPSILON, 1 - EPSILON) for _ in range(len(user_list))]]
-                        sat_id_list.append(sat_id)
-
-                        target_array = np.zeros(op_vars_index + len(user_list))
-                        target_array[op_vars_index:op_vars_index + len(user_list)] = 1
-
-                        op_vars_index += len(user_list)
-
-                        const_array.append(target_array)
-                if op_vars:
-                    for i in range(len(const_array)):
-                        data = const_array[i]
-                        if len(const_array[i]) < op_vars_index:
-                            data = np.append(const_array[i], [0] * (op_vars_index - len(const_array[i])))
-
-                        constraint = LinearConstraint(data, lb=1, ub=1)
-
-                        # constraints = [*constraints, {'type': 'eq', 'fun': const}]
-                        constraints.append(constraint)
-                    import warnings
-                    warnings.filterwarnings("ignore")
-                    ue_ratio = minimize(
-                        self.objective_function,
-                        x0=np.array(op_vars),
-                        args=(combos, cur_sat_ids, runner_up_sat_ids, sat_user_nums,
-                              future_sat_user_nums, best_ho_positions, start_buffers,
-                              video_chunk_remain, cur_bws,
-                              next_bws, user_info, bw_ratio, None),
-                        constraints=constraints,
-                        bounds=bounds,
-                        method="SLSQP"  # or BFGS
-                    )
-                    for sat_id in sat_id_list:
-                        user_info[sat_id] = user_info[sat_id] + (ue_ratio.x[user_info[sat_id][0]:user_info[sat_id][1]],)
-                        # user_info[sat_id] = user_info[sat_id] + (np.array([0.5, 0.5]),)
-                """
-
-                user_info = {}
-                for sat_id in future_sat_user_nums.keys():
-                    bw_ratio = {}
-                    op_vars = []
-                    op_vars_index = 0
-                    bounds = []
-                    constraints = []
-                    sat_id_list = []
-                    const_array = []
-                    user_list = []
-                    is_multi_users = False
-                    for i in range(len(future_sat_user_nums[sat_id])):
-                        if future_sat_user_nums[sat_id][i] > 1:
-                            is_multi_users = True
-                        user_list = [*user_list, *future_sat_user_list[sat_id][i]]
-                    if is_multi_users:
-                        user_list = list(set(user_list))
-                        assert len(user_list) > 1
-                        user_info[sat_id] = (op_vars_index, op_vars_index + len(user_list), user_list)
-
-                        op_vars = [1 / len(user_list)] * len(user_list)
-                        bounds = [*bounds, *[(0 + EPSILON, 1 - EPSILON) for _ in range(len(user_list))]]
-                        sat_id_list.append(sat_id)
-
-                        target_array = np.zeros(op_vars_index + len(user_list))
-                        target_array[op_vars_index:op_vars_index + len(user_list)] = 1
-
-                        op_vars_index += len(user_list)
-
-                        const_array.append(target_array)
-                        for i in range(len(const_array)):
-                            data = const_array[i]
-                            if len(const_array[i]) < op_vars_index:
-                                data = np.append(const_array[i], [0] * (op_vars_index - len(const_array[i])))
-
-                            constraint = LinearConstraint(data, lb=1, ub=1)
-
-                            # constraints = [*constraints, {'type': 'eq', 'fun': const}]
-                            constraints.append(constraint)
-                        import warnings
-                        warnings.filterwarnings("ignore")
-                        # print(combos, best_ho_positions, user_info)
-                        ue_ratio = minimize(
-                            self.objective_function,
-                            x0=np.array(op_vars),
-                            args=(combos, cur_sat_ids, runner_up_sat_ids, sat_user_nums,
-                                  future_sat_user_nums, best_ho_positions, start_buffers,
-                                  video_chunk_remain, cur_bws,
-                                  next_bws, user_info, bw_ratio, None),
-                            constraints=constraints,
-                            bounds=bounds,
-                            method="SLSQP",  # or BFGS
-                            # options={'max_iter': 100}
-                        )
-                        for sat_id in sat_id_list:
-                            user_info[sat_id] = user_info[sat_id] + (ue_ratio.x[user_info[sat_id][0]:user_info[sat_id][1]],)
-
-                rewards = []
-                for agent_id, combo in enumerate(combos):
-                    if combo == [np.nan] * MPC_FUTURE_CHUNK_COUNT:
-                        rewards.append(np.nan)
-                        continue
-                    curr_rebuffer_time = 0
-                    if ADAPTIVE_BUF and self.unexpected_change:
-                        curr_buffer = start_buffers[agent_id] * BUF_RATIO_COMBO
-                    else:
-                        curr_buffer = start_buffers[agent_id]
-                    bitrate_sum = 0
-                    smoothness_diff = 0
-
-                    last_quality = first_last_quality[agent_id]
-                    last_index = int(CHUNK_TIL_VIDEO_END_CAP - video_chunk_remain[agent_id])
-                    # linear optimization
-                    # constraint = LinearConstraint(np.ones(self.num_agents), lb=best_bws, ub=best_bws)
-                    cur_sat_id = cur_sat_ids[agent_id]
-                    next_sat_id = runner_up_sat_ids[agent_id]
-
-                    for position in range(0, len(combo)):
-                        # 0, 1, 2 -> 0, 2, 4
-                        chunk_quality = combo[position]
-                        index = last_index + position  # e.g., if last chunk is 3, then first iter is 3+0+1=4
-                        download_time = 0
-
-                        # cur_sat_user_num = sat_user_nums[cur_sat_id]
-                        # next_sat_user_num = sat_user_nums[next_sat_id]
-                        if best_ho_positions[agent_id] > position:
-                            cur_future_sat_user_num = future_sat_user_nums[cur_sat_id][position]
-                            harmonic_bw = cur_bws[agent_id] / cur_future_sat_user_num
-
-                        elif best_ho_positions[agent_id] == position:
-                            next_future_sat_user_num = future_sat_user_nums[next_sat_id][position]
-                            harmonic_bw = next_bws[agent_id] / next_future_sat_user_num
-
-                            # Give them a penalty
-                            download_time += HANDOVER_DELAY
-                        else:
-                            next_future_sat_user_num = future_sat_user_nums[next_sat_id][position]
-                            harmonic_bw = next_bws[agent_id] / next_future_sat_user_num
-                        # assert harmonic_bw != 0
-                        if harmonic_bw == 0:
-                            harmonic_bw = EPSILON
-                        download_time += (self.video_size[chunk_quality][index] / B_IN_MB) \
-                                         / harmonic_bw * BITS_IN_BYTE / PACKET_PAYLOAD_PORTION  # this is MB/MB/s --> seconds
-
-                        if curr_buffer < download_time:
-                            curr_rebuffer_time += (download_time - curr_buffer)
-                            curr_buffer = 0.0
-                        else:
-                            curr_buffer -= download_time
-                        curr_buffer += VIDEO_CHUNCK_LEN / MILLISECONDS_IN_SECOND
-
-                        # bitrate_sum += VIDEO_BIT_RATE[chunk_quality]
-                        # smoothness_diffs += abs(VIDEO_BIT_RATE[chunk_quality] - VIDEO_BIT_RATE[last_quality])
-                        bitrate_sum += VIDEO_BIT_RATE[chunk_quality]
-                        smoothness_diff += abs(
-                            VIDEO_BIT_RATE[chunk_quality] - VIDEO_BIT_RATE[last_quality])
-                        last_quality = chunk_quality
-                    # compute reward for this combination (one reward per 5-chunk combo)
-
-                    # bitrates are in Mbits/s, rebuffer in seconds, and smoothness_diffs in Mbits/s
-
-                    # 10~140 - 0~100 - 0~130
-                    rewards.append(bitrate_sum * QUALITY_FACTOR / M_IN_K - (REBUF_PENALTY * curr_rebuffer_time) \
-                                   - SMOOTH_PENALTY * smoothness_diff / M_IN_K)
-
-                if np.nanmean(rewards) > np.nanmean(max_rewards):
-                    best_combos = combos
-                    max_rewards = rewards
-                    best_ho_position = best_ho_positions
-                    best_user_info = {}
-                elif np.nanmean(rewards) == np.nanmean(max_rewards) \
-                     and (sum(combos[:][0]) >= sum(best_combos[:][0]) or sum(best_ho_positions) > sum(best_ho_position)):
-                    # elif np.nanmean(rewards) == np.nanmean(max_rewards) \
-                    #         and (rewards[agent] >= max_rewards[agent] or combos[agent][0] >= best_combos[agent][0]):
-                    best_combos = combos
-                    max_rewards = rewards
-                    best_ho_position = best_ho_positions
-                    best_user_info = {}
-
-                if user_info:
-                    rewards = []
-                    for agent_id, combo in enumerate(combos):
-                        if combo == [np.nan] * MPC_FUTURE_CHUNK_COUNT:
-                            rewards.append(np.nan)
-                            continue
-                        curr_rebuffer_time = 0
-                        if ADAPTIVE_BUF and self.unexpected_change:
-                            curr_buffer = start_buffers[agent_id] * BUF_RATIO_COMBO
-                        else:
-                            curr_buffer = start_buffers[agent_id]
-                        bitrate_sum = 0
-                        smoothness_diff = 0
-
-                        last_quality = first_last_quality[agent_id]
-                        last_index = int(CHUNK_TIL_VIDEO_END_CAP - video_chunk_remain[agent_id])
-                        # linear optimization
-                        # constraint = LinearConstraint(np.ones(self.num_agents), lb=best_bws, ub=best_bws)
-
-                        cur_sat_id = cur_sat_ids[agent_id]
-                        next_sat_id = runner_up_sat_ids[agent_id]
-
-                        for position in range(0, len(combo)):
-                            # 0, 1, 2 -> 0, 2, 4
-                            chunk_quality = combo[position]
-                            index = last_index + position  # e.g., if last chunk is 3, then first iter is 3+0+1=4
-                            download_time = 0
-
-                            # cur_sat_user_num = sat_user_nums[cur_sat_id]
-                            # next_sat_user_num = sat_user_nums[next_sat_id]
-                            now_sat_id = None
-                            if best_ho_positions[agent_id] > position:
-                                cur_future_sat_user_num = future_sat_user_nums[cur_sat_id][position]
-                                if cur_future_sat_user_num > 1:
-                                    now_sat_id = cur_sat_id
-                                harmonic_bw = cur_bws[agent_id]
-                            elif best_ho_positions[agent_id] == position:
-                                next_future_sat_user_num = future_sat_user_nums[next_sat_id][position]
-                                if next_future_sat_user_num > 1:
-                                    now_sat_id = next_sat_id
-                                harmonic_bw = next_bws[agent_id]
-
-                                # Give them a penalty
-                                download_time += HANDOVER_DELAY
-                            else:
-                                next_future_sat_user_num = future_sat_user_nums[next_sat_id][position]
-                                if next_future_sat_user_num > 1:
-                                    now_sat_id = next_sat_id
-                                harmonic_bw = next_bws[agent_id]
-                            if harmonic_bw == 0:
-                                harmonic_bw = EPSILON
-                            if now_sat_id:
-                                var_index = user_info[now_sat_id][2].index(agent_id)
-                                harmonic_bw *= user_info[now_sat_id][3][var_index]
-
-                            # assert harmonic_bw != 0
-                            download_time += (self.video_size[chunk_quality][index] / B_IN_MB) \
-                                             / harmonic_bw * BITS_IN_BYTE / PACKET_PAYLOAD_PORTION  # this is MB/MB/s --> seconds
-
-                            if curr_buffer < download_time:
-                                curr_rebuffer_time += (download_time - curr_buffer)
-                                curr_buffer = 0.0
-                            else:
-                                curr_buffer -= download_time
-                            curr_buffer += VIDEO_CHUNCK_LEN / MILLISECONDS_IN_SECOND
-
-                            # bitrate_sum += VIDEO_BIT_RATE[chunk_quality]
-                            # smoothness_diffs += abs(VIDEO_BIT_RATE[chunk_quality] - VIDEO_BIT_RATE[last_quality])
-                            bitrate_sum += VIDEO_BIT_RATE[chunk_quality]
-                            smoothness_diff += abs(
-                                VIDEO_BIT_RATE[chunk_quality] - VIDEO_BIT_RATE[last_quality])
-                            last_quality = chunk_quality
-                        # compute reward for this combination (one reward per 5-chunk combo)
-
-                        # bitrates are in Mbits/s, rebuffer in seconds, and smoothness_diffs in Mbits/s
-
-                        # 10~140 - 0~100 - 0~130
-                        rewards.append(bitrate_sum * QUALITY_FACTOR / M_IN_K - (REBUF_PENALTY * curr_rebuffer_time) \
-                                       - SMOOTH_PENALTY * smoothness_diff / M_IN_K)
+            with mp.Pool(INNER_PROCESS_NUMS) as pool:
+                async_results = [pool.apply_async(self.calculate_inner_reward_ratio, args=mp_inputs[i]) for i in range(len(mp_inputs))]
+                results = [ar.get() for ar in async_results]
+                for tmp_result in results:
+                    combos = tmp_result[0]
+                    rewards = tmp_result[1]
+                    best_ho_positions = tmp_result[2]
+                    user_info = tmp_result[3]
 
                     if np.nanmean(rewards) > np.nanmean(max_rewards):
                         best_combos = combos
