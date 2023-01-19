@@ -21,7 +21,7 @@ CRITIC_LR_RATE = 0.001
 BITRATE_REWARD = [1, 2, 3, 12, 15, 20]
 RANDOM_SEED = 42
 RAND_RANGE = 1000000
-SUMMARY_DIR = 'test_results_cent/'
+SUMMARY_DIR = 'test_results_dist_res/'
 LOG_FILE = SUMMARY_DIR + 'log_sim_cent'
 TEST_TRACES = '../../data/sat_data/test_tight/'
 SUMMARY_PATH = SUMMARY_DIR + 'summary'
@@ -70,7 +70,7 @@ size_video6 = [181801, 155580, 139857, 155432, 163442, 126289, 153295, 173849, 1
                181901, 111155, 153605, 149029, 157421, 157488, 143881, 163444, 179328, 159914, 131610, 124011, 144254,
                149991, 147968, 161857, 145210, 172312, 167025, 160064, 137507, 118421, 112270]
 
-MPC_TYPE = "DualMPC-v1"
+# MPC_TYPE = "DualMPC-v1"
 # MPC_TYPE = "DualMPC-Centralization-Exhaustive"
 MPC_TYPE = "DualMPC-Centralization-Reduced-v2"
 
