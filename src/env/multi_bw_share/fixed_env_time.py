@@ -42,7 +42,7 @@ SCALE_VIDEO_LEN_FOR_TEST = 2
 NUM_AGENTS = None
 
 SAT_STRATEGY = "resource-fair"
-SAT_STRATEGY = "ratio-based"
+# SAT_STRATEGY = "ratio-based"
 
 ADAPTIVE_BUF = False
 
@@ -1760,8 +1760,17 @@ class Environment:
         # make chunk combination options
         for combo in itertools.product(list(range(int(BITRATE_LEVELS / BITRATE_WEIGHT))),
                                        repeat=MPC_FUTURE_CHUNK_COUNT * self.num_agents):
-            chunk_combo_option.append(list([BITRATE_WEIGHT * x for x in combo]))
+            # chunk_combo_option.append(list([BITRATE_WEIGHT * x for x in combo]))
 
+            impossible_combo = False
+            for i in range(self.num_agents):
+                if i == agent:
+                    continue
+                if list(combo[i*MPC_FUTURE_CHUNK_COUNT:(i+1)*MPC_FUTURE_CHUNK_COUNT]) != [int(self.last_quality[i] / BITRATE_WEIGHT)] * MPC_FUTURE_CHUNK_COUNT:
+                    impossible_combo = True
+                    break
+            if not impossible_combo:
+                chunk_combo_option.append(list([BITRATE_WEIGHT * x for x in combo]))
         # make handover combination options
         for combo in itertools.product(list(range(MPC_FUTURE_CHUNK_COUNT + 1)), repeat=self.num_agents):
             ho_combo_option.append(list(combo))
