@@ -2023,7 +2023,6 @@ class Environment:
                         best_ho_position = best_ho_positions
                         best_future_sat_user_num = future_sat_user_nums
 
-
         self.log.info("final decision", mahimahi_ptr=self.mahimahi_ptr[agent],
                       best_ho_position=best_ho_position, best_combos=best_combos)
 
@@ -2032,20 +2031,22 @@ class Environment:
     def calculate_inner_reward(self, chunk_combo_option, future_chunk_length, first_last_quality, video_chunk_remain,
                                                   start_buffers, cur_bws, next_bws, future_sat_user_nums,
                                cur_sat_ids, runner_up_sat_ids, best_ho_positions):
+        max_rewards = [-10000000 for _ in range(self.num_agents)]
+        best_combos_list = []
+        best_bws_list = []
+        best_bws_sum_list = []
+        best_ho_positions_list = []
+
+        best_combos_list.append([[self.last_quality[i]] for i in range(self.num_agents)])
+        best_bws_list.append([[-10000000] * MPC_FUTURE_CHUNK_COUNT for _ in range(self.num_agents)])
+        best_bws_sum_list.append(-10000000)
+        best_ho_positions_list.append({})
+
+        best_ho_position = None
+
         for full_combo in chunk_combo_option:
             self.log.debug("CHUNK COMBO", full_combo=full_combo)
-            max_rewards = [-10000000 for _ in range(self.num_agents)]
-            best_combos_list = []
-            best_bws_list = []
-            best_bws_sum_list = []
-            best_ho_positions_list = []
 
-            best_combos_list.append([[self.last_quality[i]] for i in range(self.num_agents)])
-            best_bws_list.append([[-10000000] * MPC_FUTURE_CHUNK_COUNT for _ in range(self.num_agents)])
-            best_bws_sum_list.append(-10000000)
-            best_ho_positions_list.append({})
-
-            best_ho_position = None
             combos = []
             # Break at the end of the chunk
 
