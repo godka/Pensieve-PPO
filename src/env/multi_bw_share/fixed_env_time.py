@@ -42,7 +42,7 @@ SCALE_VIDEO_LEN_FOR_TEST = 2
 NUM_AGENTS = None
 
 SAT_STRATEGY = "resource-fair"
-SAT_STRATEGY = "ratio-based"
+# SAT_STRATEGY = "ratio-based"
 
 ADAPTIVE_BUF = False
 
@@ -2022,12 +2022,10 @@ class Environment:
                     combos = tmp_result[0]
                     rewards = tmp_result[1]
                     best_ho_positions = tmp_result[2]
-                    future_sat_user_nums = tmp_result[3]
                     if np.nanmean(rewards) > np.nanmean(max_rewards):
                         best_combos = combos
                         max_rewards = rewards
                         best_ho_position = best_ho_positions
-                        best_future_sat_user_num = future_sat_user_nums
                     elif np.nanmean(rewards) == np.nanmean(max_rewards) \
                          and (combos[agent][0] >= best_combos[agent][0]):
 
@@ -2036,7 +2034,6 @@ class Environment:
                         best_combos = combos
                         max_rewards = rewards
                         best_ho_position = best_ho_positions
-                        best_future_sat_user_num = future_sat_user_nums
 
         self.log.info("final decision", mahimahi_ptr=self.mahimahi_ptr[agent],
                       best_ho_position=best_ho_position, best_combos=best_combos)
@@ -2047,12 +2044,12 @@ class Environment:
                                                   start_buffers, cur_bws, next_bws, future_sat_user_nums,
                                cur_sat_ids, runner_up_sat_ids, best_ho_positions):
         max_rewards = [-10000000 for _ in range(self.num_agents)]
-        best_combos_list = []
+        best_combos = []
         best_bws_list = []
         best_bws_sum_list = []
         best_ho_positions_list = []
 
-        best_combos_list.append([[self.last_quality[i]] for i in range(self.num_agents)])
+        best_combos.append([[self.last_quality[i]] for i in range(self.num_agents)])
         best_bws_list.append([[-10000000] * MPC_FUTURE_CHUNK_COUNT for _ in range(self.num_agents)])
         best_bws_sum_list.append(-10000000)
         best_ho_positions_list.append({})
@@ -2145,7 +2142,6 @@ class Environment:
                 best_combos = combos
                 max_rewards = rewards
                 best_ho_position = best_ho_positions
-                best_future_sat_user_num = future_sat_user_nums
             elif np.nanmean(rewards) == np.nanmean(max_rewards) \
                  and (combos[agent][0] >= best_combos[agent][0]):
                 # elif np.nanmean(rewards) == np.nanmean(max_rewards) \
@@ -2153,8 +2149,7 @@ class Environment:
                 best_combos = combos
                 max_rewards = rewards
                 best_ho_position = best_ho_positions
-                best_future_sat_user_num = future_sat_user_nums
-        return best_combos, max_rewards, best_ho_position, best_future_sat_user_num
+        return best_combos, max_rewards, best_ho_position
 
     def calculate_inner_reward_ratio(self, chunk_combo_option, agent, future_chunk_length, first_last_quality, video_chunk_remain,
                                                   start_buffers, cur_bws, next_bws, future_sat_user_nums,
