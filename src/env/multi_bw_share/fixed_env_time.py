@@ -42,7 +42,7 @@ SCALE_VIDEO_LEN_FOR_TEST = 2
 NUM_AGENTS = None
 
 SAT_STRATEGY = "resource-fair"
-# SAT_STRATEGY = "ratio-based"
+SAT_STRATEGY = "ratio-based"
 
 ADAPTIVE_BUF = False
 
@@ -1822,8 +1822,8 @@ class Environment:
                 # cur_sat_ids[idx] = sat_id
 
         # Overwrite the buffer
-        start_buffers = [self.buffer_size[i] / MILLISECONDS_IN_SECOND for i in range(self.num_agents)]
-        first_last_quality = copy.deepcopy(self.last_quality)
+        # start_buffers = [self.buffer_size[i] / MILLISECONDS_IN_SECOND for i in range(self.num_agents)]
+        # first_last_quality = copy.deepcopy(self.last_quality)
 
         mahimahi_ptr = copy.deepcopy(first_mahimahi_ptr)
 
@@ -2492,8 +2492,8 @@ class Environment:
                 # cur_sat_ids[idx] = sat_id
 
         # Overwrite the buffer
-        start_buffers = [self.buffer_size[i] / MILLISECONDS_IN_SECOND for i in range(self.num_agents)]
-        first_last_quality = copy.deepcopy(self.last_quality)
+        # start_buffers = [self.buffer_size[i] / MILLISECONDS_IN_SECOND for i in range(self.num_agents)]
+        # first_last_quality = copy.deepcopy(self.last_quality)
 
         mahimahi_ptr = copy.deepcopy(first_mahimahi_ptr)
 
