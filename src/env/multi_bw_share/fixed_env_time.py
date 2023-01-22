@@ -42,7 +42,7 @@ SCALE_VIDEO_LEN_FOR_TEST = 2
 NUM_AGENTS = None
 
 SAT_STRATEGY = "resource-fair"
-# SAT_STRATEGY = "ratio-based"
+SAT_STRATEGY = "ratio-based"
 
 ADAPTIVE_BUF = False
 
@@ -173,17 +173,17 @@ class Environment:
                         self.unexpected_change = True
                         break
 
+            if best_user_info:
+                for sat_id in best_user_info:
+                    final_rate[sat_id] = self.cur_satellite[sat_id].set_data_rate_ratio(best_user_info[sat_id][2], best_user_info[sat_id][3], self.mahimahi_ptr[agent])
+            else:
+                for sat_id in list(set(self.cur_sat_id + runner_up_sat_ids)):
+                    if sat_id is None:
+                        continue
+                    self.cur_satellite[sat_id].set_data_rate_ratio(None, None, self.mahimahi_ptr[agent])
+
             if do_handover:
                 self.log.info("Do update", cur_sat_ids=self.cur_sat_id, runner_up_sat_ids=runner_up_sat_ids)
-                if best_user_info:
-                    for sat_id in best_user_info:
-                        final_rate[sat_id] = self.cur_satellite[sat_id].set_data_rate_ratio(best_user_info[sat_id][2], best_user_info[sat_id][3], self.mahimahi_ptr[agent])
-                else:
-                    for sat_id in list(set(self.cur_sat_id + runner_up_sat_ids)):
-                        if sat_id is None:
-                            continue
-                        self.cur_satellite[sat_id].set_data_rate_ratio(None, None, self.mahimahi_ptr[agent])
-
                 for i in range(self.num_agents):
                     runner_up_sat_id = runner_up_sat_ids[i]
                     if ho_stamps[i] == 0:
@@ -796,6 +796,8 @@ class Environment:
         self.num_of_user_sat = {}
         self.download_bw = [[] for _ in range(self.num_agents)]
         self.cur_satellite = {}
+
+        self.prev_best_combos = [[DEFAULT_QUALITY] * MPC_FUTURE_CHUNK_COUNT] * self.num_agents
 
         self.trace_idx += 1
         if self.trace_idx >= len(self.all_cooked_time):
@@ -1766,11 +1768,16 @@ class Environment:
             for i in range(self.num_agents):
                 if i == agent:
                     continue
-                if list(combo[i*MPC_FUTURE_CHUNK_COUNT:(i+1)*MPC_FUTURE_CHUNK_COUNT]) != [int(self.last_quality[i] / BITRATE_WEIGHT)] * MPC_FUTURE_CHUNK_COUNT:
+                check_list = list(combo[i*MPC_FUTURE_CHUNK_COUNT:(i+1)*MPC_FUTURE_CHUNK_COUNT])
+                check_list = [BITRATE_WEIGHT * x for x in check_list]
+                if len(self.prev_best_combos[i]) != MPC_FUTURE_CHUNK_COUNT:
+                    self.prev_best_combos[i] = self.prev_best_combos[i] * MPC_FUTURE_CHUNK_COUNT
+                if check_list != self.prev_best_combos[i]:
                     impossible_combo = True
                     break
             if not impossible_combo:
                 chunk_combo_option.append(list([BITRATE_WEIGHT * x for x in combo]))
+
         # make handover combination options
         for combo in itertools.product(list(range(MPC_FUTURE_CHUNK_COUNT + 1)), repeat=self.num_agents):
             ho_combo_option.append(list(combo))
@@ -1909,7 +1916,6 @@ class Environment:
             if [0] * self.num_agents == ho_positions or 1 in ho_positions:
                  impossible_route = True
 
-
             if impossible_route:
                 continue
 
@@ -2002,7 +2008,7 @@ class Environment:
             self.log.debug("HO COMBO", best_ho_positions=best_ho_positions, future_sat_user_list=future_sat_user_nums)
 
             mp_inputs = []
-            other_vars = [future_chunk_length, first_last_quality, video_chunk_remain,
+            other_vars = [agent, future_chunk_length, first_last_quality, video_chunk_remain,
                           start_buffers, cur_bws, next_bws, future_sat_user_nums,
                           cur_sat_ids, runner_up_sat_ids, best_ho_positions]
             chunk_combo_option_list = np.array_split(chunk_combo_option, INNER_PROCESS_NUMS)
@@ -2023,8 +2029,8 @@ class Environment:
                         best_ho_position = best_ho_positions
                         best_future_sat_user_num = future_sat_user_nums
                     elif np.nanmean(rewards) == np.nanmean(max_rewards) \
-                            and (
-                            sum(combos[:][0]) >= sum(best_combos[:][0]) or sum(best_ho_positions) > sum(best_ho_position)):
+                         and (combos[agent][0] >= best_combos[agent][0]):
+
                         # elif np.nanmean(rewards) == np.nanmean(max_rewards) \
                         #         and (rewards[agent] >= max_rewards[agent] or combos[agent][0] >= best_combos[agent][0]):
                         best_combos = combos
@@ -2037,7 +2043,7 @@ class Environment:
 
         return cur_sat_ids, runner_up_sat_ids, best_ho_position, best_combos, max_rewards
 
-    def calculate_inner_reward(self, chunk_combo_option, future_chunk_length, first_last_quality, video_chunk_remain,
+    def calculate_inner_reward(self, chunk_combo_option, agent, future_chunk_length, first_last_quality, video_chunk_remain,
                                                   start_buffers, cur_bws, next_bws, future_sat_user_nums,
                                cur_sat_ids, runner_up_sat_ids, best_ho_positions):
         max_rewards = [-10000000 for _ in range(self.num_agents)]
@@ -2141,7 +2147,7 @@ class Environment:
                 best_ho_position = best_ho_positions
                 best_future_sat_user_num = future_sat_user_nums
             elif np.nanmean(rewards) == np.nanmean(max_rewards) \
-                    and (sum(combos[:][0]) >= sum(best_combos[:][0]) or sum(best_ho_positions) > sum(best_ho_position)):
+                 and (combos[agent][0] >= best_combos[agent][0]):
                 # elif np.nanmean(rewards) == np.nanmean(max_rewards) \
                 #         and (rewards[agent] >= max_rewards[agent] or combos[agent][0] >= best_combos[agent][0]):
                 best_combos = combos
@@ -2150,19 +2156,20 @@ class Environment:
                 best_future_sat_user_num = future_sat_user_nums
         return best_combos, max_rewards, best_ho_position, best_future_sat_user_num
 
-    def calculate_inner_reward_ratio(self, chunk_combo_option, future_chunk_length, first_last_quality, video_chunk_remain,
+    def calculate_inner_reward_ratio(self, chunk_combo_option, agent, future_chunk_length, first_last_quality, video_chunk_remain,
                                                   start_buffers, cur_bws, next_bws, future_sat_user_nums,
                                cur_sat_ids, runner_up_sat_ids, best_ho_positions, future_sat_user_list, sat_user_nums):
         max_rewards = [-10000000 for _ in range(self.num_agents)]
-        best_combos_list = []
+        best_combos = []
         best_bws_list = []
         best_bws_sum_list = []
         best_ho_positions_list = []
 
-        best_combos_list.append([[self.last_quality[i]] for i in range(self.num_agents)])
+        best_combos.append([[self.last_quality[i]] for i in range(self.num_agents)])
         best_bws_list.append([[-10000000] * MPC_FUTURE_CHUNK_COUNT for _ in range(self.num_agents)])
         best_bws_sum_list.append(-10000000)
         best_ho_positions_list.append({})
+        best_user_info = None
 
         best_ho_position = None
         for full_combo in chunk_combo_option:
@@ -2314,7 +2321,7 @@ class Environment:
                 best_ho_position = best_ho_positions
                 best_user_info = {}
             elif np.nanmean(rewards) == np.nanmean(max_rewards) \
-                    and (sum(combos[:][0]) >= sum(best_combos[:][0]) or sum(best_ho_positions) > sum(best_ho_position)):
+                    and (combos[agent][0] >= best_combos[agent][0]):
                 # elif np.nanmean(rewards) == np.nanmean(max_rewards) \
                 #         and (rewards[agent] >= max_rewards[agent] or combos[agent][0] >= best_combos[agent][0]):
                 best_combos = combos
@@ -2408,10 +2415,8 @@ class Environment:
                     # ho_stamps = ho_positions
                     best_user_info = user_info
                     best_ho_position = best_ho_positions
-
                 elif np.nanmean(rewards) == np.nanmean(max_rewards) \
-                        and (
-                        sum(combos[:][0]) >= sum(best_combos[:][0]) or sum(best_ho_positions) > sum(best_ho_position)):
+                        and (combos[agent][0] >= best_combos[agent][0]):
                     # elif np.nanmean(rewards) == np.nanmean(max_rewards) \
                     #         and (rewards[agent] >= max_rewards[agent] or combos[agent][0] >= best_combos[agent][0]):
                     best_combos = combos
@@ -2419,6 +2424,7 @@ class Environment:
                     # ho_stamps = ho_positions
                     best_user_info = user_info
                     best_ho_position = best_ho_positions
+
         return best_combos, max_rewards, best_ho_position, best_user_info
 
     def calculate_mpc_with_handover_exhaustive_ratio_reduced(self, agent):
@@ -2431,7 +2437,21 @@ class Environment:
         # make chunk combination options
         for combo in itertools.product(list(range(int(BITRATE_LEVELS / BITRATE_WEIGHT))),
                                        repeat=MPC_FUTURE_CHUNK_COUNT * self.num_agents):
-            chunk_combo_option.append(list([BITRATE_WEIGHT * x for x in combo]))
+            # chunk_combo_option.append(list([BITRATE_WEIGHT * x for x in combo]))
+
+            impossible_combo = False
+            for i in range(self.num_agents):
+                if i == agent:
+                    continue
+                check_list = list(combo[i*MPC_FUTURE_CHUNK_COUNT:(i+1)*MPC_FUTURE_CHUNK_COUNT])
+                check_list = [BITRATE_WEIGHT * x for x in check_list]
+                if len(self.prev_best_combos[i]) != MPC_FUTURE_CHUNK_COUNT:
+                    self.prev_best_combos[i] = self.prev_best_combos[i] * MPC_FUTURE_CHUNK_COUNT
+                if check_list != self.prev_best_combos[i]:
+                    impossible_combo = True
+                    break
+            if not impossible_combo:
+                chunk_combo_option.append(list([BITRATE_WEIGHT * x for x in combo]))
 
         # make handover combination options
         for combo in itertools.product(list(range(MPC_FUTURE_CHUNK_COUNT + 1)), repeat=self.num_agents):
@@ -2523,9 +2543,9 @@ class Environment:
         cur_bws = []
         for agent_id in range(self.num_agents):
             tmp_next_bw = self.predict_bw(runner_up_sat_ids[agent_id], agent_id, True,
-                                          mahimahi_ptr=mahimahi_ptr[agent_id], past_len=self.last_delay[agent])
+                                          mahimahi_ptr=mahimahi_ptr[agent_id], past_len=MPC_PAST_CHUNK_COUNT)
             tmp_cur_bw = self.predict_bw(cur_sat_ids[agent_id], agent_id, True,
-                                         mahimahi_ptr=mahimahi_ptr[agent_id], past_len=self.last_delay[agent])
+                                         mahimahi_ptr=mahimahi_ptr[agent_id], past_len=MPC_PAST_CHUNK_COUNT)
             assert tmp_cur_bw != 0 or tmp_next_bw != 0
             next_bws.append(tmp_next_bw)
             cur_bws.append(tmp_cur_bw)
@@ -2542,12 +2562,12 @@ class Environment:
         # best_bws = [[-10000000] * MPC_FUTURE_CHUNK_COUNT for _ in range(self.num_agents)]
         # best_bws_sum = [-10000000]
         # best_ho_positions = {}
-        best_combos_list = []
+        best_combos = []
         best_bws_list = []
         best_bws_sum_list = []
         best_ho_positions_list = []
 
-        best_combos_list.append([[self.last_quality[i]] for i in range(self.num_agents)])
+        best_combos.append([[self.last_quality[i]] for i in range(self.num_agents)])
         best_bws_list.append([[-10000000] * MPC_FUTURE_CHUNK_COUNT for _ in range(self.num_agents)])
         best_bws_sum_list.append(-10000000)
         best_ho_positions_list.append({})
@@ -2567,10 +2587,12 @@ class Environment:
             tmp_bws_sum = []
             impossible_route = False
             for idx, ho_p in enumerate(ho_positions):
-                if agent != idx and ho_p == 0:
+                if agent != idx and (ho_p != MPC_FUTURE_CHUNK_COUNT):
                     impossible_route = True
+                    break
             if [0] * self.num_agents == ho_positions or 1 in ho_positions:
                  impossible_route = True
+
             if impossible_route:
                 continue
 
@@ -2678,7 +2700,7 @@ class Environment:
             self.log.debug("HO COMBO", best_ho_positions=best_ho_positions, future_sat_user_list=future_sat_user_list)
 
             mp_inputs = []
-            other_vars = [future_chunk_length, first_last_quality, video_chunk_remain,
+            other_vars = [agent, future_chunk_length, first_last_quality, video_chunk_remain,
                           start_buffers, cur_bws, next_bws, future_sat_user_nums,
                           cur_sat_ids, runner_up_sat_ids, best_ho_positions, future_sat_user_list, sat_user_nums]
             chunk_combo_option_list = np.array_split(chunk_combo_option, INNER_PROCESS_NUMS)
@@ -2702,7 +2724,7 @@ class Environment:
                         best_ho_position = best_ho_positions
 
                     elif np.nanmean(rewards) == np.nanmean(max_rewards) \
-                            and (sum(combos[:][0]) >= sum(best_combos[:][0]) or sum(best_ho_positions) > sum(best_ho_position)):
+                            and (combos[agent][0] >= best_combos[agent][0]):
                         # elif np.nanmean(rewards) == np.nanmean(max_rewards) \
                         #         and (rewards[agent] >= max_rewards[agent] or combos[agent][0] >= best_combos[agent][0]):
                         best_combos = combos
@@ -3187,7 +3209,7 @@ class Environment:
                 continue
 
             if method == "harmonic-mean":
-                target_sat_bw = self.predict_bw(sat_id, agent, mahimahi_ptr=mahimahi_ptr, past_len=MPC_PAST_CHUNK_COUNT)
+                target_sat_bw = self.predict_bw_num(sat_id, agent, mahimahi_ptr=mahimahi_ptr, plus=True)
                 real_sat_bw = target_sat_bw  # / (self.get_num_of_user_sat(sat_id) + 1)
             elif method == "holt-winter":
                 target_sat_bw = self.predict_bw_holt_winter(sat_id, agent, num=1)
@@ -3419,7 +3441,7 @@ class Environment:
 
         return harmonic_bw
 
-    def predict_bw_set(self, sat_id, agent, future_len=1, robustness=True, plus=False, mahimahi_ptr=None):
+    def predict_bw_num(self, sat_id, agent, robustness=True, plus=False, mahimahi_ptr=None):
         curr_error = 0
         if mahimahi_ptr is None:
             mahimahi_ptr = self.mahimahi_ptr[agent]
