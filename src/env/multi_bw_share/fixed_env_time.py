@@ -12,7 +12,8 @@ from multiprocessing import Process, Value, Array, Manager
 from env.multi_bw_share.satellite import Satellite
 from env.multi_bw_share.user import User
 from util.constants import EPSILON, MPC_FUTURE_CHUNK_COUNT, QUALITY_FACTOR, REBUF_PENALTY, SMOOTH_PENALTY, \
-    MPC_PAST_CHUNK_COUNT, HO_NUM, TOTAL_VIDEO_CHUNKS, CHUNK_TIL_VIDEO_END_CAP, DEFAULT_QUALITY, INNER_PROCESS_NUMS
+    MPC_PAST_CHUNK_COUNT, HO_NUM, TOTAL_VIDEO_CHUNKS, CHUNK_TIL_VIDEO_END_CAP, DEFAULT_QUALITY, INNER_PROCESS_NUMS, \
+    VIDEO_CHUNCK_LEN
 
 VIDEO_BIT_RATE = [300, 750, 1200, 1850, 2850, 4300]
 M_IN_K = 1000.0
@@ -21,7 +22,6 @@ MILLISECONDS_IN_SECOND = 1000.0
 B_IN_MB = 1000000.0
 BITS_IN_BYTE = 8.0
 RANDOM_SEED = 42
-VIDEO_CHUNCK_LEN = 4000.0  # millisec, every time add this amount to buffer
 BITRATE_LEVELS = 6
 BUFFER_THRESH = 60.0 * MILLISECONDS_IN_SECOND  # millisec, max buffer limit
 DRAIN_BUFFER_SLEEP_TIME = 500.0  # millisec
@@ -341,7 +341,7 @@ class Environment:
         # add in the new chunk
         self.buffer_size[agent] += VIDEO_CHUNCK_LEN
 
-        # sleep if buffer gets too large
+         # sleep if buffer gets too large
         sleep_time = 0
         if self.buffer_size[agent] > BUFFER_THRESH:
             self.log.debug("Buffer exceed!", buffer_size=self.buffer_size[agent], mahimahi_ptr=self.mahimahi_ptr[agent],
@@ -1819,14 +1819,12 @@ class Environment:
             # chunk_combo_option.append(list([BITRATE_WEIGHT * x for x in combo]))
 
             impossible_combo = False
-            prev_best_combos = [0, 0, 0]
             for i in range(self.num_agents):
                 if i == agent:
                     continue
                 check_list = list(combo[i*MPC_FUTURE_CHUNK_COUNT:(i+1)*MPC_FUTURE_CHUNK_COUNT])
                 check_list = [BITRATE_WEIGHT * x for x in check_list]
-                prev_best_combos[i] = first_last_quality[i] * MPC_FUTURE_CHUNK_COUNT
-                if check_list != prev_best_combos[i]:
+                if check_list != [first_last_quality[i]] * MPC_FUTURE_CHUNK_COUNT:
                     impossible_combo = True
                     break
             if not impossible_combo:
@@ -2492,11 +2490,9 @@ class Environment:
             for i in range(self.num_agents):
                 if i == agent:
                     continue
-                check_list = list(combo[i*MPC_FUTURE_CHUNK_COUNT:(i+1)*MPC_FUTURE_CHUNK_COUNT])
+                check_list = list(combo[i * MPC_FUTURE_CHUNK_COUNT:(i + 1) * MPC_FUTURE_CHUNK_COUNT])
                 check_list = [BITRATE_WEIGHT * x for x in check_list]
-                if len(self.prev_best_combos[i]) != MPC_FUTURE_CHUNK_COUNT:
-                    self.prev_best_combos[i] = self.prev_best_combos[i] * MPC_FUTURE_CHUNK_COUNT
-                if check_list != self.prev_best_combos[i]:
+                if check_list != [first_last_quality[i]] * MPC_FUTURE_CHUNK_COUNT:
                     impossible_combo = True
                     break
             if not impossible_combo:
