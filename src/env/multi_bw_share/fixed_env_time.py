@@ -1759,24 +1759,6 @@ class Environment:
 
         chunk_combo_option = []
         ho_combo_option = []
-        # make chunk combination options
-        for combo in itertools.product(list(range(int(BITRATE_LEVELS / BITRATE_WEIGHT))),
-                                       repeat=MPC_FUTURE_CHUNK_COUNT * self.num_agents):
-            # chunk_combo_option.append(list([BITRATE_WEIGHT * x for x in combo]))
-
-            impossible_combo = False
-            for i in range(self.num_agents):
-                if i == agent:
-                    continue
-                check_list = list(combo[i*MPC_FUTURE_CHUNK_COUNT:(i+1)*MPC_FUTURE_CHUNK_COUNT])
-                check_list = [BITRATE_WEIGHT * x for x in check_list]
-                if len(self.prev_best_combos[i]) != MPC_FUTURE_CHUNK_COUNT:
-                    self.prev_best_combos[i] = self.prev_best_combos[i] * MPC_FUTURE_CHUNK_COUNT
-                if check_list != self.prev_best_combos[i]:
-                    impossible_combo = True
-                    break
-            if not impossible_combo:
-                chunk_combo_option.append(list([BITRATE_WEIGHT * x for x in combo]))
 
         # make handover combination options
         for combo in itertools.product(list(range(MPC_FUTURE_CHUNK_COUNT + 1)), repeat=self.num_agents):
@@ -1831,6 +1813,24 @@ class Environment:
                                                        method="harmonic-mean",
                                                        mahimahi_ptr=mahimahi_ptr[i],
                                                        cur_sat_id=cur_sat_ids[i])[0] for i in range(self.num_agents)]
+        # make chunk combination options
+        for combo in itertools.product(list(range(int(BITRATE_LEVELS / BITRATE_WEIGHT))),
+                                       repeat=MPC_FUTURE_CHUNK_COUNT * self.num_agents):
+            # chunk_combo_option.append(list([BITRATE_WEIGHT * x for x in combo]))
+
+            impossible_combo = False
+            prev_best_combos = [0, 0, 0]
+            for i in range(self.num_agents):
+                if i == agent:
+                    continue
+                check_list = list(combo[i*MPC_FUTURE_CHUNK_COUNT:(i+1)*MPC_FUTURE_CHUNK_COUNT])
+                check_list = [BITRATE_WEIGHT * x for x in check_list]
+                prev_best_combos[i] = first_last_quality[i] * MPC_FUTURE_CHUNK_COUNT
+                if check_list != prev_best_combos[i]:
+                    impossible_combo = True
+                    break
+            if not impossible_combo:
+                chunk_combo_option.append(list([BITRATE_WEIGHT * x for x in combo]))
 
         related_sat_ids = []
         for sat_id in list(set(cur_sat_ids + runner_up_sat_ids)):
@@ -2429,24 +2429,6 @@ class Environment:
 
         chunk_combo_option = []
         ho_combo_option = []
-        # make chunk combination options
-        for combo in itertools.product(list(range(int(BITRATE_LEVELS / BITRATE_WEIGHT))),
-                                       repeat=MPC_FUTURE_CHUNK_COUNT * self.num_agents):
-            # chunk_combo_option.append(list([BITRATE_WEIGHT * x for x in combo]))
-
-            impossible_combo = False
-            for i in range(self.num_agents):
-                if i == agent:
-                    continue
-                check_list = list(combo[i*MPC_FUTURE_CHUNK_COUNT:(i+1)*MPC_FUTURE_CHUNK_COUNT])
-                check_list = [BITRATE_WEIGHT * x for x in check_list]
-                if len(self.prev_best_combos[i]) != MPC_FUTURE_CHUNK_COUNT:
-                    self.prev_best_combos[i] = self.prev_best_combos[i] * MPC_FUTURE_CHUNK_COUNT
-                if check_list != self.prev_best_combos[i]:
-                    impossible_combo = True
-                    break
-            if not impossible_combo:
-                chunk_combo_option.append(list([BITRATE_WEIGHT * x for x in combo]))
 
         # make handover combination options
         for combo in itertools.product(list(range(MPC_FUTURE_CHUNK_COUNT + 1)), repeat=self.num_agents):
@@ -2500,6 +2482,25 @@ class Environment:
         runner_up_sat_ids = [self.get_runner_up_sat_id(i, method="harmonic-mean",
                                                        mahimahi_ptr=mahimahi_ptr[i],
                                                        cur_sat_id=cur_sat_ids[i])[0] for i in range(self.num_agents)]
+
+        # make chunk combination options
+        for combo in itertools.product(list(range(int(BITRATE_LEVELS / BITRATE_WEIGHT))),
+                                       repeat=MPC_FUTURE_CHUNK_COUNT * self.num_agents):
+            # chunk_combo_option.append(list([BITRATE_WEIGHT * x for x in combo]))
+
+            impossible_combo = False
+            for i in range(self.num_agents):
+                if i == agent:
+                    continue
+                check_list = list(combo[i*MPC_FUTURE_CHUNK_COUNT:(i+1)*MPC_FUTURE_CHUNK_COUNT])
+                check_list = [BITRATE_WEIGHT * x for x in check_list]
+                if len(self.prev_best_combos[i]) != MPC_FUTURE_CHUNK_COUNT:
+                    self.prev_best_combos[i] = self.prev_best_combos[i] * MPC_FUTURE_CHUNK_COUNT
+                if check_list != self.prev_best_combos[i]:
+                    impossible_combo = True
+                    break
+            if not impossible_combo:
+                chunk_combo_option.append(list([BITRATE_WEIGHT * x for x in combo]))
 
         related_sat_ids = []
         for sat_id in list(set(cur_sat_ids + runner_up_sat_ids)):
