@@ -34,7 +34,7 @@ import argparse
 
 parser = argparse.ArgumentParser(description='PyTorch Synthetic Benchmark',
                                  formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-parser.add_argument('--user', type=int, default=4)
+parser.add_argument('--user', type=int, default=3)
 args = parser.parse_args()
 NUM_AGENTS = args.user
 

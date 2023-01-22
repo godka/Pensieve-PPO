@@ -3389,9 +3389,8 @@ class Environment:
         if past_bw == 0:
             return self.cur_satellite[sat_id].data_rate_unshared(mahimahi_ptr, self.cur_user[agent])
 
-        if sat_id in self.past_bw_ests[agent].keys() and len(self.past_bw_ests[agent][sat_id]) > 0 \
-                and mahimahi_ptr - 1 in self.past_bw_ests[agent][sat_id].keys():
-            curr_error = abs(self.past_bw_ests[agent][sat_id][mahimahi_ptr - 1] - past_bw) / float(past_bw)
+        if sat_id in self.past_bw_ests[agent].keys() and len(self.past_bw_ests[agent][sat_id]) > 0:
+            curr_error = abs(self.past_bw_ests[agent][sat_id][-1] - past_bw) / float(past_bw)
         if sat_id not in self.past_bw_errors[agent].keys():
             self.past_bw_errors[agent][sat_id] = []
         self.past_bw_errors[agent][sat_id].append(curr_error)
@@ -3419,10 +3418,8 @@ class Environment:
         harmonic_bw = 1.0 / (bandwidth_sum / len(past_bws))
 
         if sat_id not in self.past_bw_ests[agent].keys():
-            self.past_bw_ests[agent][sat_id] = {}
-        if self.mahimahi_ptr[agent] not in self.past_bw_ests[agent][sat_id].keys():
-            self.past_bw_ests[agent][sat_id][mahimahi_ptr] = None
-        self.past_bw_ests[agent][sat_id][mahimahi_ptr] = harmonic_bw
+            self.past_bw_ests[agent][sat_id] = []
+        self.past_bw_ests[agent][sat_id].append(harmonic_bw)
 
         if robustness:
             # future bandwidth prediction
@@ -3448,15 +3445,14 @@ class Environment:
 
         # past_bw = self.cooked_bw[self.cur_sat_id][self.mahimahi_ptr - 1]
         if num_of_user_sat == 0:
-            past_bw = self.cooked_bw[sat_id][mahimahi_ptr - 1]
+            past_bw = self.cooked_bw[sat_id][mahimahi_ptr]
         else:
-            past_bw = self.cooked_bw[sat_id][mahimahi_ptr - 1] / num_of_user_sat
+            past_bw = self.cooked_bw[sat_id][mahimahi_ptr] / num_of_user_sat
         if past_bw == 0:
             return 0
 
-        if sat_id in self.past_bw_ests[agent].keys() and len(self.past_bw_ests[agent][sat_id]) > 0 \
-                and mahimahi_ptr - 1 in self.past_bw_ests[agent][sat_id].keys():
-            curr_error = abs(self.past_bw_ests[agent][sat_id][mahimahi_ptr - 1] - past_bw) / float(past_bw)
+        if sat_id in self.past_bw_ests[agent].keys() and len(self.past_bw_ests[agent][sat_id]) > 0:
+            curr_error = abs(self.past_bw_ests[agent][sat_id][-1] - past_bw) / float(past_bw)
         if sat_id not in self.past_bw_errors[agent].keys():
             self.past_bw_errors[agent][sat_id] = []
         self.past_bw_errors[agent][sat_id].append(curr_error)
@@ -3491,10 +3487,8 @@ class Environment:
         harmonic_bw = 1.0 / (bandwidth_sum / len(past_bws))
 
         if sat_id not in self.past_bw_ests[agent].keys():
-            self.past_bw_ests[agent][sat_id] = {}
-        if self.mahimahi_ptr[agent] not in self.past_bw_ests[agent][sat_id].keys():
-            self.past_bw_ests[agent][sat_id][mahimahi_ptr] = None
-        self.past_bw_ests[agent][sat_id][mahimahi_ptr] = harmonic_bw
+            self.past_bw_ests[agent][sat_id] = []
+        self.past_bw_ests[agent][sat_id].append(harmonic_bw)
 
         if robustness:
             # future bandwidth prediction

@@ -12,7 +12,7 @@ SMOOTH_PENALTY = 1
 DEFAULT_QUALITY = 0  # default video quality without agent
 # small epsilon used in denominator to avoid division by zero
 EPSILON = 0.3
-BIG_EPSILON = 0.001
+BIG_EPSILON = -0.001
 MIN_RATIO = 0.1
 MAX_RATIO = 0.9
 B_IN_MB = 1000000.0
@@ -29,5 +29,5 @@ MPC_PAST_CHUNK_COUNT = 5
 # NUM_USERS = 10
 MULTI_USER_FOLDER = 'test_multi_user/'
 
-INNER_PROCESS_NUMS = 16
+INNER_PROCESS_NUMS = 8
 HO_NUM = 10
