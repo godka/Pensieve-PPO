@@ -208,8 +208,8 @@ class Environment:
                             assert throughput != 0
                         else:
                             ho_stamps[i] = -1
-            else:
-                best_user_info = None
+                else:
+                    best_user_info = None
 
             quality = best_combos[agent][0]
             best_combos[agent].pop(0)
