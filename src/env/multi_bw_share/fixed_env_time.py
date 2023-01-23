@@ -2599,8 +2599,10 @@ class Environment:
                 if (cur_sat_id == next_sat_id or next_sat_id is None) and ho_point != MPC_FUTURE_CHUNK_COUNT:
                     impossible_route = True
                     break
-
-                if cur_sat_id is None and ho_point != 0:
+                if cur_bws == 0 and ho_point != 0:
+                    impossible_route = True
+                    break
+                if next_bws == 0 and ho_point != 0:
                     impossible_route = True
                     break
 
