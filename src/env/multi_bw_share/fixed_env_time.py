@@ -2371,8 +2371,7 @@ class Environment:
                             if next_future_sat_user_num > 1:
                                 now_sat_id = next_sat_id
                             harmonic_bw = next_bws[agent_id]
-                        if harmonic_bw == 0:
-                            harmonic_bw = EPSILON
+
                         if now_sat_id:
                             var_index = user_info[now_sat_id][2].index(agent_id)
                             harmonic_bw *= user_info[now_sat_id][3][var_index]
