@@ -210,12 +210,12 @@ class Environment:
                             ho_stamps[i] = -1
                 else:
                     best_user_info = None
+                quality = best_combos[agent][0]
+                best_combos[agent].pop(0)
+                ho_stamp = ho_stamps[agent]
 
-            quality = best_combos[agent][0]
-            best_combos[agent].pop(0)
-            ho_stamp = ho_stamps[agent]
+                runner_up_sat_id = runner_up_sat_ids[agent]
 
-            runner_up_sat_id = runner_up_sat_ids[agent]
         elif model_type is not None and "v1" in model_type:
             is_handover, new_sat_id, bit_rate = self.run_mpc_v1(agent, model_type)
             if is_handover:
