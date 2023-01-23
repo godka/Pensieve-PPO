@@ -2167,7 +2167,7 @@ class Environment:
         best_ho_positions_list.append({})
         best_user_info = None
 
-        best_ho_position = None
+        best_ho_position = [MPC_FUTURE_CHUNK_COUNT] * self.num_agents
         for full_combo in chunk_combo_option:
             self.log.debug("CHUNK COMBO", full_combo=full_combo)
 
@@ -2565,7 +2565,7 @@ class Environment:
         best_bws_sum_list.append(-10000000)
         best_ho_positions_list.append({})
 
-        best_ho_position = None
+        best_ho_position = [MPC_FUTURE_CHUNK_COUNT] * self.num_agents
 
         sat_user_nums = num_of_sats
 
@@ -2606,7 +2606,7 @@ class Environment:
                 if cur_bws[idx] == 0 and ho_point != 0:
                     impossible_route = True
                     break
-                if next_bws[idx] == 0 and ho_point != 0:
+                if next_bws[idx] == 0 and ho_point != MPC_FUTURE_CHUNK_COUNT:
                     impossible_route = True
                     break
 
