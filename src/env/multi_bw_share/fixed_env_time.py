@@ -177,6 +177,11 @@ class Environment:
                     runner_up_sat_id = new_sat_id
                 quality = bit_rate
                 runner_up_sat_ids, ho_stamps, best_combos, best_user_info, final_rate = None, None, None, None, None
+                for sat_id in list(set(self.cur_sat_id)):
+                    if sat_id is None:
+                        continue
+                    self.cur_satellite[sat_id].set_data_rate_ratio(None, None, self.mahimahi_ptr[agent])
+
                 self.unexpected_change = False
             else:
                 if best_user_info:
@@ -2766,8 +2771,6 @@ class Environment:
         best_next_bw = None
         best_next_num = None
 
-        if future_chunk_length == 0:
-            return ho_sat_id, ho_stamp, best_combo, max_reward
 
         cur_user_num = self.get_num_of_user_sat(self.mahimahi_ptr[agent], self.cur_sat_id[agent])
         cur_download_bw, runner_up_sat_id = None, None
@@ -2785,6 +2788,10 @@ class Environment:
         else:
             print("Cannot happen")
             exit(1)
+
+        if future_chunk_length == 0:
+            return ho_sat_id, ho_stamp, best_combo, max_reward
+
 
         start_buffer = self.buffer_size[agent] / MILLISECONDS_IN_SECOND
 
@@ -2823,6 +2830,10 @@ class Environment:
                     # all possible combinations of 5 chunk bitrates for 6 bitrate options (6^5 options)
                     # iterate over list and for each, compute reward and store max reward combination
                     # ho_index: 0-4 -> Do handover, 5 -> Do not handover
+                    if cur_download_bw == 0 and ho_index != 0:
+                        continue
+                    if next_download_bw == 0 and ho_index != MPC_FUTURE_CHUNK_COUNT:
+                        continue
                     for full_combo in chunk_combo_option:
                         # Break at the end of the chunk
                         combo = full_combo[0: future_chunk_length]
