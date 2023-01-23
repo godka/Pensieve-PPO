@@ -2280,8 +2280,6 @@ class Environment:
                         next_future_sat_user_num = future_sat_user_nums[next_sat_id][position]
                         harmonic_bw = next_bws[agent_id] / next_future_sat_user_num
                     assert harmonic_bw != 0
-                    if harmonic_bw == 0:
-                        harmonic_bw = EPSILON
                     download_time += (self.video_size[chunk_quality][index] / B_IN_MB) \
                                      / harmonic_bw * BITS_IN_BYTE / PACKET_PAYLOAD_PORTION  # this is MB/MB/s --> seconds
 
@@ -2373,8 +2371,12 @@ class Environment:
                         if now_sat_id:
                             var_index = user_info[now_sat_id][2].index(agent_id)
                             harmonic_bw *= user_info[now_sat_id][3][var_index]
-
+                        if harmonic_bw == 0:
+                            print(next_bws, cur_bws)
+                            print(combos)
+                            print(best_ho_positions)
                         assert harmonic_bw != 0
+
                         download_time += (self.video_size[chunk_quality][index] / B_IN_MB) \
                                          / harmonic_bw * BITS_IN_BYTE / PACKET_PAYLOAD_PORTION  # this is MB/MB/s --> seconds
 
@@ -2535,7 +2537,7 @@ class Environment:
                                           mahimahi_ptr=mahimahi_ptr[agent_id], past_len=MPC_PAST_CHUNK_COUNT)
             tmp_cur_bw = self.predict_bw(cur_sat_ids[agent_id], agent_id, True,
                                          mahimahi_ptr=mahimahi_ptr[agent_id], past_len=MPC_PAST_CHUNK_COUNT)
-            assert tmp_cur_bw != 0 or tmp_next_bw != 0
+            assert tmp_cur_bw != 0
             next_bws.append(tmp_next_bw)
             cur_bws.append(tmp_cur_bw)
             """
