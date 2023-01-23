@@ -17,18 +17,18 @@ MIN_RATIO = 0.1
 MAX_RATIO = 0.9
 B_IN_MB = 1000000.0
 BITS_IN_BYTE = 8.0
-VIDEO_CHUNCK_LEN = 2000.0  # millisec, every time add this amount to buffer
+VIDEO_CHUNCK_LEN = 4000.0  # millisec, every time add this amount to buffer
 
 SNR_NOISE_LOW = 0.7
 SNR_NOISE_HIGH = 1
 SNR_NOISE_UNIT = 0.005
 
-MPC_FUTURE_CHUNK_COUNT = 2
+MPC_FUTURE_CHUNK_COUNT = 3
 MPC_PAST_CHUNK_COUNT = 5
 
 # Multi-user config in the trace files
 # NUM_USERS = 10
 MULTI_USER_FOLDER = 'test_multi_user/'
 
-INNER_PROCESS_NUMS = 8
+INNER_PROCESS_NUMS = 16
 HO_NUM = 10

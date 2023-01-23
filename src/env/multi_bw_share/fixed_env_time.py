@@ -35,8 +35,6 @@ BITRATE_WEIGHT = 2
 # LEO SETTINGS
 HANDOVER_DELAY = 0.2  # sec
 HANDOVER_WEIGHT = 1
-SCALE_VIDEO_SIZE_FOR_TEST = 20
-SCALE_VIDEO_LEN_FOR_TEST = 2
 
 # Multi-user setting
 NUM_AGENTS = None
@@ -2281,7 +2279,7 @@ class Environment:
                     else:
                         next_future_sat_user_num = future_sat_user_nums[next_sat_id][position]
                         harmonic_bw = next_bws[agent_id] / next_future_sat_user_num
-                    # assert harmonic_bw != 0
+                    assert harmonic_bw != 0
                     if harmonic_bw == 0:
                         harmonic_bw = EPSILON
                     download_time += (self.video_size[chunk_quality][index] / B_IN_MB) \
@@ -2376,7 +2374,7 @@ class Environment:
                             var_index = user_info[now_sat_id][2].index(agent_id)
                             harmonic_bw *= user_info[now_sat_id][3][var_index]
 
-                        # assert harmonic_bw != 0
+                        assert harmonic_bw != 0
                         download_time += (self.video_size[chunk_quality][index] / B_IN_MB) \
                                          / harmonic_bw * BITS_IN_BYTE / PACKET_PAYLOAD_PORTION  # this is MB/MB/s --> seconds
 
