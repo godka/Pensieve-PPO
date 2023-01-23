@@ -1878,12 +1878,10 @@ class Environment:
         # best_bws = [[-10000000] * MPC_FUTURE_CHUNK_COUNT for _ in range(self.num_agents)]
         # best_bws_sum = [-10000000]
         # best_ho_positions = {}
-        best_combos_list = []
         best_bws_list = []
         best_bws_sum_list = []
         best_ho_positions_list = []
 
-        best_combos_list.append([self.last_quality[i]] for i in range(self.num_agents))
         best_bws_list.append([[-10000000] * MPC_FUTURE_CHUNK_COUNT for _ in range(self.num_agents)])
         best_bws_sum_list.append(-10000000)
         best_ho_positions_list.append({})
@@ -2576,10 +2574,10 @@ class Environment:
             tmp_bws_sum = []
             impossible_route = False
             for idx, ho_p in enumerate(ho_positions):
-                if agent != idx and (ho_p != MPC_FUTURE_CHUNK_COUNT):
+                if False and agent != idx and (ho_p != MPC_FUTURE_CHUNK_COUNT):
                     impossible_route = True
                     break
-            if [0] * self.num_agents == ho_positions or 1 in ho_positions:
+            if [0] * self.num_agents == ho_positions:
                  impossible_route = True
 
             if impossible_route:
