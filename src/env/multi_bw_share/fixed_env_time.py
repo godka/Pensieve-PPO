@@ -2433,6 +2433,7 @@ class Environment:
         # cur_download_bws = [self.predict_download_bw(i, True) for i in range(self.num_agents)]
         first_last_quality = copy.deepcopy(self.last_quality)
         first_mahimahi_ptr = copy.deepcopy(self.mahimahi_ptr)
+        cur_sat_ids = [self.cur_user[i].get_conn_sat_id(self.mahimahi_ptr[agent]) for i in range(self.num_agents)]
 
         start_buffers = [self.buffer_size[i] / MILLISECONDS_IN_SECOND for i in range(self.num_agents)]
         self.log.info("From", first_mahimahi_ptr=first_mahimahi_ptr, cur_sat_ids=cur_sat_ids,
