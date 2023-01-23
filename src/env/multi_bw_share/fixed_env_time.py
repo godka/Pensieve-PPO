@@ -190,8 +190,8 @@ class Environment:
                             ho_stamps[i] = -1
                             self.delay[i] = HANDOVER_DELAY
 
-                            self.update_sat_info(self.cur_sat_id[i], self.last_mahimahi_time[i], i, -1)
-                            self.update_sat_info(runner_up_sat_id, self.last_mahimahi_time[i], i, 1)
+                            self.update_sat_info(self.cur_sat_id[i], self.mahimahi_ptr[agent], i, -1)
+                            self.update_sat_info(runner_up_sat_id, self.mahimahi_ptr[agent], i, 1)
                             self.prev_sat_id[i] = self.cur_sat_id[i]
                             self.cur_sat_id[i] = runner_up_sat_id
                             self.download_bw[i] = []
@@ -2577,7 +2577,8 @@ class Environment:
                 if False and agent != idx and (ho_p != MPC_FUTURE_CHUNK_COUNT):
                     impossible_route = True
                     break
-            if [0] * self.num_agents == ho_positions:
+
+            if False and [0] * self.num_agents == ho_positions:
                  impossible_route = True
 
             if impossible_route:
