@@ -2108,8 +2108,6 @@ class Environment:
                         next_future_sat_user_num = future_sat_user_nums[next_sat_id][position]
                         harmonic_bw = next_bws[agent_id] / next_future_sat_user_num
                     # assert harmonic_bw != 0
-                    if harmonic_bw == 0:
-                        harmonic_bw = EPSILON
                     download_time += (self.video_size[chunk_quality][index] / B_IN_MB) \
                                      / harmonic_bw * BITS_IN_BYTE / PACKET_PAYLOAD_PORTION  # this is MB/MB/s --> seconds
 
@@ -2371,10 +2369,6 @@ class Environment:
                         if now_sat_id:
                             var_index = user_info[now_sat_id][2].index(agent_id)
                             harmonic_bw *= user_info[now_sat_id][3][var_index]
-                        if harmonic_bw == 0:
-                            print(next_bws, cur_bws)
-                            print(combos)
-                            print(best_ho_positions)
                         assert harmonic_bw != 0
 
                         download_time += (self.video_size[chunk_quality][index] / B_IN_MB) \
@@ -2437,7 +2431,6 @@ class Environment:
                 future_chunk_length[i] = video_chunk_remain[i]
 
         # cur_download_bws = [self.predict_download_bw(i, True) for i in range(self.num_agents)]
-        cur_sat_ids = [self.cur_user[i].get_conn_sat_id(self.mahimahi_ptr[agent]) for i in range(self.num_agents)]
         first_last_quality = copy.deepcopy(self.last_quality)
         first_mahimahi_ptr = copy.deepcopy(self.mahimahi_ptr)
 
@@ -2475,6 +2468,7 @@ class Environment:
         # first_last_quality = copy.deepcopy(self.last_quality)
 
         mahimahi_ptr = copy.deepcopy(first_mahimahi_ptr)
+        cur_sat_ids = [self.cur_user[i].get_conn_sat_id(mahimahi_ptr[agent]) for i in range(self.num_agents)]
 
         runner_up_sat_ids = [self.get_runner_up_sat_id(i, method="harmonic-mean",
                                                        mahimahi_ptr=mahimahi_ptr[i],
@@ -2537,7 +2531,7 @@ class Environment:
                                           mahimahi_ptr=mahimahi_ptr[agent_id], past_len=MPC_PAST_CHUNK_COUNT)
             tmp_cur_bw = self.predict_bw(cur_sat_ids[agent_id], agent_id, True,
                                          mahimahi_ptr=mahimahi_ptr[agent_id], past_len=MPC_PAST_CHUNK_COUNT)
-            assert tmp_cur_bw != 0
+            # assert tmp_cur_bw != 0
             next_bws.append(tmp_next_bw)
             cur_bws.append(tmp_cur_bw)
             """
@@ -2599,6 +2593,10 @@ class Environment:
                 next_sat_id = runner_up_sat_ids[idx]
 
                 if (cur_sat_id == next_sat_id or next_sat_id is None) and ho_point != MPC_FUTURE_CHUNK_COUNT:
+                    impossible_route = True
+                    break
+
+                if cur_sat_id is None and ho_point != 0:
                     impossible_route = True
                     break
 
@@ -2955,8 +2953,6 @@ class Environment:
                     if next_future_sat_user_num > 1:
                         now_sat_id = next_sat_id
                     harmonic_bw = next_bws[agent_id]
-                if harmonic_bw == 0:
-                    harmonic_bw = EPSILON
                 if now_sat_id:
                     if now_sat_id in user_info.keys():
                         if len(user_info[now_sat_id]) == 3:
