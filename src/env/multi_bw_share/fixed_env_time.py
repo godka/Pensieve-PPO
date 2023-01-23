@@ -1860,7 +1860,7 @@ class Environment:
             tmp_cur_bw = self.predict_bw(cur_sat_ids[agent_id], agent_id, True,
                                          mahimahi_ptr=mahimahi_ptr[agent_id], past_len=self.last_delay[agent])
             # assert tmp_next_bw != 0 if runner_up_sat_ids[agent_id] is not None else tmp_next_bw == 0
-            assert tmp_cur_bw != 0 or tmp_next_bw != 0
+            # assert tmp_cur_bw != 0 or tmp_next_bw != 0
 
             next_bws.append(tmp_next_bw)
             cur_bws.append(tmp_cur_bw)
@@ -1926,6 +1926,9 @@ class Environment:
                     impossible_route = True
                     break
 
+                if cur_sat_id is None and ho_point != 0:
+                    impossible_route = True
+                    break
                 if next_sat_id is not None:
                     cur_nums = tmp_future_sat_user_nums[cur_sat_id]
                     next_nums = tmp_future_sat_user_nums[next_sat_id]
@@ -2964,7 +2967,9 @@ class Environment:
                             harmonic_bw *= user_info[now_sat_id][3][var_index]
                     else:
                         harmonic_bw /= next_future_sat_user_num
-
+                if harmonic_bw == 0:
+                    print(cur_bws, next_bws, agent_id, ho_positions)
+                assert harmonic_bw != 0
                 download_time += (self.video_size[chunk_quality][index] / B_IN_MB) \
                                  / harmonic_bw * BITS_IN_BYTE / PACKET_PAYLOAD_PORTION  # this is MB/MB/s --> seconds
                 if curr_buffer < download_time:
