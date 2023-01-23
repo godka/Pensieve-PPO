@@ -2046,7 +2046,6 @@ class Environment:
                                                   start_buffers, cur_bws, next_bws, future_sat_user_nums,
                                cur_sat_ids, runner_up_sat_ids, best_ho_positions):
         max_rewards = [-10000000 for _ in range(self.num_agents)]
-        best_combos = []
         best_bws_list = []
         best_bws_sum_list = []
         best_ho_positions_list = []
@@ -2155,12 +2154,11 @@ class Environment:
                                                   start_buffers, cur_bws, next_bws, future_sat_user_nums,
                                cur_sat_ids, runner_up_sat_ids, best_ho_positions, future_sat_user_list, sat_user_nums):
         max_rewards = [-10000000 for _ in range(self.num_agents)]
-        best_combos = []
         best_bws_list = []
         best_bws_sum_list = []
         best_ho_positions_list = []
 
-        best_combos.append([[self.last_quality[i]] for i in range(self.num_agents)])
+        best_combos = [[self.last_quality[i]] for i in range(self.num_agents)]
         best_bws_list.append([[-10000000] * MPC_FUTURE_CHUNK_COUNT for _ in range(self.num_agents)])
         best_bws_sum_list.append(-10000000)
         best_ho_positions_list.append({})
