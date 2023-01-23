@@ -2552,12 +2552,11 @@ class Environment:
         # best_bws = [[-10000000] * MPC_FUTURE_CHUNK_COUNT for _ in range(self.num_agents)]
         # best_bws_sum = [-10000000]
         # best_ho_positions = {}
-        best_combos = []
         best_bws_list = []
         best_bws_sum_list = []
         best_ho_positions_list = []
 
-        best_combos.append([[self.last_quality[i]] for i in range(self.num_agents)])
+        best_combos = [[self.last_quality[i]] for i in range(self.num_agents)]
         best_bws_list.append([[-10000000] * MPC_FUTURE_CHUNK_COUNT for _ in range(self.num_agents)])
         best_bws_sum_list.append(-10000000)
         best_ho_positions_list.append({})
