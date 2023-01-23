@@ -1883,7 +1883,7 @@ class Environment:
         best_bws_sum_list = []
         best_ho_positions_list = []
 
-        best_combos_list.append([[self.last_quality[i]] for i in range(self.num_agents)])
+        best_combos_list.append([self.last_quality[i]] for i in range(self.num_agents))
         best_bws_list.append([[-10000000] * MPC_FUTURE_CHUNK_COUNT for _ in range(self.num_agents)])
         best_bws_sum_list.append(-10000000)
         best_ho_positions_list.append({})
@@ -1925,11 +1925,10 @@ class Environment:
                 if (cur_sat_id == next_sat_id or next_sat_id is None) and ho_point != MPC_FUTURE_CHUNK_COUNT:
                     impossible_route = True
                     break
-
                 if cur_bws[idx] == 0 and ho_point != 0:
                     impossible_route = True
                     break
-                if next_bws[idx] == 0 and ho_point != 0:
+                if next_bws[idx] == 0 and ho_point != MPC_FUTURE_CHUNK_COUNT:
                     impossible_route = True
                     break
 
@@ -2052,7 +2051,7 @@ class Environment:
         best_bws_sum_list = []
         best_ho_positions_list = []
 
-        best_combos.append([[self.last_quality[i]] for i in range(self.num_agents)])
+        best_combos = [[self.last_quality[i]] for i in range(self.num_agents)]
         best_bws_list.append([[-10000000] * MPC_FUTURE_CHUNK_COUNT for _ in range(self.num_agents)])
         best_bws_sum_list.append(-10000000)
         best_ho_positions_list.append({})
