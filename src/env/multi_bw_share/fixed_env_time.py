@@ -171,38 +171,43 @@ class Environment:
                         self.unexpected_change = True
 
             if self.unexpected_change:
-                cur_sat_ids, runner_up_sat_ids, ho_stamps, best_combos, best_user_info, final_rate = self.run_mpc(
-                    agent, model_type)
+                is_handover, new_sat_id, bit_rate = self.run_mpc_v1(agent, model_type)
+                if is_handover:
+                    ho_stamp = 0
+                    runner_up_sat_id = new_sat_id
+                quality = bit_rate
+                runner_up_sat_ids, ho_stamps, best_combos, best_user_info, final_rate = None, None, None, None, None
                 self.unexpected_change = False
-            if best_user_info:
-                for sat_id in best_user_info:
-                    final_rate[sat_id] = self.cur_satellite[sat_id].set_data_rate_ratio(best_user_info[sat_id][2], best_user_info[sat_id][3], self.mahimahi_ptr[agent])
             else:
-                for sat_id in list(set(self.cur_sat_id + runner_up_sat_ids)):
-                    if sat_id is None:
-                        continue
-                    self.cur_satellite[sat_id].set_data_rate_ratio(None, None, self.mahimahi_ptr[agent])
+                if best_user_info:
+                    for sat_id in best_user_info:
+                        final_rate[sat_id] = self.cur_satellite[sat_id].set_data_rate_ratio(best_user_info[sat_id][2], best_user_info[sat_id][3], self.mahimahi_ptr[agent])
+                else:
+                    for sat_id in list(set(self.cur_sat_id + runner_up_sat_ids)):
+                        if sat_id is None:
+                            continue
+                        self.cur_satellite[sat_id].set_data_rate_ratio(None, None, self.mahimahi_ptr[agent])
 
-            self.log.info("Do update", cur_sat_ids=self.cur_sat_id, runner_up_sat_ids=runner_up_sat_ids)
-            for i in range(self.num_agents):
-                runner_up_sat_id = runner_up_sat_ids[i]
-                if ho_stamps[i] == 0:
-                    if self.cur_sat_id[i] != runner_up_sat_id:
-                        is_handover = True
-                        ho_stamps[i] = -1
-                        self.delay[i] = HANDOVER_DELAY
+                self.log.info("Do update", cur_sat_ids=self.cur_sat_id, runner_up_sat_ids=runner_up_sat_ids)
+                for i in range(self.num_agents):
+                    runner_up_sat_id = runner_up_sat_ids[i]
+                    if ho_stamps[i] == 0:
+                        if self.cur_sat_id[i] != runner_up_sat_id:
+                            is_handover = True
+                            ho_stamps[i] = -1
+                            self.delay[i] = HANDOVER_DELAY
 
-                        self.update_sat_info(self.cur_sat_id[i], self.mahimahi_ptr[agent], i, -1)
-                        self.update_sat_info(runner_up_sat_id, self.mahimahi_ptr[agent], i, 1)
-                        self.prev_sat_id[i] = self.cur_sat_id[i]
-                        self.cur_sat_id[i] = runner_up_sat_id
-                        self.download_bw[i] = []
+                            self.update_sat_info(self.cur_sat_id[i], self.mahimahi_ptr[agent], i, -1)
+                            self.update_sat_info(runner_up_sat_id, self.mahimahi_ptr[agent], i, 1)
+                            self.prev_sat_id[i] = self.cur_sat_id[i]
+                            self.cur_sat_id[i] = runner_up_sat_id
+                            self.download_bw[i] = []
 
-                        throughput = self.cur_satellite[self.cur_sat_id[i]].data_rate(self.cur_user[i],
-                                                                                          self.mahimahi_ptr[agent]) * B_IN_MB / BITS_IN_BYTE
-                        assert throughput != 0
-                    else:
-                        ho_stamps[i] = -1
+                            throughput = self.cur_satellite[self.cur_sat_id[i]].data_rate(self.cur_user[i],
+                                                                                              self.mahimahi_ptr[agent]) * B_IN_MB / BITS_IN_BYTE
+                            assert throughput != 0
+                        else:
+                            ho_stamps[i] = -1
             else:
                 best_user_info = None
 
@@ -1762,8 +1767,7 @@ class Environment:
         # make handover combination options
         for combo in itertools.product(list(range(MPC_FUTURE_CHUNK_COUNT + 1)), repeat=self.num_agents):
             ho_combo_option.append(list(combo))
-        if self.unexpected_change:
-            ho_combo_option = [[MPC_FUTURE_CHUNK_COUNT] * self.num_agents]
+
         future_chunk_length = [MPC_FUTURE_CHUNK_COUNT] * self.num_agents
         for i in range(self.num_agents):
             if video_chunk_remain[i] < MPC_FUTURE_CHUNK_COUNT:
@@ -1906,10 +1910,10 @@ class Environment:
             impossible_route = False
 
             for idx, ho_p in enumerate(ho_positions):
-                if agent != idx and (ho_p != MPC_FUTURE_CHUNK_COUNT):
+                if False and agent != idx and (ho_p != MPC_FUTURE_CHUNK_COUNT):
                     impossible_route = True
                     break
-            if [0] * self.num_agents == ho_positions or 1 in ho_positions:
+            if False and [0] * self.num_agents == ho_positions:
                  impossible_route = True
 
             if impossible_route:
@@ -2428,8 +2432,7 @@ class Environment:
         # make handover combination options
         for combo in itertools.product(list(range(MPC_FUTURE_CHUNK_COUNT + 1)), repeat=self.num_agents):
             ho_combo_option.append(list(combo))
-        if self.unexpected_change:
-            ho_combo_option = [[MPC_FUTURE_CHUNK_COUNT] * self.num_agents]
+
         future_chunk_length = [MPC_FUTURE_CHUNK_COUNT] * self.num_agents
         for i in range(self.num_agents):
             if video_chunk_remain[i] < MPC_FUTURE_CHUNK_COUNT:
