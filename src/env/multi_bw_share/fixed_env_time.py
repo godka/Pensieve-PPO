@@ -171,7 +171,7 @@ class Environment:
                         self.unexpected_change = True
 
             if self.unexpected_change:
-                is_handover, new_sat_id, bit_rate = self.run_mpc_v1(agent, model_type)
+                is_handover, new_sat_id, bit_rate = self.run_mpc_v1(agent, "DualMPC-v1")
                 if is_handover:
                     ho_stamp = 0
                     runner_up_sat_id = new_sat_id
