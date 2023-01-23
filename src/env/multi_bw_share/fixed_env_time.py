@@ -1926,9 +1926,13 @@ class Environment:
                     impossible_route = True
                     break
 
-                if cur_sat_id is None and ho_point != 0:
+                if cur_bws[idx] == 0 and ho_point != 0:
                     impossible_route = True
                     break
+                if next_bws[idx] == 0 and ho_point != 0:
+                    impossible_route = True
+                    break
+
                 if next_sat_id is not None:
                     cur_nums = tmp_future_sat_user_nums[cur_sat_id]
                     next_nums = tmp_future_sat_user_nums[next_sat_id]
@@ -2599,10 +2603,10 @@ class Environment:
                 if (cur_sat_id == next_sat_id or next_sat_id is None) and ho_point != MPC_FUTURE_CHUNK_COUNT:
                     impossible_route = True
                     break
-                if cur_bws == 0 and ho_point != 0:
+                if cur_bws[idx] == 0 and ho_point != 0:
                     impossible_route = True
                     break
-                if next_bws == 0 and ho_point != 0:
+                if next_bws[idx] == 0 and ho_point != 0:
                     impossible_route = True
                     break
 
