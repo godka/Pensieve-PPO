@@ -42,6 +42,7 @@ SAT_STRATEGY = "resource-fair"
 SAT_STRATEGY = "ratio-based"
 
 EXHAUSTIVE = False
+ADAPTIVE_BUF = False
 
 SNR_MIN = 70
 
