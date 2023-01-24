@@ -1,7 +1,7 @@
 import os
 import csv
 
-COOKED_TRACE_FOLDER = '../../data/sat_data/train/'
+COOKED_TRACE_FOLDER = 'data/sat_data/train/'
 COOKED_DIS_FOLDER = 'dis/'
 
 

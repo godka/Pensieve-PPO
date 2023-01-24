@@ -2,7 +2,7 @@
 import numpy as np
 
 from util.constants import DEFAULT_QUALITY, REBUF_PENALTY, SMOOTH_PENALTY, VIDEO_BIT_RATE, BUFFER_NORM_FACTOR, \
-    BITRATE_WEIGHT
+    BITRATE_WEIGHT, CHUNK_TIL_VIDEO_END_CAP
 from . import core_implicit_time as abrenv
 from . import load_trace_tight as load_trace
 
