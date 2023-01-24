@@ -150,8 +150,9 @@ class Environment:
                         self.unexpected_change = True
 
                     if do_handover:
-                        self.update_sat_info(self.cur_sat_id[i], self.mahimahi_ptr[i], i, -1)
-                        self.update_sat_info(runner_up_sat_id, self.mahimahi_ptr[i], i, 1)
+                        assert runner_up_sat_id != self.cur_sat_id[i]
+                        self.update_sat_info(self.cur_sat_id[i], self.last_mahimahi_time[i], i, -1)
+                        self.update_sat_info(runner_up_sat_id, self.last_mahimahi_time[i], i, 1)
                         self.prev_sat_id[i] = self.cur_sat_id[i]
                         self.cur_sat_id[i] = runner_up_sat_id
                         self.download_bw[i] = []
@@ -198,8 +199,9 @@ class Environment:
                 self.unexpected_change = True
 
             if do_handover:
-                self.update_sat_info(self.cur_sat_id[agent], self.mahimahi_ptr[agent], agent, -1)
-                self.update_sat_info(runner_up_sat_id, self.mahimahi_ptr[agent], agent, 1)
+                assert self.cur_sat_id[agent] != runner_up_sat_id
+                self.update_sat_info(self.cur_sat_id[agent], self.last_mahimahi_time[agent], agent, -1)
+                self.update_sat_info(runner_up_sat_id, self.last_mahimahi_time[agent], agent, 1)
                 self.prev_sat_id[agent] = self.cur_sat_id[agent]
                 self.cur_sat_id[agent] = runner_up_sat_id
                 self.download_bw[agent] = []
@@ -225,8 +227,9 @@ class Environment:
                               next_bw=self.cooked_bw[
                                   sat_id][self.mahimahi_ptr[agent] - 3:self.mahimahi_ptr[agent] + 3]
                               )
-                self.update_sat_info(self.cur_sat_id[agent], self.mahimahi_ptr[agent], agent, -1)
-                self.update_sat_info(sat_id, self.mahimahi_ptr[agent], agent, 1)
+                assert self.cur_sat_id[agent] != sat_id
+                self.update_sat_info(self.cur_sat_id[agent], self.last_mahimahi_time[agent], agent, -1)
+                self.update_sat_info(sat_id, self.last_mahimahi_time[agent], agent, 1)
 
                 self.switch_sat(agent, sat_id)
                 delay += HANDOVER_DELAY
@@ -259,9 +262,9 @@ class Environment:
             if self.mahimahi_ptr[agent] >= len(self.cooked_bw[self.cur_sat_id[agent]]):
                 # loop back in the beginning
                 # note: trace file starts with time 0
-                self.mahimahi_ptr[agent] = 1
-                self.last_mahimahi_time[agent] = 0
-                self.end_of_video[agent] = True
+                # self.mahimahi_ptr[agent] = 1
+                # self.last_mahimahi_time[agent] = 0
+                # self.end_of_video[agent] = True
                 end_of_network = True
                 break
         delay *= MILLISECONDS_IN_SECOND
@@ -296,9 +299,9 @@ class Environment:
                 if self.mahimahi_ptr[agent] >= len(self.cooked_bw[self.cur_sat_id[agent]]):
                     # loop back in the beginning
                     # note: trace file starts with time 0
-                    self.mahimahi_ptr[agent] = 1
-                    self.last_mahimahi_time[agent] = 0
-                    self.end_of_video[agent] = True
+                    # self.mahimahi_ptr[agent] = 1
+                    # self.last_mahimahi_time[agent] = 0
+                    # self.end_of_video[agent] = True
                     end_of_network = True
                     break
 
@@ -319,8 +322,9 @@ class Environment:
                     assert sat_id != self.cur_sat_id[agent]
                     self.log.debug("Forced Handover2", cur_sat_id=self.cur_sat_id[agent], sat_id=sat_id,
                                   mahimahi_ptr=self.mahimahi_ptr[agent], agent=agent)
-                    self.update_sat_info(sat_id, self.mahimahi_ptr[agent], agent, 1)
-                    self.update_sat_info(self.cur_sat_id[agent], self.mahimahi_ptr[agent], agent, -1)
+                    assert sat_id != self.cur_sat_id[agent]
+                    self.update_sat_info(sat_id, self.last_mahimahi_time[agent], agent, 1)
+                    self.update_sat_info(self.cur_sat_id[agent], self.last_mahimahi_time[agent], agent, -1)
                     self.switch_sat(agent, sat_id)
                     is_handover = True
                     throughput = self.cur_satellite[self.cur_sat_id[agent]].data_rate(self.cur_user[agent],
@@ -343,7 +347,7 @@ class Environment:
             self.end_of_video[agent] = True
             self.buffer_size[agent] = 0
             self.video_chunk_counter[agent] = 0
-            self.update_sat_info(self.cur_sat_id[agent], self.mahimahi_ptr[agent], agent, -1)
+            self.update_sat_info(self.cur_sat_id[agent], self.last_mahimahi_time[agent], agent, -1)
 
             # Refresh satellite info
             # self.connection[self.cur_sat_id[agent]] = -1
@@ -409,8 +413,8 @@ class Environment:
                 self.unexpected_change = True
 
             if do_handover:
-                self.update_sat_info(self.cur_sat_id[agent], self.mahimahi_ptr[agent], agent, -1)
-                self.update_sat_info(runner_up_sat_id, self.mahimahi_ptr[agent], agent, 1)
+                self.update_sat_info(self.cur_sat_id[agent], self.last_mahimahi_time[agent], agent, -1)
+                self.update_sat_info(runner_up_sat_id, self.last_mahimahi_time[agent], agent, 1)
                 self.prev_sat_id[agent] = self.cur_sat_id[agent]
                 self.cur_sat_id[agent] = runner_up_sat_id
                 self.download_bw[agent] = []
@@ -446,10 +450,7 @@ class Environment:
         self.download_bw = [[] for _ in range(self.num_agents)]
         self.cur_satellite = {}
 
-        self.trace_idx += 1
-        if self.trace_idx >= len(self.all_cooked_time):
-            self.trace_idx = 0
-
+        self.trace_idx = np.random.randint(len(self.all_cooked_time))
         self.cooked_time = self.all_cooked_time[self.trace_idx]
         self.cooked_bw = self.all_cooked_bw[self.trace_idx]
 
@@ -475,9 +476,11 @@ class Environment:
         self.last_delay = [MPC_PAST_CHUNK_COUNT for _ in range(self.num_agents)]
 
     def check_end(self):
+        # End if all users finish
         for agent in range(self.num_agents):
             if not self.end_of_video[agent]:
                 return False
+
         return True
 
     def get_first_agent(self):
@@ -598,7 +601,6 @@ class Environment:
 
     def update_sat_info(self, sat_id, mahimahi_ptr, agent, variation):
         # update sat info
-
         if variation == 1:
             self.cur_satellite[sat_id].add_ue(agent, mahimahi_ptr)
         elif variation == -1:
@@ -633,8 +635,8 @@ class Environment:
             self.log.debug("set_satellite", cur_sat_id=self.cur_sat_id[agent], next_sat_id=sat_id,
                           mahimahi_ptr=self.mahimahi_ptr[agent], agent=agent)
 
-            self.update_sat_info(sat_id, self.mahimahi_ptr[agent], agent, 1)
-            self.update_sat_info(self.cur_sat_id[agent], self.mahimahi_ptr[agent], agent, -1)
+            self.update_sat_info(sat_id, self.last_mahimahi_time[agent], agent, 1)
+            self.update_sat_info(self.cur_sat_id[agent], self.last_mahimahi_time[agent], agent, -1)
             self.prev_sat_id[agent] = self.cur_sat_id[agent]
             self.cur_sat_id[agent] = sat_id
             self.download_bw[agent] = []

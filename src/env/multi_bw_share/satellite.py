@@ -93,7 +93,7 @@ class Satellite:
 
     def add_ue(self, user_id, mahimahi_ptr):
         self.log.debug("Add_ue", conn_use_log=self.conn_use_log, user_id=user_id, mahimahi_ptr=mahimahi_ptr)
-
+        mahimahi_ptr = round(mahimahi_ptr, 3)
         # print("Add: ", user_id, self.sat_id, mahimahi_ptr)
         if mahimahi_ptr in self.conn_use_log:
             self.conn_use_log[mahimahi_ptr].append([True, user_id])
@@ -117,11 +117,11 @@ class Satellite:
         # print("Remove: ", user_id, self.sat_id, mahimahi_ptr)
         # assert user_id in self.conn_ues
         # self.conn_ues.remove(user_id)
+        mahimahi_ptr = round(mahimahi_ptr, 3)
         if mahimahi_ptr in self.conn_use_log.keys():
             self.conn_use_log[mahimahi_ptr].append([False, user_id])
         else:
             self.conn_use_log[mahimahi_ptr] = [[False, user_id]]
-
         self.get_ue_list(mahimahi_ptr)
 
         """
@@ -134,7 +134,7 @@ class Satellite:
 
     def get_ue_list(self, mahimahi_ptr):
         ue_list = []
-
+        mahimahi_ptr = round(mahimahi_ptr, 3)
         for i in sorted(self.conn_use_log.keys()):
             if mahimahi_ptr < i:
                 break
@@ -157,7 +157,9 @@ class Satellite:
 
         return recent_log
 
-    def get_conn_use_log(self, mahimahi_ptr):
+    def get_conn_use_log(self, mahimahi_ptr, all=False):
+        if all:
+            return self.conn_use_log
         recent_log = {}
         for i in sorted(self.conn_use_log.keys()):
             if mahimahi_ptr < i:
