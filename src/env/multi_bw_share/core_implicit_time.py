@@ -68,7 +68,9 @@ class Environment:
         self.mahimahi_start_ptr = 1
         # randomize the start point of the trace
         # note: trace file starts with time 0
-        self.mahimahi_ptr = [1 for _ in range(self.num_agents)]
+
+        self.mahimahi_ptr = [np.random.randint(1, len(self.cooked_time) - TOTAL_VIDEO_CHUNKS)] * self.num_agents
+
         self.last_mahimahi_time = [self.mahimahi_start_ptr - 1] * self.num_agents
 
         # Centralization

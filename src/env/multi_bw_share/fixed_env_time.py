@@ -41,7 +41,7 @@ NUM_AGENTS = None
 SAT_STRATEGY = "resource-fair"
 SAT_STRATEGY = "ratio-based"
 
-EXHAUSTIVE = False
+NO_EXHAUSTIVE = True
 ADAPTIVE_BUF = False
 
 SNR_MIN = 70
@@ -1832,7 +1832,7 @@ class Environment:
                     continue
                 check_list = list(combo[i*MPC_FUTURE_CHUNK_COUNT:(i+1)*MPC_FUTURE_CHUNK_COUNT])
                 check_list = [BITRATE_WEIGHT * x for x in check_list]
-                if EXHAUSTIVE and check_list != [first_last_quality[i]] * MPC_FUTURE_CHUNK_COUNT:
+                if NO_EXHAUSTIVE and check_list != [first_last_quality[i]] * MPC_FUTURE_CHUNK_COUNT:
                     impossible_combo = True
                     break
             if not impossible_combo:
@@ -1914,10 +1914,10 @@ class Environment:
             impossible_route = False
 
             for idx, ho_p in enumerate(ho_positions):
-                if EXHAUSTIVE and agent != idx and (ho_p != MPC_FUTURE_CHUNK_COUNT):
+                if NO_EXHAUSTIVE and agent != idx and (ho_p != MPC_FUTURE_CHUNK_COUNT):
                     impossible_route = True
                     break
-            if EXHAUSTIVE and [0] * self.num_agents == ho_positions:
+            if NO_EXHAUSTIVE and [0] * self.num_agents == ho_positions:
                  impossible_route = True
 
             if impossible_route:
@@ -2498,7 +2498,7 @@ class Environment:
                     continue
                 check_list = list(combo[i * MPC_FUTURE_CHUNK_COUNT:(i + 1) * MPC_FUTURE_CHUNK_COUNT])
                 check_list = [BITRATE_WEIGHT * x for x in check_list]
-                if EXHAUSTIVE and check_list != [first_last_quality[i]] * MPC_FUTURE_CHUNK_COUNT:
+                if NO_EXHAUSTIVE and check_list != [first_last_quality[i]] * MPC_FUTURE_CHUNK_COUNT:
                     impossible_combo = True
                     break
             if not impossible_combo:
@@ -2584,11 +2584,11 @@ class Environment:
             tmp_bws_sum = []
             impossible_route = False
             for idx, ho_p in enumerate(ho_positions):
-                if EXHAUSTIVE and agent != idx and (ho_p != MPC_FUTURE_CHUNK_COUNT):
+                if NO_EXHAUSTIVE and agent != idx and (ho_p != MPC_FUTURE_CHUNK_COUNT):
                     impossible_route = True
                     break
 
-            if EXHAUSTIVE and [0] * self.num_agents == ho_positions:
+            if NO_EXHAUSTIVE and [0] * self.num_agents == ho_positions:
                  impossible_route = True
 
             if impossible_route:
