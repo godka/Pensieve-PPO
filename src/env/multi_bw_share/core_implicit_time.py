@@ -10,19 +10,17 @@ import copy
 from env.multi_bw_share.satellite import Satellite
 from env.multi_bw_share.user import User
 from util.constants import EPSILON, MPC_FUTURE_CHUNK_COUNT, QUALITY_FACTOR, REBUF_PENALTY, SMOOTH_PENALTY, \
-    MPC_PAST_CHUNK_COUNT, HO_NUM, TOTAL_VIDEO_CHUNKS, CHUNK_TIL_VIDEO_END_CAP, DEFAULT_QUALITY
+    MPC_PAST_CHUNK_COUNT, HO_NUM, TOTAL_VIDEO_CHUNKS, CHUNK_TIL_VIDEO_END_CAP, DEFAULT_QUALITY, SNR_MIN, BUF_RATIO, \
+    VIDEO_CHUNCK_LEN
 
-VIDEO_BIT_RATE = [300, 750, 1200, 1850, 2850, 4300]
 M_IN_K = 1000.0
 
 MILLISECONDS_IN_SECOND = 1000.0
 B_IN_MB = 1000000.0
 BITS_IN_BYTE = 8.0
 RANDOM_SEED = 42
-VIDEO_CHUNCK_LEN = 4000.0  # millisec, every time add this amount to buffer
 BITRATE_LEVELS = 6
 PAST_LEN = 8
-TOTAL_VIDEO_CHUNCK = 48
 BUFFER_THRESH = 60.0 * MILLISECONDS_IN_SECOND  # millisec, max buffer limit
 DRAIN_BUFFER_SLEEP_TIME = 500.0  # millisec
 PACKET_PAYLOAD_PORTION = 0.95
@@ -41,10 +39,6 @@ NUM_AGENTS = None
 
 SAT_STRATEGY = "resource-fair"
 # SAT_STRATEGY = "ratio-based"
-
-SNR_MIN = 70
-
-BUF_RATIO = 0.7
 
 
 class Environment:
@@ -65,13 +59,12 @@ class Environment:
         # self.last_quality = DEFAULT_QUALITY
         self.last_quality = [DEFAULT_QUALITY for _ in range(self.num_agents)]
 
-        self.mahimahi_start_ptr = 1
         # randomize the start point of the trace
         # note: trace file starts with time 0
 
         self.mahimahi_ptr = [np.random.randint(1, len(self.cooked_time) - TOTAL_VIDEO_CHUNKS)] * self.num_agents
 
-        self.last_mahimahi_time = [self.mahimahi_start_ptr - 1] * self.num_agents
+        self.last_mahimahi_time = [self.mahimahi_ptr[i] - 1 for i in range(self.num_agents)]
 
         # Centralization
         self.user_qoe_log = [{} for _ in range(self.num_agents)]
@@ -469,9 +462,8 @@ class Environment:
         for agent_id in range(self.num_agents):
             self.cur_user.append(User(agent_id, SNR_MIN))
 
-        self.mahimahi_start_ptr = 1
-        self.mahimahi_ptr = [1 for _ in range(self.num_agents)]
-        self.last_mahimahi_time = [self.mahimahi_start_ptr - 1] * self.num_agents
+        self.mahimahi_ptr = [np.random.randint(1, len(self.cooked_time) - TOTAL_VIDEO_CHUNKS)] * self.num_agents
+        self.last_mahimahi_time = [self.mahimahi_ptr[i] - 1 for i in range(self.num_agents)]
 
         self.cur_sat_id = []
         for agent in range(self.num_agents):

@@ -13,7 +13,7 @@ from env.multi_bw_share.satellite import Satellite
 from env.multi_bw_share.user import User
 from util.constants import EPSILON, MPC_FUTURE_CHUNK_COUNT, QUALITY_FACTOR, REBUF_PENALTY, SMOOTH_PENALTY, \
     MPC_PAST_CHUNK_COUNT, HO_NUM, TOTAL_VIDEO_CHUNKS, CHUNK_TIL_VIDEO_END_CAP, DEFAULT_QUALITY, INNER_PROCESS_NUMS, \
-    VIDEO_CHUNCK_LEN, BITRATE_WEIGHT
+    VIDEO_CHUNCK_LEN, BITRATE_WEIGHT, SNR_MIN, BUF_RATIO
 
 VIDEO_BIT_RATE = [300, 750, 1200, 1850, 2850, 4300]
 M_IN_K = 1000.0
@@ -40,14 +40,6 @@ NUM_AGENTS = None
 
 SAT_STRATEGY = "resource-fair"
 SAT_STRATEGY = "ratio-based"
-
-NO_EXHAUSTIVE = True
-ADAPTIVE_BUF = False
-
-SNR_MIN = 70
-
-BUF_RATIO = 0.7
-BUF_RATIO_COMBO = 0.8
 
 
 class Environment:

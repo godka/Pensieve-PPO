@@ -2,7 +2,7 @@
 import numpy as np
 
 from util.constants import DEFAULT_QUALITY, REBUF_PENALTY, SMOOTH_PENALTY, VIDEO_BIT_RATE, BUFFER_NORM_FACTOR, \
-    BITRATE_WEIGHT, CHUNK_TIL_VIDEO_END_CAP
+    BITRATE_WEIGHT, CHUNK_TIL_VIDEO_END_CAP, M_IN_K
 from . import core_implicit_time as abrenv
 from . import load_trace_tight as load_trace
 
@@ -13,10 +13,7 @@ A_DIM = 6
 PAST_LEN = 8
 A_SAT = 2
 MAX_SAT = 5
-TRAIN_SEQ_LEN = 100  # take as a train batch
-MODEL_SAVE_INTERVAL = 100
 
-M_IN_K = 1000.0
 RANDOM_SEED = 42
 RAND_RANGE = 1000
 EPS = 1e-6

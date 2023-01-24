@@ -1,7 +1,8 @@
 import os
 import sys
 
-from util.constants import BITRATE_WEIGHT
+from util.constants import BITRATE_WEIGHT, BUFFER_NORM_FACTOR, VIDEO_BIT_RATE, CHUNK_TIL_VIDEO_END_CAP, M_IN_K, \
+    REBUF_PENALTY, SMOOTH_PENALTY, DEFAULT_QUALITY
 
 os.environ['CUDA_VISIBLE_DEVICES']='-1'
 import numpy as np
@@ -18,13 +19,6 @@ PAST_LEN = 8
 A_SAT = 2
 ACTOR_LR_RATE = 1e-4
 # CRITIC_LR_RATE = 0.001
-VIDEO_BIT_RATE = [300,750,1200,1850,2850,4300]  # Kbps
-BUFFER_NORM_FACTOR = 10.0
-CHUNK_TIL_VIDEO_END_CAP = 48.0
-M_IN_K = 1000.0
-REBUF_PENALTY = 4.3  # 1 sec rebuffering -> 3 Mbps
-SMOOTH_PENALTY = 1
-DEFAULT_QUALITY = 1  # default video quality without agent
 RANDOM_SEED = 42
 TEST_TRACES = 'data/sat_data/test_tight/'
 NN_MODEL = sys.argv[1]

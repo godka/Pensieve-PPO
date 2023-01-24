@@ -2,7 +2,7 @@ import os
 import sys
 
 from util.constants import CHUNK_TIL_VIDEO_END_CAP, BUFFER_NORM_FACTOR, VIDEO_BIT_RATE, REBUF_PENALTY, SMOOTH_PENALTY, \
-    DEFAULT_QUALITY, BITRATE_WEIGHT
+    DEFAULT_QUALITY, BITRATE_WEIGHT, M_IN_K
 
 os.environ['CUDA_VISIBLE_DEVICES']='-1'
 import numpy as np
@@ -19,7 +19,6 @@ PAST_LEN = 8
 A_SAT = 2
 ACTOR_LR_RATE = 1e-4
 # CRITIC_LR_RATE = 0.001
-M_IN_K = 1000.0
 RANDOM_SEED = 42
 TEST_TRACES = '../../data/sat_data/test_tight/'
 NN_MODEL = sys.argv[1]
