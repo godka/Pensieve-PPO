@@ -2904,7 +2904,7 @@ class Environment:
                                          "ho_index": ho_index, "next_sat_id": next_sat_id, "reward": reward,
                                          "cur_user_num": cur_user_num, "next_user_num": next_user_num,
                                          "cur_sat_id": self.cur_sat_id[agent]}
-                        elif reward == max_reward and (combo[0] >= best_combo[0] or ho_index > ho_stamp):
+                        elif reward == max_reward and (combo[0] >= best_combo[0]):
                             best_combo = combo
                             max_reward = reward
                             ho_sat_id = next_sat_id
