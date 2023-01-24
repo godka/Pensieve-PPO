@@ -212,6 +212,7 @@ def main():
 
             # Testing for mpc
             bit_rate[agent] /= BITRATE_WEIGHT
+            bit_rate[agent] = int(bit_rate[agent])
             if not end_of_video:
                 changed_sat_id = net_env.set_satellite(agent, sat[agent])
                 if sat[agent] == 1:

@@ -153,6 +153,7 @@ class ABREnv():
 
         # For testing with mpc
         bit_rate /= BITRATE_WEIGHT
+        bit_rate = int(bit_rate)
         # 0 -> select current satellite // 1 -> select another satellite
         # the action is from the last decision
         # this is to make the framework similar to the real
