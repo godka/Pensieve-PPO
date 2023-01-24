@@ -167,7 +167,6 @@ class Environment:
                     if runner_up_sat_id is None or not self.cur_satellite[runner_up_sat_id].is_visible(self.mahimahi_ptr[agent]):
                         self.log.info("Do not update", cur_sat_ids=self.cur_sat_id, runner_up_sat_ids=runner_up_sat_ids,
                                       is_visible=self.cur_satellite[runner_up_sat_id].is_visible(self.mahimahi_ptr[agent]))
-
                         self.unexpected_change = True
 
             if self.unexpected_change:
@@ -1833,7 +1832,7 @@ class Environment:
                     continue
                 check_list = list(combo[i*MPC_FUTURE_CHUNK_COUNT:(i+1)*MPC_FUTURE_CHUNK_COUNT])
                 check_list = [BITRATE_WEIGHT * x for x in check_list]
-                if check_list != [first_last_quality[i]] * MPC_FUTURE_CHUNK_COUNT:
+                if False and check_list != [first_last_quality[i]] * MPC_FUTURE_CHUNK_COUNT:
                     impossible_combo = True
                     break
             if not impossible_combo:
@@ -2499,7 +2498,7 @@ class Environment:
                     continue
                 check_list = list(combo[i * MPC_FUTURE_CHUNK_COUNT:(i + 1) * MPC_FUTURE_CHUNK_COUNT])
                 check_list = [BITRATE_WEIGHT * x for x in check_list]
-                if check_list != [first_last_quality[i]] * MPC_FUTURE_CHUNK_COUNT:
+                if False and check_list != [first_last_quality[i]] * MPC_FUTURE_CHUNK_COUNT:
                     impossible_combo = True
                     break
             if not impossible_combo:
