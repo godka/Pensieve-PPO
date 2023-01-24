@@ -2771,7 +2771,6 @@ class Environment:
         best_next_bw = None
         best_next_num = None
 
-
         cur_user_num = self.get_num_of_user_sat(self.mahimahi_ptr[agent], self.cur_sat_id[agent])
         cur_download_bw, runner_up_sat_id = None, None
         if method == "harmonic-mean":
@@ -2792,11 +2791,10 @@ class Environment:
         if future_chunk_length == 0:
             return ho_sat_id, ho_stamp, best_combo, max_reward
 
-
         start_buffer = self.buffer_size[agent] / MILLISECONDS_IN_SECOND
-
-        best_combo, max_reward, best_case = self.calculate_mpc(video_chunk_remain, start_buffer, last_index,
-                                                               cur_download_bw, agent, centralized)
+        if cur_download_bw != 0:
+            best_combo, max_reward, best_case = self.calculate_mpc(video_chunk_remain, start_buffer, last_index,
+                                                                   cur_download_bw, agent, centralized)
 
         for next_sat_id, next_sat_bw in self.cooked_bw.items():
             if next_sat_id == self.cur_sat_id[agent]:
