@@ -155,6 +155,7 @@ class ABREnv():
         bit_rate /= BITRATE_WEIGHT
         bit_rate = int(bit_rate)
         bit_rate *= BITRATE_WEIGHT
+
         # 0 -> select current satellite // 1 -> select another satellite
         # the action is from the last decision
         # this is to make the framework similar to the real

@@ -19,10 +19,10 @@ TRAIN_SEQ_LEN = 1000  # take as a train batch
 TRAIN_EPOCH = 500000
 MODEL_SAVE_INTERVAL = 1000
 RANDOM_SEED = 42
-SUMMARY_DIR = './ppo_imp'
+SUMMARY_DIR = './ppo_imp_fit'
 MODEL_DIR = '..'
 TRAIN_TRACES = 'data/sat_data/train/'
-TEST_LOG_FOLDER = './test_results_imp'
+TEST_LOG_FOLDER = './test_results_imp_fit'
 PPO_TRAINING_EPO = 5
 
 import argparse
@@ -60,7 +60,7 @@ def testing(epoch, nn_model, log_file):
         os.makedirs(TEST_LOG_FOLDER)
     # run test script
     log.info('python test_implicit_time.py ', nn_model=nn_model + ' ' + str(USERS))
-    os.system('python test_implicit_time.py ' + nn_model + ' ' + str(USERS))
+    os.system('python test_implicit_time.py ' + nn_model + ' ' + str(USERS) + ' ' + str(TEST_LOG_FOLDER))
     log.info('End testing')
 
     # append test performance to the log
