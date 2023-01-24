@@ -4,7 +4,7 @@ import sys
 import pathlib
 import os
 
-from env.multi_bw_share import fixed_env_time as env, load_trace as load_trace
+from env.multi_bw_share import fixed_env_time as env, load_trace_tight as load_trace
 import itertools
 import logging
 

@@ -4,7 +4,7 @@ import sys
 import pathlib
 import os
 
-from env.multi_bw_share import fixed_env_time as env, load_trace_tight as load_trace
+from env.multi_bw_share import fixed_env_time as env, load_trace as load_trace
 import itertools
 import logging
 
@@ -21,7 +21,7 @@ CRITIC_LR_RATE = 0.001
 BITRATE_REWARD = [1, 2, 3, 12, 15, 20]
 RANDOM_SEED = 42
 RAND_RANGE = 1000000
-SUMMARY_DIR = 'test_results_normal_dist/'
+SUMMARY_DIR = 'test_results_normal_dist_ratio/'
 LOG_FILE = SUMMARY_DIR + 'log_sim_cent'
 TEST_TRACES = 'data/sat_data/test/'
 SUMMARY_PATH = SUMMARY_DIR + 'summary'
@@ -70,9 +70,9 @@ size_video6 = [181801, 155580, 139857, 155432, 163442, 126289, 153295, 173849, 1
                181901, 111155, 153605, 149029, 157421, 157488, 143881, 163444, 179328, 159914, 131610, 124011, 144254,
                149991, 147968, 161857, 145210, 172312, 167025, 160064, 137507, 118421, 112270]
 
-MPC_TYPE = "DualMPC-v1"
+# MPC_TYPE = "DualMPC-v1"
 # MPC_TYPE = "DualMPC-Centralization-Exhaustive"
-# MPC_TYPE = "DualMPC-Centralization-Reduced"
+MPC_TYPE = "DualMPC-Centralization-Reduced-v2"
 
 # DualMPC-Centralization
 
@@ -209,13 +209,13 @@ def main():
                 ho_stamps_log[agent] = -1
             elif ho_stamps_log[agent] != MPC_FUTURE_CHUNK_COUNT:
                 ho_stamps_log[agent] -= 1
-            # do_mpc = True
+            do_mpc = True
         # the action is from the last decision
         # this is to make the framework similar to the real
         delay, sleep_time, buffer_size, rebuf, \
         video_chunk_size, next_video_chunk_sizes, \
         end_of_video, video_chunk_remain, is_handover, sat_status, _, _, _, _, _, _, cur_sat_id, \
-        runner_up_sat_ids, ho_stamps, best_combos, best_user_info \
+        runner_up_sat_ids, ho_stamps, best_combos, best_user_info, quality \
             = net_env.get_video_chunk(bit_rate[agent], agent, MPC_TYPE, next_sat_log[agent], ho_point, do_mpc)
 
         if best_combos:
@@ -233,9 +233,9 @@ def main():
             best_user_infos.append(best_user_info)
 
         # reward is video quality - rebuffer penalty
-        reward = VIDEO_BIT_RATE[bit_rate[agent]] / M_IN_K \
+        reward = VIDEO_BIT_RATE[quality] / M_IN_K \
                  - REBUF_PENALTY * rebuf \
-                 - SMOOTH_PENALTY * np.abs(VIDEO_BIT_RATE[bit_rate[agent]] -
+                 - SMOOTH_PENALTY * np.abs(VIDEO_BIT_RATE[quality] -
                                            VIDEO_BIT_RATE[last_bit_rate[agent]]) / M_IN_K
 
         r_batch[agent].append(reward)
@@ -248,7 +248,7 @@ def main():
         #         video_chunk_size, next_video_chunk_sizes, \
         #         end_of_video, video_chunk_remain)
 
-        last_bit_rate[agent] = bit_rate[agent]
+        last_bit_rate[agent] =quality
 
         if agent is not None:
             # log time_stamp, bit_rate, buffer_size, reward
@@ -256,7 +256,7 @@ def main():
             log_file.write("{: <15} {: <10} {: <10} {: <15} {: <15} {: <15}"
                            " {: <15} {: <15} {: <15} {: <15} {: <15} {: <15} {: <15}\n"
                            .format(str(round(time_stamp[agent] / M_IN_K, 3)), str(agent),
-                                   str(VIDEO_BIT_RATE[bit_rate[agent]]), str(round(buffer_size, 3)),
+                                   str(VIDEO_BIT_RATE[quality]), str(round(buffer_size, 3)),
                                    str(round(rebuf, 3)),
                                    str(round(video_chunk_size, 3)), str(round(delay, 3)), str(round(reward, 3)),
                                    str(cur_sat_id), str(is_handover), str(sat_status), str(ho_stamps), str(best_user_info)))
