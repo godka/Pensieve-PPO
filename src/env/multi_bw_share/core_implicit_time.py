@@ -35,8 +35,6 @@ VIDEO_SIZE_FILE = 'data/video_data/envivio/video_size_'
 # LEO SETTINGS
 HANDOVER_DELAY = 0.2  # sec
 HANDOVER_WEIGHT = 1
-SCALE_VIDEO_SIZE_FOR_TEST = 20
-SCALE_VIDEO_LEN_FOR_TEST = 2
 
 # Multi-user setting
 NUM_AGENTS = None
@@ -189,6 +187,7 @@ class Environment:
         is_handover = False
 
         if ho_stamp == 0:
+            exit(1)
             is_handover = True
             delay += HANDOVER_DELAY
             # self.connection[self.cur_sat_id[agent]] = -1

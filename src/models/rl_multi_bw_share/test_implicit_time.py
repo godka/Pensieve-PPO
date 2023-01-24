@@ -1,5 +1,9 @@
 import os
 import sys
+
+from util.constants import CHUNK_TIL_VIDEO_END_CAP, BUFFER_NORM_FACTOR, VIDEO_BIT_RATE, REBUF_PENALTY, SMOOTH_PENALTY, \
+    DEFAULT_QUALITY, BITRATE_WEIGHT
+
 os.environ['CUDA_VISIBLE_DEVICES']='-1'
 import numpy as np
 import tensorflow.compat.v1 as tf
@@ -15,13 +19,7 @@ PAST_LEN = 8
 A_SAT = 2
 ACTOR_LR_RATE = 1e-4
 # CRITIC_LR_RATE = 0.001
-VIDEO_BIT_RATE = [300,750,1200,1850,2850,4300]  # Kbps
-BUFFER_NORM_FACTOR = 10.0
-CHUNK_TIL_VIDEO_END_CAP = 48.0
 M_IN_K = 1000.0
-REBUF_PENALTY = 4.3  # 1 sec rebuffering -> 3 Mbps
-SMOOTH_PENALTY = 1
-DEFAULT_QUALITY = 1  # default video quality without agent
 RANDOM_SEED = 42
 TEST_TRACES = '../../data/sat_data/test_tight/'
 NN_MODEL = sys.argv[1]
@@ -206,6 +204,9 @@ def main():
             
             sat[agent] = action // A_DIM
             bit_rate[agent] = action % A_DIM
+
+            # Testing for mpc
+            bit_rate[agent] /= BITRATE_WEIGHT
 
             if not end_of_video:
                 changed_sat_id = net_env.set_satellite(agent, sat[agent])

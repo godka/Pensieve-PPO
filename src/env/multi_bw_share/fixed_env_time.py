@@ -13,7 +13,7 @@ from env.multi_bw_share.satellite import Satellite
 from env.multi_bw_share.user import User
 from util.constants import EPSILON, MPC_FUTURE_CHUNK_COUNT, QUALITY_FACTOR, REBUF_PENALTY, SMOOTH_PENALTY, \
     MPC_PAST_CHUNK_COUNT, HO_NUM, TOTAL_VIDEO_CHUNKS, CHUNK_TIL_VIDEO_END_CAP, DEFAULT_QUALITY, INNER_PROCESS_NUMS, \
-    VIDEO_CHUNCK_LEN
+    VIDEO_CHUNCK_LEN, BITRATE_WEIGHT
 
 VIDEO_BIT_RATE = [300, 750, 1200, 1850, 2850, 4300]
 M_IN_K = 1000.0
@@ -29,7 +29,6 @@ PACKET_PAYLOAD_PORTION = 0.95
 LINK_RTT = 80  # millisec
 PACKET_SIZE = 1500  # bytes
 VIDEO_SIZE_FILE = 'data/video_data/envivio/video_size_'
-BITRATE_WEIGHT = 2
 
 
 # LEO SETTINGS
@@ -201,14 +200,14 @@ class Environment:
                             ho_stamps[i] = -1
                             self.delay[i] = HANDOVER_DELAY
 
-                            self.update_sat_info(self.cur_sat_id[i], self.mahimahi_ptr[agent], i, -1)
-                            self.update_sat_info(runner_up_sat_id, self.mahimahi_ptr[agent], i, 1)
+                            self.update_sat_info(self.cur_sat_id[i], self.last_mahimahi_time[agent], i, -1)
+                            self.update_sat_info(runner_up_sat_id, self.last_mahimahi_time[agent], i, 1)
                             self.prev_sat_id[i] = self.cur_sat_id[i]
                             self.cur_sat_id[i] = runner_up_sat_id
                             self.download_bw[i] = []
 
                             throughput = self.cur_satellite[self.cur_sat_id[i]].data_rate(self.cur_user[i],
-                                                                                              self.mahimahi_ptr[agent]) * B_IN_MB / BITS_IN_BYTE
+                                                                                              self.last_mahimahi_time[agent]) * B_IN_MB / BITS_IN_BYTE
                             assert throughput != 0
                         else:
                             ho_stamps[i] = -1
@@ -250,7 +249,7 @@ class Environment:
             do_handover = False
 
             if runner_up_sat_id and runner_up_sat_id != self.cur_sat_id[agent] and self.cur_satellite[
-                runner_up_sat_id].is_visible(self.mahimahi_ptr[agent]):
+                runner_up_sat_id].is_visible(self.last_mahimahi_time[agent]):
                 do_handover = True
             else:
                 self.unexpected_change = True
@@ -1778,7 +1777,7 @@ class Environment:
                 future_chunk_length[i] = video_chunk_remain[i]
 
         # cur_download_bws = [self.predict_download_bw(i, True) for i in range(self.num_agents)]
-        cur_sat_ids = [self.cur_user[i].get_conn_sat_id(self.mahimahi_ptr[agent]) for i in range(self.num_agents)]
+        cur_sat_ids = [self.cur_user[i].get_conn_sat_id(self.last_mahimahi_time[agent]) for i in range(self.num_agents)]
         first_last_quality = copy.deepcopy(self.last_quality)
         first_mahimahi_ptr = copy.deepcopy(self.mahimahi_ptr)
 
@@ -1793,7 +1792,7 @@ class Environment:
             if idx == agent:
                 continue
             start_mahimahi_ptr, sat_id, cur_video_chunk_remain, prev_logs, cur_last_quality, buf_size \
-                = self.cur_user[idx].get_related_download_logs(self.mahimahi_ptr[agent], self.mahimahi_ptr[idx])
+                = self.cur_user[idx].get_related_download_logs(self.last_mahimahi_time[agent], self.last_mahimahi_time[idx])
             if cur_last_quality:
                 first_last_quality[idx] = cur_last_quality
             if buf_size:
@@ -2445,7 +2444,7 @@ class Environment:
         # cur_download_bws = [self.predict_download_bw(i, True) for i in range(self.num_agents)]
         first_last_quality = copy.deepcopy(self.last_quality)
         first_mahimahi_ptr = copy.deepcopy(self.mahimahi_ptr)
-        cur_sat_ids = [self.cur_user[i].get_conn_sat_id(self.mahimahi_ptr[agent]) for i in range(self.num_agents)]
+        cur_sat_ids = [self.cur_user[i].get_conn_sat_id(self.last_mahimahi_time[agent]) for i in range(self.num_agents)]
 
         start_buffers = [self.buffer_size[i] / MILLISECONDS_IN_SECOND for i in range(self.num_agents)]
         self.log.info("From", first_mahimahi_ptr=first_mahimahi_ptr, cur_sat_ids=cur_sat_ids,
@@ -2458,7 +2457,7 @@ class Environment:
             if idx == agent:
                 continue
             start_mahimahi_ptr, sat_id, cur_video_chunk_remain, prev_logs, cur_last_quality, buf_size \
-                = self.cur_user[idx].get_related_download_logs(self.mahimahi_ptr[agent], self.mahimahi_ptr[idx])
+                = self.cur_user[idx].get_related_download_logs(self.last_mahimahi_time[agent], self.last_mahimahi_time[idx])
             if cur_last_quality:
                 first_last_quality[idx] = cur_last_quality
             if buf_size:

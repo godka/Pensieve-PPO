@@ -1,5 +1,8 @@
 import os
 import sys
+
+from util.constants import BITRATE_WEIGHT
+
 os.environ['CUDA_VISIBLE_DEVICES']='-1'
 import numpy as np
 import tensorflow.compat.v1 as tf
@@ -207,6 +210,8 @@ def main():
             sat[agent] = action // A_DIM
             bit_rate[agent] = action % A_DIM
 
+            # Testing for mpc
+            bit_rate[agent] /= BITRATE_WEIGHT
             if not end_of_video:
                 changed_sat_id = net_env.set_satellite(agent, sat[agent])
                 if sat[agent] == 1:
