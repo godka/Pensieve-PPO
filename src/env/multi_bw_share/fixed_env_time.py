@@ -208,7 +208,7 @@ class Environment:
                             self.download_bw[i] = []
 
                             throughput = self.cur_satellite[self.cur_sat_id[i]].data_rate(self.cur_user[i],
-                                                                                              self.last_mahimahi_time[agent]) * B_IN_MB / BITS_IN_BYTE
+                                                                                              self.mahimahi_ptr[agent]) * B_IN_MB / BITS_IN_BYTE
                             assert throughput != 0
                         else:
                             ho_stamps[i] = -1
