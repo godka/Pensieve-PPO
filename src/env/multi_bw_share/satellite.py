@@ -305,5 +305,5 @@ class Satellite:
         return dr_ue_shared
 
     def is_visible(self, mahimahi_ptr):
-        return True if self.sat_bw[mahimahi_ptr] != 0 else False
+        return True if self.sat_bw[round(mahimahi_ptr)] != 0 else False
 
