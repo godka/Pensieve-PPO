@@ -143,7 +143,7 @@ def main():
     while True:  # serve video forever
         agent = net_env.get_first_agent()
 
-        if agent == -1 or end_of_video:
+        if agent == -1:
             log_file.write('\n')
             log_file.close()
 

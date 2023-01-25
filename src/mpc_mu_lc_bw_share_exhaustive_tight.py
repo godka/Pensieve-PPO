@@ -70,9 +70,9 @@ size_video6 = [181801, 155580, 139857, 155432, 163442, 126289, 153295, 173849, 1
                181901, 111155, 153605, 149029, 157421, 157488, 143881, 163444, 179328, 159914, 131610, 124011, 144254,
                149991, 147968, 161857, 145210, 172312, 167025, 160064, 137507, 118421, 112270]
 
-# MPC_TYPE = "DualMPC-v1"
+MPC_TYPE = "DualMPC-v1"
 # MPC_TYPE = "DualMPC-Centralization-Exhaustive"
-MPC_TYPE = "DualMPC-Centralization-Reduced-v2"
+# MPC_TYPE = "DualMPC-Centralization-Reduced-v2"
 
 # DualMPC-Centralization
 
@@ -143,7 +143,7 @@ def main():
     while True:  # serve video forever
         agent = net_env.get_first_agent()
 
-        if agent == -1 or end_of_video:
+        if agent == -1:
             log_file.write('\n')
             log_file.close()
 

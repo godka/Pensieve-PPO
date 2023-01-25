@@ -14,7 +14,6 @@ S_DIM = [6 + 1 + 4, 8]
 A_DIM = 6
 A_SAT = 2
 ACTOR_LR_RATE = 1e-4
-NUM_AGENTS = 3
 TRAIN_SEQ_LEN = 1000  # take as a train batch
 TRAIN_EPOCH = 500000
 MODEL_SAVE_INTERVAL = 1000
@@ -24,6 +23,8 @@ MODEL_DIR = '..'
 TRAIN_TRACES = 'data/sat_data/train/'
 TEST_LOG_FOLDER = './test_results_imp_fit'
 PPO_TRAINING_EPO = 5
+
+NUM_AGENTS = 3
 
 import argparse
 
