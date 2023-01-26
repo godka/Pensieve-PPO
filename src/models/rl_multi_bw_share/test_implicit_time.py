@@ -2,7 +2,7 @@ import os
 import sys
 
 from util.constants import CHUNK_TIL_VIDEO_END_CAP, BUFFER_NORM_FACTOR, VIDEO_BIT_RATE, REBUF_PENALTY, SMOOTH_PENALTY, \
-    DEFAULT_QUALITY, BITRATE_WEIGHT, M_IN_K
+    DEFAULT_QUALITY, BITRATE_WEIGHT, M_IN_K, A_DIM, S_LEN
 
 os.environ['CUDA_VISIBLE_DEVICES']='-1'
 import numpy as np
@@ -13,8 +13,6 @@ import structlog
 import logging
 
 S_INFO = 6 + 1 + 4  # bit_rate, buffer_size, next_chunk_size, bandwidth_measurement(throughput and time), chunk_til_video_end
-S_LEN = 8  # take how many frames in the past
-A_DIM = 6
 PAST_LEN = 8
 A_SAT = 2
 ACTOR_LR_RATE = 1e-4
@@ -205,9 +203,9 @@ def main():
             bit_rate[agent] = action % A_DIM
 
             # Testing for mpc
-            bit_rate[agent] /= BITRATE_WEIGHT
-            bit_rate[agent] = int(bit_rate[agent])
-            bit_rate[agent] *= BITRATE_WEIGHT
+            # bit_rate[agent] /= BITRATE_WEIGHT
+            # bit_rate[agent] = int(bit_rate[agent])
+            # bit_rate[agent] *= BITRATE_WEIGHT
             if not end_of_video:
                 changed_sat_id = net_env.set_satellite(agent, sat[agent])
                 if sat[agent] == 1:

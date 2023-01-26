@@ -7,14 +7,15 @@ import tensorflow.compat.v1 as tf
 import structlog
 import logging
 
+from util.constants import A_DIM
+
 os.environ['CUDA_VISIBLE_DEVICES'] = '-1'
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 
 S_DIM = [6 + 1 + 4, 8]
-A_DIM = 6
 A_SAT = 2
 ACTOR_LR_RATE = 1e-4
-NUM_AGENTS = 3
+NUM_AGENTS = 4
 TRAIN_SEQ_LEN = 1000  # take as a train batch
 TRAIN_EPOCH = 500000
 MODEL_SAVE_INTERVAL = 1000

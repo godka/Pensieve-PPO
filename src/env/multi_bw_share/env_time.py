@@ -2,14 +2,12 @@
 import numpy as np
 
 from util.constants import DEFAULT_QUALITY, REBUF_PENALTY, SMOOTH_PENALTY, VIDEO_BIT_RATE, BUFFER_NORM_FACTOR, \
-    BITRATE_WEIGHT, CHUNK_TIL_VIDEO_END_CAP, M_IN_K
+    BITRATE_WEIGHT, CHUNK_TIL_VIDEO_END_CAP, M_IN_K, S_LEN, A_DIM
 from . import core_implicit_time as abrenv
 from . import load_trace_tight as load_trace
 
 # bit_rate, buffer_size, next_chunk_size, bandwidth_measurement(throughput and time), chunk_til_video_end
 S_INFO = 6 + 1 + 4
-S_LEN = 8  # take how many frames in the past
-A_DIM = 6
 PAST_LEN = 8
 A_SAT = 2
 MAX_SAT = 5

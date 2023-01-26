@@ -24,7 +24,7 @@ TRAIN_TRACES = 'data/sat_data/train/'
 TEST_LOG_FOLDER = './test_results_imp_fit'
 PPO_TRAINING_EPO = 5
 
-NUM_AGENTS = 3
+NUM_AGENTS = 4
 
 import argparse
 
