@@ -37,7 +37,7 @@ def main():
 
     np.random.seed(RANDOM_SEED)
 
-    assert len(VIDEO_BIT_RATE) == A_DIM
+    # assert len(VIDEO_BIT_RATE) == A_DIM
 
     is_handover = False
 
@@ -171,7 +171,9 @@ def main():
             state[agent][1, -1] = buffer_size / BUFFER_NORM_FACTOR  # 10 sec
             state[agent][2, -1] = float(video_chunk_size) / float(delay) / M_IN_K  # kilo byte / ms
             state[agent][3, -1] = float(delay) / M_IN_K / BUFFER_NORM_FACTOR  # 10 sec
-            state[agent][4, :A_DIM] = np.array(next_video_chunk_sizes) / M_IN_K / M_IN_K  # mega byte
+            # state[agent][4, :A_DIM] = np.array(next_video_chunk_sizes) / M_IN_K / M_IN_K  # mega byte
+            state[agent][4, :A_DIM] = np.array([next_video_chunk_sizes[index] for index in [0, 2, 4]]) / M_IN_K / M_IN_K  # mega byte
+
             state[agent][5, -1] = np.minimum(video_chunk_remain, CHUNK_TIL_VIDEO_END_CAP) / float(CHUNK_TIL_VIDEO_END_CAP)
             if len(next_sat_bw_logs) < PAST_LEN:
                 next_sat_bw_logs = [0] * (PAST_LEN - len(next_sat_bw_logs)) + next_sat_bw_logs

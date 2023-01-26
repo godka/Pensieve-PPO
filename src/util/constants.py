@@ -17,6 +17,7 @@ MIN_RATIO = 0.1
 MAX_RATIO = 0.9
 B_IN_MB = 1000000.0
 BITS_IN_BYTE = 8.0
+BITRATE_LEVELS = 6
 
 VIDEO_CHUNCK_LEN = 2000.0  # millisec, every time add this amount to buffer
 
