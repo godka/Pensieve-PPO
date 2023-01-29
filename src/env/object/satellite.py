@@ -1,6 +1,6 @@
 import structlog
 
-from env.multi_bw_share.user import User
+from env.object.user import User
 from util.constants import SUPPORTED_SHARING, EPSILON, BIG_EPSILON
 import numpy as np
 import copy
@@ -122,6 +122,7 @@ class Satellite:
             self.conn_use_log[mahimahi_ptr].append([False, user_id])
         else:
             self.conn_use_log[mahimahi_ptr] = [[False, user_id]]
+        self.log.debug("ue_list", ue_list=self.get_conn_use_log(None, all=True))
         self.get_ue_list(mahimahi_ptr)
 
         """
@@ -143,6 +144,10 @@ class Satellite:
                     assert elem[1] not in ue_list
                     ue_list.append(elem[1])
                 else:
+                    if elem[1] not in ue_list:
+                        print(self.conn_use_log)
+                        print(mahimahi_ptr)
+                        exit(1)
                     assert elem[1] in ue_list
                     ue_list.remove(elem[1])
 

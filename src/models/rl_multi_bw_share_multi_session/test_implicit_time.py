@@ -2,27 +2,27 @@ import os
 import sys
 
 from util.constants import CHUNK_TIL_VIDEO_END_CAP, BUFFER_NORM_FACTOR, VIDEO_BIT_RATE, REBUF_PENALTY, SMOOTH_PENALTY, \
-    DEFAULT_QUALITY, BITRATE_WEIGHT, M_IN_K, A_DIM, S_LEN, PAST_LEN
+    DEFAULT_QUALITY, BITRATE_WEIGHT, M_IN_K, A_DIM, S_LEN
 
-os.environ['CUDA_VISIBLE_DEVICES']='-1'
+os.environ['CUDA_VISIBLE_DEVICES'] = '-1'
 import numpy as np
 import tensorflow.compat.v1 as tf
-from env.multi_bw_share import fixed_env_time as env
-from env.multi_bw_share import load_trace as load_trace
+from env.multi_bw_share_multi_session import fixed_env_time as env, load_trace
 from models.rl_multi_bw_share.ppo_spec import ppo_implicit as network
 import structlog
 import logging
 
 S_INFO = 6 + 1 + 4  # bit_rate, buffer_size, next_chunk_size, bandwidth_measurement(throughput and time), chunk_til_video_end
+PAST_LEN = 8
 A_SAT = 2
 ACTOR_LR_RATE = 1e-4
 # CRITIC_LR_RATE = 0.001
 RANDOM_SEED = 42
-TEST_TRACES = '../../data/sat_data/test_tight/'
+TEST_TRACES = 'data/sat_data/test_tight/'
 NN_MODEL = sys.argv[1]
 NUM_AGENTS = int(sys.argv[2])
 
-LOG_FILE = './test_results_imp' + str(NUM_AGENTS) + '/log_sim_ppo'
+LOG_FILE = './test_results_imp_multi' + str(NUM_AGENTS) + '/log_sim_ppo'
 
 # A_SAT = NUM_AGENTS
 structlog.configure(
@@ -34,7 +34,6 @@ log.debug('Test init')
 
 
 def main():
-
     np.random.seed(RANDOM_SEED)
 
     # assert len(VIDEO_BIT_RATE) == A_DIM
@@ -76,18 +75,18 @@ def main():
         for i in range(NUM_AGENTS):
             action_vec[i][bit_rate] = 1
 
-        s_batch = [[np.zeros((S_INFO, S_LEN))]for _ in range(NUM_AGENTS)]
-        a_batch = [[action_vec]for _ in range(NUM_AGENTS)]
-        r_batch = [[]for _ in range(NUM_AGENTS)]
-        state = [[np.zeros((S_INFO, S_LEN))]for _ in range(NUM_AGENTS)]
-        entropy_record = [[]for _ in range(NUM_AGENTS)]
+        s_batch = [[np.zeros((S_INFO, S_LEN))] for _ in range(NUM_AGENTS)]
+        a_batch = [[action_vec] for _ in range(NUM_AGENTS)]
+        r_batch = [[] for _ in range(NUM_AGENTS)]
+        state = [[np.zeros((S_INFO, S_LEN))] for _ in range(NUM_AGENTS)]
+        entropy_record = [[] for _ in range(NUM_AGENTS)]
         entropy_ = 0.5
         video_count = 0
-        
+
         while True:  # serve video forever
-            
+
             agent = net_env.get_first_agent()
-            
+
             if agent == -1:
                 log_file.write('\n')
                 log_file.close()
@@ -95,7 +94,7 @@ def main():
                 last_bit_rate = [DEFAULT_QUALITY for _ in range(NUM_AGENTS)]
                 bit_rate = [DEFAULT_QUALITY for _ in range(NUM_AGENTS)]
                 net_env.reset()
-                
+
                 del s_batch[:]
                 del a_batch[:]
                 del r_batch[:]
@@ -104,12 +103,12 @@ def main():
                 for i in range(NUM_AGENTS):
                     action_vec[i][bit_rate[agent]] = 1
 
-                s_batch = [[np.zeros((S_INFO, S_LEN))]for _ in range(NUM_AGENTS)]
-                a_batch = [[action_vec]for _ in range(NUM_AGENTS)]
-                r_batch = [[]for _ in range(NUM_AGENTS)]
-                entropy_record = [[]for _ in range(NUM_AGENTS)]
-                
-                state = [[np.zeros((S_INFO, S_LEN))]for _ in range(NUM_AGENTS)]
+                s_batch = [[np.zeros((S_INFO, S_LEN))] for _ in range(NUM_AGENTS)]
+                a_batch = [[action_vec] for _ in range(NUM_AGENTS)]
+                r_batch = [[] for _ in range(NUM_AGENTS)]
+                entropy_record = [[] for _ in range(NUM_AGENTS)]
+
+                state = [[np.zeros((S_INFO, S_LEN))] for _ in range(NUM_AGENTS)]
 
                 print("network count", video_count)
                 print(sum(results) / len(results))
@@ -121,40 +120,40 @@ def main():
                 log_path = LOG_FILE + '_' + all_file_names[net_env.trace_idx]
                 log_file = open(log_path, 'w')
                 continue
-            
+
             # the action is from the last decision
             # this is to make the framework similar to the real
             delay, sleep_time, buffer_size, rebuf, \
             video_chunk_size, next_video_chunk_sizes, \
-            end_of_video, video_chunk_remain, is_handover, _, _, next_sat_bw_logs, \
+            end_of_video, video_chunk_remain, is_handover, _, next_sat_bandwidth, next_sat_bw_logs, \
             cur_sat_user_num, next_sat_user_num, cur_sat_bw_logs, connected_time, cur_sat_id, _, _, _, _, _ = \
                 net_env.get_video_chunk(bit_rate[agent], agent, model_type=None)
 
             time_stamp[agent] += delay  # in ms
             time_stamp[agent] += sleep_time  # in ms
-            
+
             # reward is video quality - rebuffer penalty
             reward = VIDEO_BIT_RATE[bit_rate[agent]] / M_IN_K \
-                    - REBUF_PENALTY * rebuf \
-                    - SMOOTH_PENALTY * np.abs(VIDEO_BIT_RATE[bit_rate[agent]] -
-                                            VIDEO_BIT_RATE[last_bit_rate[agent]]) / M_IN_K
+                     - REBUF_PENALTY * rebuf \
+                     - SMOOTH_PENALTY * np.abs(VIDEO_BIT_RATE[bit_rate[agent]] -
+                                               VIDEO_BIT_RATE[last_bit_rate[agent]]) / M_IN_K
 
             r_batch[agent].append(reward)
             results.append(reward)
-            
+
             last_bit_rate[agent] = bit_rate[agent]
 
             # log time_stamp, bit_rate, buffer_size, reward
             log_file.write(str(time_stamp[agent] / M_IN_K) + '\t' +
-                        str(agent) + '\t' +
-                        str(sat[agent]) + '\t' +
-                        str(cur_sat_id) + '\t' +
-                        str(VIDEO_BIT_RATE[bit_rate[agent]]) + '\t' +
-                        str(buffer_size) + '\t' +
-                        str(rebuf) + '\t' +
-                        str(float(video_chunk_size) / float(delay) / M_IN_K) + '\t' +
-                        str(delay) + '\t' +
-                        str(reward) + '\n')
+                           str(agent) + '\t' +
+                           str(sat[agent]) + '\t' +
+                           str(cur_sat_id) + '\t' +
+                           str(VIDEO_BIT_RATE[bit_rate[agent]]) + '\t' +
+                           str(buffer_size) + '\t' +
+                           str(rebuf) + '\t' +
+                           str(float(video_chunk_size) / float(delay) / M_IN_K) + '\t' +
+                           str(delay) + '\t' +
+                           str(reward) + '\n')
             log_file.flush()
 
             # retrieve previous state
@@ -172,9 +171,11 @@ def main():
             state[agent][2, -1] = float(video_chunk_size) / float(delay) / M_IN_K  # kilo byte / ms
             state[agent][3, -1] = float(delay) / M_IN_K / BUFFER_NORM_FACTOR  # 10 sec
             # state[agent][4, :A_DIM] = np.array(next_video_chunk_sizes) / M_IN_K / M_IN_K  # mega byte
-            state[agent][4, :A_DIM] = np.array([next_video_chunk_sizes[index] for index in [0, 2, 4]]) / M_IN_K / M_IN_K  # mega byte
+            state[agent][4, :A_DIM] = np.array(
+                [next_video_chunk_sizes[index] for index in [0, 2, 4]]) / M_IN_K / M_IN_K  # mega byte
 
-            state[agent][5, -1] = np.minimum(video_chunk_remain, CHUNK_TIL_VIDEO_END_CAP) / float(CHUNK_TIL_VIDEO_END_CAP)
+            state[agent][5, -1] = np.minimum(video_chunk_remain, CHUNK_TIL_VIDEO_END_CAP) / float(
+                CHUNK_TIL_VIDEO_END_CAP)
             if len(next_sat_bw_logs) < PAST_LEN:
                 next_sat_bw_logs = [0] * (PAST_LEN - len(next_sat_bw_logs)) + next_sat_bw_logs
 
@@ -190,7 +191,8 @@ def main():
                 state[agent][9:10, 0:S_LEN] = np.zeros((1, S_LEN))
             state[agent][8:9, -1] = np.array(cur_sat_user_num) / 10
             state[agent][9:10, -1] = np.array(next_sat_user_num) / 10
-            state[agent][10, :2] = [float(connected_time[0]) / BUFFER_NORM_FACTOR / 10, float(connected_time[1]) / BUFFER_NORM_FACTOR / 10]
+            state[agent][10, :2] = [float(connected_time[0]) / BUFFER_NORM_FACTOR / 10,
+                                    float(connected_time[1]) / BUFFER_NORM_FACTOR / 10]
 
             # if len(next_sat_user_num) < PAST_LEN:
             #     next_sat_user_num = [0] * (PAST_LEN - len(next_sat_user_num)) + next_sat_user_num
@@ -200,15 +202,15 @@ def main():
             action_prob = actor.predict(np.reshape(state[agent], (1, S_INFO, S_LEN)))
             noise = np.random.gumbel(size=len(action_prob))
             action = np.argmax(np.log(action_prob) + noise)
-            
+
             sat[agent] = action // A_DIM
             bit_rate[agent] = action % A_DIM
 
             # Testing for mpc
             # bit_rate[agent] /= BITRATE_WEIGHT
             # bit_rate[agent] = int(bit_rate[agent])
-            # bit_rate[agent] *= BITRATE_WEIGHT
             bit_rate[agent] *= BITRATE_WEIGHT
+
             if not end_of_video:
                 changed_sat_id = net_env.set_satellite(agent, sat[agent])
                 if sat[agent] == 1:
@@ -218,7 +220,7 @@ def main():
                     is_handover = False
                     # print("X Handover")
             s_batch[agent].append(state[agent])
-        
+
             entropy_ = -np.dot(action_prob, np.log(action_prob))
             entropy_record.append(entropy_)
 

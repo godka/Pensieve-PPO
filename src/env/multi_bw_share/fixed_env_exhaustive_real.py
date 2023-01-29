@@ -6,8 +6,8 @@ import pandas as pd
 import numpy as np
 import copy
 
-from env.multi_bw_share.satellite import Satellite
-from env.multi_bw_share.user import User
+from env.object.satellite import Satellite
+from env.object.user import User
 from util.constants import EPSILON
 
 VIDEO_BIT_RATE = [300, 750, 1200, 1850, 2850, 4300]

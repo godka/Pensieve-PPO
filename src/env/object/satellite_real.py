@@ -1,6 +1,6 @@
 import structlog
 
-from env.multi_bw_share.user import User
+from env.object.user import User
 from util.constants import SUPPORTED_SHARING, EPSILON, B_IN_MB, BITS_IN_BYTE
 import numpy as np
 

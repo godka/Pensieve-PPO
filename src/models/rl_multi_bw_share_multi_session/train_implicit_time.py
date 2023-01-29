@@ -1,7 +1,7 @@
 import multiprocessing as mp
 import numpy as np
 import os
-from env.multi_bw_share.env_time import ABREnv
+from env.multi_bw_share_multi_session.env_time import ABREnv
 from models.rl_multi_bw_share.ppo_spec import ppo_implicit as network
 import tensorflow.compat.v1 as tf
 import structlog
@@ -19,15 +19,15 @@ TRAIN_SEQ_LEN = 1000  # take as a train batch
 TRAIN_EPOCH = 500000
 MODEL_SAVE_INTERVAL = 1000
 RANDOM_SEED = 42
-SUMMARY_DIR = './ppo_imp'
+SUMMARY_DIR = './ppo_imp_multi'
 MODEL_DIR = '..'
 TRAIN_TRACES = '../../data/sat_data/train/'
-TEST_LOG_FOLDER = './test_results_imp'
+TEST_LOG_FOLDER = './test_results_imp_multi'
 PPO_TRAINING_EPO = 5
 
-NUM_AGENTS = 3
-
 import argparse
+
+NUM_AGENTS = 3
 
 parser = argparse.ArgumentParser(description='PyTorch Synthetic Benchmark',
                                  formatter_class=argparse.ArgumentDefaultsHelpFormatter)
@@ -106,9 +106,8 @@ def central_agent(net_params_queues, exp_queues):
 
     assert len(net_params_queues) == NUM_AGENTS
     assert len(exp_queues) == NUM_AGENTS
-    tf_config = tf.ConfigProto(intra_op_parallelism_threads=1,
-                            inter_op_parallelism_threads=1)
-    with tf.Session(config = tf_config) as sess, open(LOG_FILE + '_test.txt', 'w') as test_log_file:
+    tf_config = tf.ConfigProto(intra_op_parallelism_threads=1, inter_op_parallelism_threads=1)
+    with tf.Session(config=tf_config) as sess, open(LOG_FILE + '_test.txt', 'w') as test_log_file:
         summary_ops, summary_vars = build_summaries()
 
         actor = network.Network(sess,

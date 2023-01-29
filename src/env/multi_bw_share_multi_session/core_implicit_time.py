@@ -72,7 +72,7 @@ class Environment:
             self.num_of_user_sat[sat_id] = 0
             self.cur_satellite[sat_id] = Satellite(sat_id, sat_bw, SAT_STRATEGY)
 
-        self.cur_user = [User(i, SNR_MIN) for i in range(self.num_agents)]
+        self.cur_user = [User(0, SNR_MIN) for _ in range(self.num_agents)]
 
         # print(self.num_sat_info)
         self.prev_best_combos = [[DEFAULT_QUALITY] * MPC_FUTURE_CHUNK_COUNT] * self.num_agents
@@ -80,10 +80,9 @@ class Environment:
         # multiuser setting
         self.cur_sat_id = []
         self.prev_sat_id = [None for _ in range(self.num_agents)]
-        for agent in range(self.num_agents):
-            cur_sat_id = self.get_best_sat_id(agent)
-            self.cur_sat_id.append(cur_sat_id)
-            self.update_sat_info(cur_sat_id, self.last_mahimahi_time[agent], agent, 1)
+        cur_sat_id = self.get_best_sat_id(0)
+        self.cur_sat_id.append(cur_sat_id)
+        self.update_sat_info(cur_sat_id, self.last_mahimahi_time[0], 0, 1)
 
         self.video_chunk_counter = [0 for _ in range(self.num_agents)]
         self.buffer_size = [0 for _ in range(self.num_agents)]
@@ -132,36 +131,33 @@ class Environment:
         end_of_network = False
         is_handover = False
 
-        # Do All users' handover
-
         self.last_quality[agent] = quality
 
         while True:  # download video chunk over mahimahi
-            throughput = self.cur_satellite[self.cur_sat_id[agent]].data_rate(self.cur_user[agent],
+            throughput = self.cur_satellite[self.cur_sat_id[0]].data_rate(self.cur_user[agent],
                                                                               self.mahimahi_ptr[
                                                                                   agent]) * B_IN_MB / BITS_IN_BYTE
             if throughput == 0.0:
                 # Connect the satellite that has the best serving time
                 sat_id = self.get_best_sat_id(agent, self.mahimahi_ptr[agent])
-                self.log.debug("Forced Handover1", cur_sat_id=self.cur_sat_id[agent], next_sat_id=sat_id,
+                self.log.debug("Forced Handover1", cur_sat_id=self.cur_sat_id[0], next_sat_id=sat_id,
                               mahimahi_ptr=self.mahimahi_ptr[agent], agent=agent,
-                              cur_bw=self.cooked_bw[self.cur_sat_id[agent]][self.mahimahi_ptr[agent]-3:self.mahimahi_ptr[agent]+3],
+                              cur_bw=self.cooked_bw[self.cur_sat_id[0]][self.mahimahi_ptr[agent]-3:self.mahimahi_ptr[agent]+3],
                               next_bw=self.cooked_bw[
                                   sat_id][self.mahimahi_ptr[agent] - 3:self.mahimahi_ptr[agent] + 3]
                               )
-                assert self.cur_sat_id[agent] != sat_id
-                self.update_sat_info(self.cur_sat_id[agent], self.last_mahimahi_time[agent], agent, -1)
-                self.update_sat_info(sat_id, self.last_mahimahi_time[agent], agent, 1)
+                assert self.cur_sat_id[0] != sat_id
+                # self.update_sat_info(self.cur_sat_id[0], self.last_mahimahi_time[agent], agent, -1)
+                # self.update_sat_info(sat_id, self.last_mahimahi_time[agent], agent, 1)
 
-                self.switch_sat(agent, sat_id)
+                # bself.switch_sat(agent, sat_id)
                 delay += HANDOVER_DELAY
                 is_handover = True
                 self.download_bw[agent] = []
                 self.unexpected_change = True
-                throughput = self.cur_satellite[self.cur_sat_id[agent]].data_rate(self.cur_user[agent],
+                throughput = self.cur_satellite[sat_id].data_rate(self.cur_user[agent],
                                                                                   self.mahimahi_ptr[
                                                                                       agent]) * B_IN_MB / BITS_IN_BYTE
-
                 assert throughput != 0
             duration = self.cooked_time[self.mahimahi_ptr[agent]] \
                        - self.last_mahimahi_time[agent]
@@ -181,7 +177,7 @@ class Environment:
 
             self.mahimahi_ptr[agent] += 1
 
-            if self.mahimahi_ptr[agent] >= len(self.cooked_bw[self.cur_sat_id[agent]]):
+            if self.mahimahi_ptr[agent] >= len(self.cooked_bw[self.cur_sat_id[0]]):
                 # loop back in the beginning
                 # note: trace file starts with time 0
                 # self.mahimahi_ptr[agent] = 1
@@ -218,7 +214,7 @@ class Environment:
             self.buffer_size[agent] -= sleep_time
 
             while True:
-                if self.mahimahi_ptr[agent] >= len(self.cooked_bw[self.cur_sat_id[agent]]):
+                if self.mahimahi_ptr[agent] >= len(self.cooked_bw[self.cur_sat_id[0]]):
                     # loop back in the beginning
                     # note: trace file starts with time 0
                     # self.mahimahi_ptr[agent] = 1
@@ -236,17 +232,17 @@ class Environment:
                 self.last_mahimahi_time[agent] = self.cooked_time[self.mahimahi_ptr[agent]]
                 self.mahimahi_ptr[agent] += 1
 
-                throughput = self.cur_satellite[self.cur_sat_id[agent]].data_rate(self.cur_user[agent],
+                throughput = self.cur_satellite[self.cur_sat_id[0]].data_rate(self.cur_user[agent],
                                                                                   self.mahimahi_ptr[agent])* B_IN_MB / BITS_IN_BYTE
                 if throughput == 0.0:
                     # Connect the satellite that has the best serving time
                     sat_id = self.get_best_sat_id(agent, self.mahimahi_ptr[agent])
-                    assert sat_id != self.cur_sat_id[agent]
-                    self.log.debug("Forced Handover2", cur_sat_id=self.cur_sat_id[agent], sat_id=sat_id,
+                    assert sat_id != self.cur_sat_id[0]
+                    self.log.debug("Forced Handover2", cur_sat_id=self.cur_sat_id[0], sat_id=sat_id,
                                   mahimahi_ptr=self.mahimahi_ptr[agent], agent=agent)
-                    assert sat_id != self.cur_sat_id[agent]
+                    assert sat_id != self.cur_sat_id[0]
                     self.update_sat_info(sat_id, self.last_mahimahi_time[agent], agent, 1)
-                    self.update_sat_info(self.cur_sat_id[agent], self.last_mahimahi_time[agent], agent, -1)
+                    self.update_sat_info(self.cur_sat_id[0], self.last_mahimahi_time[agent], agent, -1)
                     self.switch_sat(agent, sat_id)
                     is_handover = True
                     delay += HANDOVER_DELAY
@@ -268,11 +264,11 @@ class Environment:
             self.end_of_video[agent] = True
             self.buffer_size[agent] = 0
             self.video_chunk_counter[agent] = 0
-            self.update_sat_info(self.cur_sat_id[agent], self.last_mahimahi_time[agent], agent, -1)
+            # self.update_sat_info(self.cur_sat_id[0], self.last_mahimahi_time[agent], agent, -1)
 
             # Refresh satellite info
-            # self.connection[self.cur_sat_id[agent]] = -1
-            # self.cur_sat_id[agent] = None
+            # self.connection[self.cur_sat_id[0]] = -1
+            # self.cur_sat_id[0] = None
 
             # wait for overall clean
             cur_sat_bw_logs, next_sat_bandwidth, next_sat_id, next_sat_bw_logs, connected_time = [], [], None, [], [0, 0]
@@ -288,7 +284,7 @@ class Environment:
         self.download_bw[agent].append(float(video_chunk_size) / delay / M_IN_K * BITS_IN_BYTE)
 
         # num of users
-        cur_sat_user_num = len(self.cur_satellite[self.cur_sat_id[agent]].get_ue_list(self.mahimahi_ptr[agent]))
+        cur_sat_user_num = len(self.cur_satellite[self.cur_sat_id[0]].get_ue_list(self.mahimahi_ptr[agent]))
         self.next_sat_id[agent] = next_sat_id
         if next_sat_id:
             next_sat_user_num = len(self.cur_satellite[next_sat_id].get_ue_list(self.mahimahi_ptr[agent]))
@@ -306,7 +302,7 @@ class Environment:
                video_chunk_remain, \
                is_handover, self.get_num_of_user_sat(self.mahimahi_ptr[agent], sat_id="all"), \
                next_sat_bandwidth, next_sat_bw_logs, cur_sat_user_num, next_sat_user_num, cur_sat_bw_logs, connected_time, \
-               self.cur_sat_id[agent], runner_up_sat_ids, ho_stamps, best_combos, final_rate
+               self.cur_sat_id[0], runner_up_sat_ids, ho_stamps, best_combos, final_rate
 
     def reset(self):
         self.video_chunk_counter = [0 for _ in range(self.num_agents)]
@@ -331,19 +327,16 @@ class Environment:
             self.num_of_user_sat[sat_id] = 0
             self.cur_satellite[sat_id] = Satellite(sat_id, sat_bw, SAT_STRATEGY)
 
-        self.cur_user = []
-        for agent_id in range(self.num_agents):
-            self.cur_user.append(User(agent_id, SNR_MIN))
+        self.cur_user = [User(0, SNR_MIN) for _ in range(self.num_agents)]
 
         self.mahimahi_ptr = [np.random.randint(1, len(self.cooked_time) - TOTAL_VIDEO_CHUNKS)] * self.num_agents
         self.last_mahimahi_time = [self.mahimahi_ptr[i] - 1 for i in range(self.num_agents)]
 
         self.cur_sat_id = []
-        for agent in range(self.num_agents):
-            cur_sat_id = self.get_best_sat_id(agent)
-            # self.connection[cur_sat_id] = agent
-            self.cur_sat_id.append(cur_sat_id)
-            self.update_sat_info(cur_sat_id, self.last_mahimahi_time[agent], agent, 1)
+        cur_sat_id = self.get_best_sat_id(0)
+        # self.connection[cur_sat_id] = agent
+        self.cur_sat_id.append(cur_sat_id)
+        self.update_sat_info(cur_sat_id, self.last_mahimahi_time[0], 0, 1)
 
         self.last_delay = [MPC_PAST_CHUNK_COUNT for _ in range(self.num_agents)]
 
@@ -378,14 +371,14 @@ class Environment:
 
         list1, next_sat_id, next_sat_bws = [], [], []
         bw_list = []
-        sat_bw = self.cooked_bw[self.cur_sat_id[agent]]
+        sat_bw = self.cooked_bw[self.cur_sat_id[0]]
         for i in range(PAST_LEN, 1, -1):
             if mahimahi_ptr - i >= 0:
-                if len(self.cur_satellite[self.cur_sat_id[agent]].get_ue_list(mahimahi_ptr)) == 0:
+                if len(self.cur_satellite[self.cur_sat_id[0]].get_ue_list(mahimahi_ptr)) == 0:
                     bw_list.append(sat_bw[mahimahi_ptr - i])
                 else:
                     bw_list.append(
-                        sat_bw[mahimahi_ptr - i] / len(self.cur_satellite[self.cur_sat_id[agent]].get_ue_list(mahimahi_ptr)))
+                        sat_bw[mahimahi_ptr - i] / len(self.cur_satellite[self.cur_sat_id[0]].get_ue_list(mahimahi_ptr)))
 
         up_time = 0
         tmp_index = mahimahi_ptr - 1
@@ -449,26 +442,31 @@ class Environment:
         return best_sat_id
 
     def switch_sat(self, agent, cur_sat_id):
-        pre_sat_id = self.cur_sat_id[agent]
-        self.prev_sat_id[agent] = pre_sat_id
+        pre_sat_id = self.cur_sat_id[0]
+        self.prev_sat_id[0] = pre_sat_id
 
         # self.connection[pre_sat_id] = -1
         # self.connection[cur_sat_id] = agent
 
-        self.cur_sat_id[agent] = cur_sat_id
+        self.cur_sat_id[0] = cur_sat_id
 
     def update_sat_info(self, sat_id, mahimahi_ptr, agent, variation):
         # update sat info
-        if variation == 1:
-            self.cur_satellite[sat_id].add_ue(agent, mahimahi_ptr)
-        elif variation == -1:
-            self.cur_satellite[sat_id].remove_ue(agent, mahimahi_ptr)
+        self.log.debug("update_sat_info", agent=agent, sat_id=sat_id, mahimahi_ptr=mahimahi_ptr, variation=variation)
+        total_num = 0
+        for i in range(self.num_agents):
+            if variation == 1:
+                self.cur_user[i].update_sat_log(sat_id, mahimahi_ptr)
+                self.cur_satellite[sat_id].add_ue(i, mahimahi_ptr)
 
-        if sat_id in self.num_of_user_sat.keys():
-            self.num_of_user_sat[sat_id] += variation
-        else:
-            self.num_of_user_sat[sat_id] = variation
-        # print(self.num_of_user_sat)
+            elif variation == -1:
+                self.cur_satellite[sat_id].remove_ue(i, mahimahi_ptr)
+
+            if sat_id in self.num_of_user_sat.keys():
+                self.num_of_user_sat[sat_id] += variation
+            else:
+                self.num_of_user_sat[sat_id] = variation
+            total_num += self.num_of_user_sat[sat_id]
         assert self.num_of_user_sat[sat_id] >= 0
 
     def get_num_of_user_sat(self, mahimahi_ptr, sat_id):
@@ -488,14 +486,14 @@ class Environment:
         if mahimahi_ptr is None:
             mahimahi_ptr = self.mahimahi_ptr[agent]
         if cur_sat_id is None:
-            cur_sat_id = self.cur_sat_id[agent]
+            cur_sat_id = self.cur_sat_id[0]
 
         for sat_id, sat_bw in self.cooked_bw.items():
             real_sat_bw = None
 
             # Pass the previously connected satellite
-            # if sat_id == cur_sat_id or sat_id == self.prev_sat_id[agent]:
-            if sat_id == cur_sat_id or sat_id == self.prev_sat_id[agent]:
+            # if sat_id == cur_sat_id or sat_id == self.prev_sat_id[0]:
+            if sat_id == cur_sat_id or sat_id == self.prev_sat_id[0]:
                 continue
 
             if method == "harmonic-mean":
@@ -585,17 +583,19 @@ class Environment:
         if id_list is None:
             sat_id = self.next_sat_id[agent]
 
-        if sat == 1:
-            if sat_id == self.cur_sat_id[agent] or sat_id is None:
+        if sat == 1 and agent == 0:
+            if sat_id == self.cur_sat_id[0] or sat_id is None:
                 # print("Can't do handover. Only one visible satellite")
                 return
-            self.log.debug("set_satellite", cur_sat_id=self.cur_sat_id[agent], next_sat_id=sat_id,
+            self.log.debug("set_satellite", cur_sat_id=self.cur_sat_id[0], next_sat_id=sat_id,
                           mahimahi_ptr=self.mahimahi_ptr[agent], agent=agent)
 
             self.update_sat_info(sat_id, self.last_mahimahi_time[agent], agent, 1)
-            self.update_sat_info(self.cur_sat_id[agent], self.last_mahimahi_time[agent], agent, -1)
-            self.prev_sat_id[agent] = self.cur_sat_id[agent]
-            self.cur_sat_id[agent] = sat_id
+            self.update_sat_info(self.cur_sat_id[0], self.last_mahimahi_time[agent], agent, -1)
+
+            self.prev_sat_id[0] = self.cur_sat_id[0]
+            self.cur_sat_id[0] = sat_id
             self.download_bw[agent] = []
-            self.delay[agent] = HANDOVER_DELAY
+            for i in range(self.num_agents):
+                self.delay[i] = HANDOVER_DELAY
             return sat_id

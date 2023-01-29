@@ -6,7 +6,7 @@ import time
 os.environ['CUDA_VISIBLE_DEVICES'] = '2'
 import tflearn
 
-FEATURE_NUM = 128
+FEATURE_NUM = 256
 ACTION_EPS = 1e-4
 PAST_LEN = 8
 A_SAT = 2
@@ -46,7 +46,9 @@ class Network():
                  split_8_flat, split_8_1_flat, split_9_flat], 'concat')
 
             pi_net = tflearn.fully_connected(merge_net, FEATURE_NUM, activation='relu')
-            pi = tflearn.fully_connected(pi_net, self.a_dim, activation='softmax')
+            pi_net2 = tflearn.fully_connected(pi_net, FEATURE_NUM, activation='relu')
+
+            pi = tflearn.fully_connected(pi_net2, self.a_dim, activation='softmax')
 
         with tf.variable_scope('critic'):
             split_0 = tflearn.fully_connected(inputs[:, 0:1, -1], FEATURE_NUM, activation='relu')
@@ -74,7 +76,9 @@ class Network():
                 [split_0, split_1, split_2_flat, split_3_flat, split_4_flat, split_5, split_6_flat, split_7_flat,
                  split_8_flat, split_8_1_flat, split_9_flat], 'concat')
             value_net = tflearn.fully_connected(merge_net, FEATURE_NUM, activation='relu')
-            value = tflearn.fully_connected(value_net, 1, activation='linear')
+            value_net2 = tflearn.fully_connected(value_net, FEATURE_NUM, activation='relu')
+
+            value = tflearn.fully_connected(value_net2, 1, activation='linear')
             return pi, value
             
     def get_network_params(self):
