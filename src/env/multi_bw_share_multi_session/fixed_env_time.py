@@ -1318,7 +1318,7 @@ class Environment:
                         tmp_bws_sum.append(harmonic_bw)
 
                         download_time += (self.video_size[chunk_quality][index] / B_IN_MB) \
-                                         / harmonic_bw * BITS_IN_BYTE / PACKET_PAYLOAD_PORTION  # this is MB/MB/s --> seconds
+                                         / harmonic_bw * BITS_IN_BYTE  # this is MB/MB/s --> seconds
                         if curr_buffer < download_time:
                             curr_rebuffer_time += (download_time - curr_buffer)
                             curr_buffer = 0.0
@@ -1568,7 +1568,7 @@ class Environment:
                         tmp_bws_sum.append(harmonic_bw)
 
                         download_time += (self.video_size[chunk_quality][index] / B_IN_MB) \
-                                         / harmonic_bw * BITS_IN_BYTE / PACKET_PAYLOAD_PORTION  # this is MB/MB/s --> seconds
+                                         / harmonic_bw * BITS_IN_BYTE  # this is MB/MB/s --> seconds
 
                         if curr_buffer < download_time:
                             curr_rebuffer_time += (download_time - curr_buffer)
@@ -2104,7 +2104,7 @@ class Environment:
                         harmonic_bw = next_bws[agent_id]
                         # assert harmonic_bw != 0
                     download_time += (self.video_size[chunk_quality][index] / B_IN_MB) \
-                                     / harmonic_bw * BITS_IN_BYTE / PACKET_PAYLOAD_PORTION  # this is MB/MB/s --> seconds
+                                     / harmonic_bw * BITS_IN_BYTE  # this is MB/MB/s --> seconds
 
                     if curr_buffer < download_time:
                         curr_rebuffer_time += (download_time - curr_buffer)
@@ -2275,7 +2275,7 @@ class Environment:
                         harmonic_bw = next_bws[agent_id] / next_future_sat_user_num
                     assert harmonic_bw != 0
                     download_time += (self.video_size[chunk_quality][index] / B_IN_MB) \
-                                     / harmonic_bw * BITS_IN_BYTE / PACKET_PAYLOAD_PORTION  # this is MB/MB/s --> seconds
+                                     / harmonic_bw * BITS_IN_BYTE  # this is MB/MB/s --> seconds
 
                     if curr_buffer < download_time:
                         curr_rebuffer_time += (download_time - curr_buffer)
@@ -2368,7 +2368,7 @@ class Environment:
                         assert harmonic_bw != 0
 
                         download_time += (self.video_size[chunk_quality][index] / B_IN_MB) \
-                                         / harmonic_bw * BITS_IN_BYTE / PACKET_PAYLOAD_PORTION  # this is MB/MB/s --> seconds
+                                         / harmonic_bw * BITS_IN_BYTE  # this is MB/MB/s --> seconds
 
                         if curr_buffer < download_time:
                             curr_rebuffer_time += (download_time - curr_buffer)
@@ -2843,7 +2843,7 @@ class Environment:
                                 harmonic_bw = next_download_bw
 
                             download_time += (self.video_size[chunk_quality][index] / B_IN_MB) \
-                                             / harmonic_bw * BITS_IN_BYTE / PACKET_PAYLOAD_PORTION  # this is MB/MB/s --> seconds
+                                             / harmonic_bw * BITS_IN_BYTE  # this is MB/MB/s --> seconds
 
                             if curr_buffer < download_time:
                                 curr_rebuffer_time += (download_time - curr_buffer)
@@ -2973,7 +2973,7 @@ class Environment:
                     print(cur_bws, next_bws, agent_id, ho_positions)
                 assert harmonic_bw != 0
                 download_time += (self.video_size[chunk_quality][index] / B_IN_MB) \
-                                 / harmonic_bw * BITS_IN_BYTE / PACKET_PAYLOAD_PORTION  # this is MB/MB/s --> seconds
+                                 / harmonic_bw * BITS_IN_BYTE  # this is MB/MB/s --> seconds
                 if curr_buffer < download_time:
                     curr_rebuffer_time += (download_time - curr_buffer)
                     curr_buffer = 0.0
@@ -3286,7 +3286,7 @@ class Environment:
                 index = last_index + position  # e.g., if last chunk is 3, then first iter is 3+0+1=4
                 download_time = 0
                 download_time += (self.video_size[chunk_quality][index] / B_IN_MB) \
-                                 / cur_download_bw * BITS_IN_BYTE / PACKET_PAYLOAD_PORTION  # this is MB/MB/s --> seconds
+                                 / cur_download_bw * BITS_IN_BYTE  # this is MB/MB/s --> seconds
 
                 if curr_buffer < download_time:
                     curr_rebuffer_time += (download_time - curr_buffer)

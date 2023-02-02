@@ -62,7 +62,7 @@ def testing(epoch, nn_model, log_file):
                 parse = line.split()
                 try:
                     entropy.append(float(parse[-2]))
-                    reward.append(float(parse[-1]))
+                    reward.append(float(parse[-6]))
                 except IndexError:
                     break
         rewards.append(np.mean(reward[1:]))

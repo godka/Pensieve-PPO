@@ -10,7 +10,7 @@ import logging
 
 from util.constants import VIDEO_BIT_RATE, BUFFER_NORM_FACTOR, CHUNK_TIL_VIDEO_END_CAP, M_IN_K, REBUF_PENALTY, \
     SMOOTH_PENALTY, DEFAULT_QUALITY, MPC_FUTURE_CHUNK_COUNT, size_video1, size_video2, size_video3, size_video4, \
-    size_video5, size_video6
+    size_video5, size_video6, NUM_AGENTS
 
 S_INFO = 5  # bit_rate, buffer_size, rebuffering_time, bandwidth_measurement, chunk_til_video_end
 S_LEN = 8  # take how many frames in the past
@@ -31,11 +31,9 @@ CHUNK_COMBO_OPTIONS = []
 
 import argparse
 
-NUM_AGENTS = 3
-
 parser = argparse.ArgumentParser(description='PyTorch Synthetic Benchmark',
                                  formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-parser.add_argument('--user', type=int, default=NUM_AGENTS)
+parser.add_argument('--user', type=int, default=3)
 args = parser.parse_args()
 
 MPC_TYPE = "DualMPC-v1"

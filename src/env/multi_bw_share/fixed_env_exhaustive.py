@@ -1169,7 +1169,7 @@ class Environment:
                         tmp_bws_sum.append(harmonic_bw)
 
                         download_time += (self.video_size[chunk_quality][index] / B_IN_MB) \
-                                         / harmonic_bw * BITS_IN_BYTE / PACKET_PAYLOAD_PORTION  # this is MB/MB/s --> seconds
+                                         / harmonic_bw * BITS_IN_BYTE  # this is MB/MB/s --> seconds
                         if curr_buffer < download_time:
                             curr_rebuffer_time += (download_time - curr_buffer)
                             curr_buffer = 0.0
@@ -1336,7 +1336,7 @@ class Environment:
                     position_list[agent_id] += 1
 
                     download_time += (self.video_size[chunk_quality][index] / B_IN_MB) \
-                                     / harmonic_bw * BITS_IN_BYTE / PACKET_PAYLOAD_PORTION  # this is MB/MB/s --> seconds
+                                     / harmonic_bw * BITS_IN_BYTE  # this is MB/MB/s --> seconds
 
                     mahimahi_ptr[agent_id] += download_time
 
@@ -1701,7 +1701,7 @@ class Environment:
                 position_list[agent_id] += 1
 
                 download_time += (self.video_size[chunk_quality][index] / B_IN_MB) \
-                                 / harmonic_bw * BITS_IN_BYTE / PACKET_PAYLOAD_PORTION  # this is MB/MB/s --> seconds
+                                 / harmonic_bw * BITS_IN_BYTE  # this is MB/MB/s --> seconds
 
                 mahimahi_ptr[agent_id] += download_time
 
@@ -1785,7 +1785,7 @@ class Environment:
                     position_list[agent_id] += 1
 
                     download_time += (self.video_size[chunk_quality][index] / B_IN_MB) \
-                                     / harmonic_bw * BITS_IN_BYTE / PACKET_PAYLOAD_PORTION  # this is MB/MB/s --> seconds
+                                     / harmonic_bw * BITS_IN_BYTE  # this is MB/MB/s --> seconds
 
                     mahimahi_ptr[agent_id] += download_time
 
@@ -2025,7 +2025,7 @@ class Environment:
                 position_list[agent_id] += 1
 
                 download_time += (self.video_size[chunk_quality][index] / B_IN_MB) \
-                                 / harmonic_bw * BITS_IN_BYTE / PACKET_PAYLOAD_PORTION  # this is MB/MB/s --> seconds
+                                 / harmonic_bw * BITS_IN_BYTE  # this is MB/MB/s --> seconds
 
                 mahimahi_ptr[agent_id] += download_time
 
@@ -2215,7 +2215,7 @@ class Environment:
                     position_list[agent_id] += 1
 
                     download_time += (self.video_size[chunk_quality][index] / B_IN_MB ) \
-                                     / harmonic_bw * BITS_IN_BYTE / PACKET_PAYLOAD_PORTION  # this is MB/MB/s --> seconds
+                                     / harmonic_bw * BITS_IN_BYTE  # this is MB/MB/s --> seconds
                     mahimahi_ptr[agent_id] += download_time
 
                     if curr_buffer[agent_id] < download_time:
@@ -2493,7 +2493,7 @@ class Environment:
                     harmonic_bw *= x[var_index]
 
                 download_time += (self.video_size[chunk_quality][index] / B_IN_MB) \
-                                 / harmonic_bw * BITS_IN_BYTE / PACKET_PAYLOAD_PORTION  # this is MB/MB/s --> seconds
+                                 / harmonic_bw * BITS_IN_BYTE  # this is MB/MB/s --> seconds
                 if curr_buffer < download_time:
                     curr_rebuffer_time += (download_time - curr_buffer)
                     curr_buffer = 0.0

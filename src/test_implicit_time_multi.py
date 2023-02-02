@@ -20,9 +20,11 @@ ACTOR_LR_RATE = 1e-4
 RANDOM_SEED = 42
 TEST_TRACES = 'data/sat_data/test_tight/'
 NN_MODEL = sys.argv[1]
-NUM_AGENTS = int(sys.argv[2])
+USERS = int(sys.argv[2])
+SUMMARY_DIR = './test_results_imp_multi' + str(USERS)
 
-LOG_FILE = './test_results_imp_multi' + str(NUM_AGENTS) + '/log_sim_ppo'
+LOG_FILE = SUMMARY_DIR + '/log_sim_ppo'
+SUMMARY_PATH = SUMMARY_DIR + 'summary'
 
 # A_SAT = NUM_AGENTS
 structlog.configure(
@@ -44,12 +46,15 @@ def main():
 
     net_env = env.Environment(all_cooked_time=all_cooked_time,
                               all_cooked_bw=all_cooked_bw,
-                              num_agents=NUM_AGENTS)
+                              num_agents=USERS)
 
     log_path = LOG_FILE + '_' + all_file_names[net_env.trace_idx]
     log_file = open(log_path, 'w')
 
+    time_stamp = [0 for _ in range(USERS)]
+
     results = []
+    tmp_results = []
 
     with tf.Session() as sess:
 
@@ -65,21 +70,21 @@ def main():
             saver.restore(sess, NN_MODEL)
             print("Testing model restored.")
 
-        time_stamp = [0 for _ in range(NUM_AGENTS)]
+        time_stamp = [0 for _ in range(USERS)]
 
-        last_bit_rate = [DEFAULT_QUALITY for _ in range(NUM_AGENTS)]
-        bit_rate = [DEFAULT_QUALITY for _ in range(NUM_AGENTS)]
-        sat = [0 for _ in range(NUM_AGENTS)]
+        last_bit_rate = [DEFAULT_QUALITY for _ in range(USERS)]
+        bit_rate = [DEFAULT_QUALITY for _ in range(USERS)]
+        sat = [0 for _ in range(USERS)]
 
-        action_vec = [np.zeros(A_DIM * A_SAT) for _ in range(NUM_AGENTS)]
-        for i in range(NUM_AGENTS):
+        action_vec = [np.zeros(A_DIM * A_SAT) for _ in range(USERS)]
+        for i in range(USERS):
             action_vec[i][bit_rate] = 1
 
-        s_batch = [[np.zeros((S_INFO, S_LEN))] for _ in range(NUM_AGENTS)]
-        a_batch = [[action_vec] for _ in range(NUM_AGENTS)]
-        r_batch = [[] for _ in range(NUM_AGENTS)]
-        state = [[np.zeros((S_INFO, S_LEN))] for _ in range(NUM_AGENTS)]
-        entropy_record = [[] for _ in range(NUM_AGENTS)]
+        s_batch = [[np.zeros((S_INFO, S_LEN))] for _ in range(USERS)]
+        a_batch = [[action_vec] for _ in range(USERS)]
+        r_batch = [[] for _ in range(USERS)]
+        state = [[np.zeros((S_INFO, S_LEN))] for _ in range(USERS)]
+        entropy_record = [[] for _ in range(USERS)]
         entropy_ = 0.5
         video_count = 0
 
@@ -91,27 +96,36 @@ def main():
                 log_file.write('\n')
                 log_file.close()
 
-                last_bit_rate = [DEFAULT_QUALITY for _ in range(NUM_AGENTS)]
-                bit_rate = [DEFAULT_QUALITY for _ in range(NUM_AGENTS)]
+                last_bit_rate = [DEFAULT_QUALITY for _ in range(USERS)]
+                bit_rate = [DEFAULT_QUALITY for _ in range(USERS)]
                 net_env.reset()
 
                 del s_batch[:]
                 del a_batch[:]
                 del r_batch[:]
 
-                action_vec = [np.zeros(A_DIM) for _ in range(NUM_AGENTS)]
-                for i in range(NUM_AGENTS):
+                action_vec = [np.zeros(A_DIM) for _ in range(USERS)]
+                for i in range(USERS):
                     action_vec[i][bit_rate[agent]] = 1
 
-                s_batch = [[np.zeros((S_INFO, S_LEN))] for _ in range(NUM_AGENTS)]
-                a_batch = [[action_vec] for _ in range(NUM_AGENTS)]
-                r_batch = [[] for _ in range(NUM_AGENTS)]
-                entropy_record = [[] for _ in range(NUM_AGENTS)]
+                s_batch = [[np.zeros((S_INFO, S_LEN))] for _ in range(USERS)]
+                a_batch = [[action_vec] for _ in range(USERS)]
+                r_batch = [[] for _ in range(USERS)]
+                entropy_record = [[] for _ in range(USERS)]
 
-                state = [[np.zeros((S_INFO, S_LEN))] for _ in range(NUM_AGENTS)]
+                state = [[np.zeros((S_INFO, S_LEN))] for _ in range(USERS)]
 
                 print("network count", video_count)
-                print(sum(results) / len(results))
+                print(sum(tmp_results) / len(tmp_results))
+                summary_file = open(SUMMARY_PATH, 'a')
+                summary_file.write('\n')
+                summary_file.write('\n')
+                summary_file.write(str(sum(tmp_results) / len(tmp_results)))
+                summary_file.close()
+                results += tmp_results
+                tmp_results = []
+                time_stamp = [0 for _ in range(USERS)]
+
                 video_count += 1
 
                 if video_count >= len(all_file_names):
@@ -139,21 +153,23 @@ def main():
                                                VIDEO_BIT_RATE[last_bit_rate[agent]]) / M_IN_K
 
             r_batch[agent].append(reward)
-            results.append(reward)
+            tmp_results.append(reward)
 
             last_bit_rate[agent] = bit_rate[agent]
 
             # log time_stamp, bit_rate, buffer_size, reward
-            log_file.write(str(time_stamp[agent] / M_IN_K) + '\t' +
-                           str(agent) + '\t' +
-                           str(sat[agent]) + '\t' +
-                           str(cur_sat_id) + '\t' +
-                           str(VIDEO_BIT_RATE[bit_rate[agent]]) + '\t' +
-                           str(buffer_size) + '\t' +
-                           str(rebuf) + '\t' +
-                           str(float(video_chunk_size) / float(delay) / M_IN_K) + '\t' +
-                           str(delay) + '\t' +
-                           str(reward) + '\n')
+            log_file.write("{: <15} {: <10} {: <10} {: <15} {: <15} {: <15}"
+                           " {: <15} {: <15} {: <15} {: <15} {: <15} {: <15} {: <15}\n"
+                           .format(str(round(time_stamp[agent] / M_IN_K, 3)),
+                                   str(agent),
+                                   str(VIDEO_BIT_RATE[bit_rate[agent]]),
+                                   str(round(buffer_size, 3)),
+                                   str(round(rebuf, 3)),
+                                   str(round(video_chunk_size, 3)),
+                                   str(round(delay, 3)),
+                                   str(round(reward, 3)),
+                                   str(cur_sat_id), str(is_handover), str(0), str(0),
+                                   str(0)))
             log_file.flush()
 
             # retrieve previous state
@@ -227,6 +243,10 @@ def main():
     # print(results)
     print(sum(results) / len(results))
 
+    summary_file = open(SUMMARY_PATH, 'a')
+    summary_file.write('\n')
+    summary_file.write(str(sum(results) / len(results)))
+    summary_file.close()
 
 if __name__ == '__main__':
     main()

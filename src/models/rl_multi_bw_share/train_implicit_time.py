@@ -7,7 +7,7 @@ import tensorflow.compat.v1 as tf
 import structlog
 import logging
 
-from util.constants import A_DIM
+from util.constants import A_DIM, NUM_AGENTS
 
 os.environ['CUDA_VISIBLE_DEVICES'] = '-1'
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
@@ -25,13 +25,11 @@ TRAIN_TRACES = '../../data/sat_data/train/'
 TEST_LOG_FOLDER = './test_results_imp'
 PPO_TRAINING_EPO = 5
 
-NUM_AGENTS = 3
-
 import argparse
 
 parser = argparse.ArgumentParser(description='PyTorch Synthetic Benchmark',
                                  formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-parser.add_argument('--user', type=int, default=NUM_AGENTS)
+parser.add_argument('--user', type=int, default=3)
 args = parser.parse_args()
 USERS = args.user
 # A_SAT = USERS + 1
@@ -61,8 +59,8 @@ def testing(epoch, nn_model, log_file):
     if not os.path.exists(TEST_LOG_FOLDER):
         os.makedirs(TEST_LOG_FOLDER)
     # run test script
-    log.info('python test_implicit_time_multi.py ', nn_model=nn_model + ' ' + str(USERS))
-    os.system('python test_implicit_time_multi.py ' + nn_model + ' ' + str(USERS))
+    log.info('python test_implicit_time.py ', nn_model=nn_model + ' ' + str(USERS))
+    os.system('python test_implicit_time.py ' + nn_model + ' ' + str(USERS))
     log.info('End testing')
 
     # append test performance to the log
@@ -75,7 +73,7 @@ def testing(epoch, nn_model, log_file):
                 parse = line.split()
                 try:
                     entropy.append(float(parse[-2]))
-                    reward.append(float(parse[-1]))
+                    reward.append(float(parse[-6]))
                 except IndexError:
                     break
         rewards.append(np.mean(reward[1:]))

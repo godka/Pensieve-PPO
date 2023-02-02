@@ -58,17 +58,17 @@ def testing(epoch, nn_model, log_file):
     rewards, entropies = [], []
     test_log_files = os.listdir(TEST_LOG_FOLDER)
     for test_log_file in test_log_files:
-        reward, entropy = [], []
+        reward = [] # , # entropy = [], []
         with open(TEST_LOG_FOLDER + test_log_file, 'rb') as f:
             for line in f:
                 parse = line.split()
                 try:
-                    entropy.append(float(parse[-2]))
-                    reward.append(float(parse[-1]))
+                    # entropy.append(float(parse[-2]))
+                    reward.append(float(parse[-6]))
                 except IndexError:
                     break
         rewards.append(np.mean(reward[1:]))
-        entropies.append(np.mean(entropy[1:]))
+        # entropies.append(np.mean(entropy[1:]))
 
     rewards = np.array(rewards)
 
@@ -113,6 +113,7 @@ def central_agent(net_params_queues, exp_queues):
         if nn_model is not None:  # nn_model is the path to file
             saver.restore(sess, nn_model)
             print("Model restored.")
+
         
         # while True:  # assemble experiences from agents, compute the gradients
         for epoch in range(TRAIN_EPOCH):

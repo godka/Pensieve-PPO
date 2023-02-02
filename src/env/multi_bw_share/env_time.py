@@ -2,13 +2,12 @@
 import numpy as np
 
 from util.constants import DEFAULT_QUALITY, REBUF_PENALTY, SMOOTH_PENALTY, VIDEO_BIT_RATE, BUFFER_NORM_FACTOR, \
-    BITRATE_WEIGHT, CHUNK_TIL_VIDEO_END_CAP, M_IN_K, S_LEN, A_DIM
+    BITRATE_WEIGHT, CHUNK_TIL_VIDEO_END_CAP, M_IN_K, S_LEN, A_DIM, PAST_LEN
 from . import core_implicit_time as abrenv
 from . import load_trace as load_trace
 
 # bit_rate, buffer_size, next_chunk_size, bandwidth_measurement(throughput and time), chunk_til_video_end
 S_INFO = 6 + 1 + 4
-PAST_LEN = 8
 A_SAT = 2
 MAX_SAT = 5
 
@@ -150,8 +149,7 @@ class ABREnv():
         # For testing with mpc
         # bit_rate /= BITRATE_WEIGHT
         # bit_rate = int(bit_rate)
-        # bit_rate *= BITRATE_WEIGHT
-        bit_rate *= 2
+        bit_rate *= BITRATE_WEIGHT
 
         # 0 -> select current satellite // 1 -> select another satellite
         # the action is from the last decision
@@ -206,6 +204,5 @@ class ABREnv():
         # state[agent][8, :PAST_LEN] = next_sat_user_nums[:5]
 
         self.state[agent] = state
-
         #observation, reward, done, info = ppo_spec.step(action)
         return state, reward, end_of_video, {'bitrate': VIDEO_BIT_RATE[bit_rate], 'rebuffer': rebuf}
