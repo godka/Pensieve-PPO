@@ -24,7 +24,7 @@ USERS = int(sys.argv[2])
 SUMMARY_DIR = './test_results_imp_multi' + str(USERS)
 
 LOG_FILE = SUMMARY_DIR + '/log_sim_ppo'
-SUMMARY_PATH = SUMMARY_DIR + 'summary'
+SUMMARY_PATH = SUMMARY_DIR + '/summary'
 
 # A_SAT = NUM_AGENTS
 structlog.configure(

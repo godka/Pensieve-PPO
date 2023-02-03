@@ -68,9 +68,13 @@ def testing(epoch, nn_model, log_file):
     test_log_files = os.listdir(TEST_LOG_FOLDER)
     for test_log_file in test_log_files:
         reward, entropy = [], []
+        if test_log_file == "summary":
+            continue
         with open(TEST_LOG_FOLDER + test_log_file, 'rb') as f:
             for line in f:
                 parse = line.split()
+                if not parse:
+                    break
                 try:
                     entropy.append(float(parse[-2]))
                     reward.append(float(parse[-6]))
