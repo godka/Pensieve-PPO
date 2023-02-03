@@ -1,4 +1,7 @@
 SUPPORTED_SHARING = {'max-cap', 'resource-fair', 'ratio-based'}
+CENT_MPC_MODELS = ["DualMPC-Centralization-Reduced", "DualMPC-Centralization-Exhaustive", "Oracle"]
+DIST_MPC_MODELS = ["ManifoldMPC", "DualMPC", "DualMPC-Centralization"]
+SEP_MPC_MODELS = ["MVT", "MRSS", "MRSS-Smart"]
 VIDEO_BIT_RATE = [300, 750, 1200, 1850, 2850, 4300]  # Kbps
 BITRATE_REWARD = [1, 2, 3, 12, 15, 20]
 BUFFER_NORM_FACTOR = 10.0
@@ -18,7 +21,7 @@ EPSILON = 0.2
 BIG_EPSILON = -0.001
 MIN_RATIO = 0.1
 MAX_RATIO = 0.9
-B_IN_MB = 1000000.0
+B_IN_MB = 1000000
 BITS_IN_BYTE = 8.0
 BITRATE_LEVELS = 6
 PAST_LEN = 8

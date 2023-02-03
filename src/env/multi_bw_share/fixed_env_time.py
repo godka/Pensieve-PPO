@@ -14,7 +14,7 @@ from env.object.user import User
 from util.constants import EPSILON, MPC_FUTURE_CHUNK_COUNT, QUALITY_FACTOR, REBUF_PENALTY, SMOOTH_PENALTY, \
     MPC_PAST_CHUNK_COUNT, HO_NUM, TOTAL_VIDEO_CHUNKS, CHUNK_TIL_VIDEO_END_CAP, DEFAULT_QUALITY, INNER_PROCESS_NUMS, \
     VIDEO_CHUNCK_LEN, BITRATE_WEIGHT, SNR_MIN, BUF_RATIO, NO_EXHAUSTIVE, ADAPTIVE_BUF, VIDEO_BIT_RATE, BITRATE_LEVELS, \
-    MILLISECONDS_IN_SECOND, B_IN_MB, M_IN_K, BITS_IN_BYTE, PAST_LEN
+    MILLISECONDS_IN_SECOND, B_IN_MB, M_IN_K, BITS_IN_BYTE, PAST_LEN, CENT_MPC_MODELS, DIST_MPC_MODELS, SEP_MPC_MODELS
 
 RANDOM_SEED = 42
 BUFFER_THRESH = 60.0 * MILLISECONDS_IN_SECOND  # millisec, max buffer limit
@@ -136,7 +136,7 @@ class Environment:
         assert quality in [0, 2, 4]
 
         is_handover = False
-        if model_type is not None and ("v2" in model_type or "v4" in model_type) and (agent == 0 or do_mpc or self.unexpected_change) and self.end_of_video[agent] is not True:
+        if model_type is not None and model_type in CENT_MPC_MODELS and (agent == 0 or do_mpc or self.unexpected_change) and self.end_of_video[agent] is not True:
             cur_sat_ids, runner_up_sat_ids, ho_stamps, best_combos, best_user_info, final_rate = self.run_mpc(agent, model_type)
             self.unexpected_change = False
 
@@ -204,12 +204,17 @@ class Environment:
 
                 runner_up_sat_id = runner_up_sat_ids[agent]
 
-        elif model_type is not None and "v1" in model_type:
+        elif model_type is not None and model_type in DIST_MPC_MODELS:
             is_handover, new_sat_id, bit_rate = self.run_mpc_v1(agent, model_type)
             if is_handover:
                 ho_stamp = 0
                 runner_up_sat_id = new_sat_id
             quality = bit_rate
+            runner_up_sat_ids, ho_stamps, best_combos, best_user_info, final_rate = None, None, None, None, None
+
+        elif model_type is not None and model_type in SEP_MPC_MODELS:
+            best_combo, max_reward, best_case = self.run_mpc_sep(agent, model_type)
+            quality = best_combo[0]
             runner_up_sat_ids, ho_stamps, best_combos, best_user_info, final_rate = None, None, None, None, None
 
         else:
@@ -251,7 +256,45 @@ class Environment:
             throughput = self.cur_satellite[self.cur_sat_id[agent]].data_rate(self.cur_user[agent], self.mahimahi_ptr[
                 agent]) * B_IN_MB / BITS_IN_BYTE
             assert throughput != 0
+        elif model_type == "MRSS":
+            tmp_best_id = self.get_best_sat_id(agent)
+            if tmp_best_id != self.cur_sat_id[agent]:
+                is_handover = True
+                delay += HANDOVER_DELAY
+                self.update_sat_info(self.cur_sat_id[agent], self.last_mahimahi_time[agent], agent, -1)
+                self.update_sat_info(tmp_best_id, self.last_mahimahi_time[agent], agent, 1)
+                self.prev_sat_id[agent] = self.cur_sat_id[agent]
+                self.cur_sat_id[agent] = tmp_best_id
+                self.download_bw[agent] = []
 
+            throughput = self.cur_satellite[self.cur_sat_id[agent]].data_rate(self.cur_user[agent], self.mahimahi_ptr[
+                agent]) * B_IN_MB / BITS_IN_BYTE
+            assert throughput != 0
+        elif model_type == "MRSS-Smart":
+            runner_up_sat_id, _ = self.get_runner_up_sat_id(
+                agent, method="harmonic-mean", cur_sat_id=self.cur_sat_id[agent])
+            cur_user_num = self.get_num_of_user_sat(self.mahimahi_ptr[agent], self.cur_sat_id[agent])
+            next_user_num = self.get_num_of_user_sat(self.mahimahi_ptr[agent], runner_up_sat_id)
+
+            cur_download_bw = self.predict_bw(self.cur_sat_id[agent], agent, True,
+                                              mahimahi_ptr=self.mahimahi_ptr[agent], past_len=self.last_delay[agent])
+            next_download_bw = self.predict_bw(runner_up_sat_id, agent, True,
+                                              mahimahi_ptr=self.mahimahi_ptr[agent], past_len=self.last_delay[agent])
+            cur_download_bw /= cur_user_num
+            if next_user_num != 0:
+                next_download_bw /= next_user_num
+            if cur_download_bw < next_download_bw:
+                is_handover = True
+                delay += HANDOVER_DELAY
+                self.update_sat_info(self.cur_sat_id[agent], self.last_mahimahi_time[agent], agent, -1)
+                self.update_sat_info(runner_up_sat_id, self.last_mahimahi_time[agent], agent, 1)
+                self.prev_sat_id[agent] = self.cur_sat_id[agent]
+                self.cur_sat_id[agent] = runner_up_sat_id
+                self.download_bw[agent] = []
+
+            throughput = self.cur_satellite[self.cur_sat_id[agent]].data_rate(self.cur_user[agent], self.mahimahi_ptr[
+                agent]) * B_IN_MB / BITS_IN_BYTE
+            assert throughput != 0
         # Do All users' handover
 
         self.last_quality[agent] = quality
@@ -937,16 +980,57 @@ class Environment:
         self.cur_sat_id[agent] = cur_sat_id
 
     def run_mpc_v1(self, agent, model_type):
-        if model_type == "ManifoldMPC-v1":
+        if model_type == "ManifoldMPC":
             is_handover, new_sat_id, bit_rate = self.qoe_v2(
                 agent, only_runner_up=False)
-        elif model_type == "DualMPC-v1":
+        elif model_type == "DualMPC":
             is_handover, new_sat_id, bit_rate = self.qoe_v2(
                 agent, only_runner_up=True)
-        elif model_type == "DualMPC-Centralization-v1":
+        elif model_type == "DualMPC-Centralization":
             is_handover, new_sat_id, bit_rate = self.qoe_v2(
                 agent, centralized=True)
         return is_handover, new_sat_id, bit_rate
+
+    def run_mpc_sep(self, agent, method="harmonic-mean"):
+        # future chunks length (try 4 if that many remaining)
+        video_chunk_remain = self.video_chunk_remain[agent]
+        # last_index = self.get_total_video_chunk() - video_chunk_remain
+        last_index = int(CHUNK_TIL_VIDEO_END_CAP - video_chunk_remain)
+
+        chunk_combo_option = []
+        # make chunk combination options
+        for combo in itertools.product(list(range(int(BITRATE_LEVELS / BITRATE_WEIGHT))),
+                                       repeat=MPC_FUTURE_CHUNK_COUNT):
+            chunk_combo_option.append(list([BITRATE_WEIGHT * x for x in combo]))
+
+        future_chunk_length = MPC_FUTURE_CHUNK_COUNT
+        if video_chunk_remain < MPC_FUTURE_CHUNK_COUNT:
+            future_chunk_length = video_chunk_remain
+
+        max_reward = -10000000
+        best_combo = (self.last_quality[agent],)
+        ho_sat_id = self.cur_sat_id[agent]
+        ho_stamp = MPC_FUTURE_CHUNK_COUNT
+
+        cur_user_num = self.get_num_of_user_sat(self.mahimahi_ptr[agent], self.cur_sat_id[agent])
+        cur_download_bw, runner_up_sat_id = None, None
+        # cur_download_bw = self.predict_download_bw(agent, True)
+        cur_download_bw = self.predict_bw(self.cur_sat_id[agent], agent, True,
+                        mahimahi_ptr=self.mahimahi_ptr[agent], past_len=self.last_delay[agent])
+        cur_download_bw /= cur_user_num
+        runner_up_sat_id, _ = self.get_runner_up_sat_id(
+            agent, method="harmonic-mean", cur_sat_id=self.cur_sat_id[agent])
+
+
+        if future_chunk_length == 0:
+            return ho_sat_id, ho_stamp, best_combo, max_rewar
+
+        start_buffer = self.buffer_size[agent] / MILLISECONDS_IN_SECOND
+        assert cur_download_bw != 0
+        best_combo, max_reward, best_case = self.calculate_mpc(video_chunk_remain, start_buffer, last_index,
+                                                               cur_download_bw, agent)
+
+        return best_combo, max_reward, best_case
 
     def run_mpc(self, agent, model_type):
         final_rate = {}
@@ -956,11 +1040,11 @@ class Environment:
         best_combos = None
         best_user_info = None
 
-        if model_type == "DualMPC-Centralization-Exhaustive-v2":
+        if model_type == "DualMPC-Centralization-Exhaustive":
             cur_ids, runner_up_sat_ids, ho_stamps, best_combos, max_rewards, best_user_info = self.qoe_v3(agent)
-        elif model_type == "DualMPC-Centralization-Reduced-v2":
+        elif model_type == "DualMPC-Centralization-Reduced":
             cur_ids, runner_up_sat_ids, ho_stamps, best_combos, max_rewards, best_user_info = self.qoe_v3(agent, reduced=True)
-        elif model_type == "Oracle-v4":
+        elif model_type == "Oracle":
             cur_ids, runner_up_sat_ids, ho_stamps, best_combos, max_rewards, best_user_info = self.qoe_v4(
                 agent)
         else:

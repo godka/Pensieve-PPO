@@ -41,7 +41,8 @@ MPC_TYPE = "DualMPC"
 # MPC_TYPE = "DualMPC-Centralization-Exhaustive"
 # MPC_TYPE = "DualMPC-Centralization-Reduced"
 MPC_TYPE = "MVT"
-MPC_TYPE = "MRSS"
+# MPC_TYPE = "MRSS"
+MPC_TYPE = "MRSS-Smart"
 
 # DualMPC-Centralization
 
