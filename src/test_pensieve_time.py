@@ -9,11 +9,11 @@ import numpy as np
 import tensorflow.compat.v1 as tf
 from env.multi_bw_share import fixed_env_time as env
 from env.multi_bw_share import load_trace as load_trace
-from models.rl_multi_bw_share.ppo_spec import ppo_implicit as network
+from models.rl_multi_bw_share.ppo_spec import pensieve as network
 import structlog
 import logging
 
-S_INFO = 6 + 1 + 4  # bit_rate, buffer_size, next_chunk_size, bandwidth_measurement(throughput and time), chunk_til_video_end
+S_INFO = 6  # bit_rate, buffer_size, next_chunk_size, bandwidth_measurement(throughput and time), chunk_til_video_end
 A_SAT = 2
 ACTOR_LR_RATE = 1e-4
 # CRITIC_LR_RATE = 0.001
@@ -21,9 +21,10 @@ RANDOM_SEED = 42
 TEST_TRACES = 'data/sat_data/test/'
 NN_MODEL = sys.argv[1]
 USERS = int(sys.argv[2])
-SUMMARY_DIR = './test_results_imp' + str(USERS)
+HO_TYPE = str(sys.argv[3])
+SUMMARY_DIR = './test_results_pensieve' + str(USERS)
 
-LOG_FILE = SUMMARY_DIR + '/log_sim_ppo'
+LOG_FILE = SUMMARY_DIR + '/log_sim_pensieve'
 SUMMARY_PATH = SUMMARY_DIR + '/summary'
 
 # A_SAT = NUM_AGENTS
@@ -33,6 +34,7 @@ structlog.configure(
 
 log = structlog.get_logger()
 log.debug('Test init')
+
 
 
 def main():
@@ -156,7 +158,7 @@ def main():
             video_chunk_size, next_video_chunk_sizes, \
             end_of_video, video_chunk_remain, is_handover, _, _, next_sat_bw_logs, \
             cur_sat_user_num, next_sat_user_num, cur_sat_bw_logs, connected_time, cur_sat_id, _, _, _, _, _ = \
-                net_env.get_video_chunk(bit_rate[agent], agent, model_type=None)
+                net_env.get_video_chunk(bit_rate[agent], agent, model_type=HO_TYPE)
 
             time_stamp[agent] += delay  # in ms
             time_stamp[agent] += sleep_time  # in ms
@@ -207,31 +209,8 @@ def main():
             # state[agent][4, :A_DIM] = np.array(next_video_chunk_sizes) / M_IN_K / M_IN_K  # mega byte
             state[agent][4, :A_DIM] = np.array(
                 [next_video_chunk_sizes[index] for index in [0, 2, 4]]) / M_IN_K / M_IN_K  # mega byte
-
-            state[agent][5, -1] = np.minimum(video_chunk_remain, CHUNK_TIL_VIDEO_END_CAP) / float(
-                CHUNK_TIL_VIDEO_END_CAP)
-            if len(next_sat_bw_logs) < PAST_LEN:
-                next_sat_bw_logs = [0] * (PAST_LEN - len(next_sat_bw_logs)) + next_sat_bw_logs
-
-            state[agent][6, :PAST_LEN] = np.array(next_sat_bw_logs[:PAST_LEN]) / 10
-
-            if len(cur_sat_bw_logs) < PAST_LEN:
-                cur_sat_bw_logs = [0] * (PAST_LEN - len(cur_sat_bw_logs)) + cur_sat_bw_logs
-
-            state[agent][7, :PAST_LEN] = np.array(cur_sat_bw_logs[:PAST_LEN]) / 10
-            if is_handover:
-                state[agent][8:9, 0:S_LEN] = np.zeros((1, S_LEN))
-                state[agent][9:10, 0:S_LEN] = np.zeros((1, S_LEN))
-            state[agent][8:9, -1] = np.array(cur_sat_user_num) / 10
-            state[agent][9:10, -1] = np.array(next_sat_user_num) / 10
-            state[agent][10, :2] = [float(connected_time[0]) / BUFFER_NORM_FACTOR / 10,
-                                    float(connected_time[1]) / BUFFER_NORM_FACTOR / 10]
-
-            # if len(next_sat_user_num) < PAST_LEN:
-            #     next_sat_user_num = [0] * (PAST_LEN - len(next_sat_user_num)) + next_sat_user_num
-
-            # state[agent][8, :PAST_LEN] = next_sat_user_num[:5]
-
+            state[agent][5, -1] = np.minimum(video_chunk_remain, CHUNK_TIL_VIDEO_END_CAP) / float(CHUNK_TIL_VIDEO_END_CAP)
+                
             action_prob = actor.predict(np.reshape(state[agent], (1, S_INFO, S_LEN)))
             noise = np.random.gumbel(size=len(action_prob))
             action = np.argmax(np.log(action_prob) + noise)
@@ -245,14 +224,6 @@ def main():
             # bit_rate[agent] *= BITRATE_WEIGHT
             bit_rate[agent] *= BITRATE_WEIGHT
 
-            if not end_of_video:
-                changed_sat_id = net_env.set_satellite(agent, sat[agent])
-                if sat[agent] == 1:
-                    is_handover = True
-                    # print("Handover!!")
-                else:
-                    is_handover = False
-                    # print("X Handover")
             s_batch[agent].append(state[agent])
 
             entropy_ = -np.dot(action_prob, np.log(action_prob))
@@ -273,6 +244,7 @@ def main():
     reward_file.write('\n')
     reward_file.write(' '.join(str(elem) for elem in reward_3))
     reward_file.write('\n')
+
 
 if __name__ == '__main__':
     main()

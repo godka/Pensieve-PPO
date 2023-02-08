@@ -133,6 +133,7 @@ def main():
                 results += tmp_results
                 tmp_results = []
                 time_stamp = [0 for _ in range(USERS)]
+
                 reward_1.append(np.mean(tmp_reward_1))
                 reward_2.append(np.mean(tmp_reward_2))
                 reward_3.append(np.mean(tmp_reward_3))
@@ -219,6 +220,7 @@ def main():
                 cur_sat_bw_logs = [0] * (PAST_LEN - len(cur_sat_bw_logs)) + cur_sat_bw_logs
 
             state[agent][7, :PAST_LEN] = np.array(cur_sat_bw_logs[:PAST_LEN]) / 10
+
             if is_handover:
                 state[agent][8:9, 0:S_LEN] = np.zeros((1, S_LEN))
                 state[agent][9:10, 0:S_LEN] = np.zeros((1, S_LEN))

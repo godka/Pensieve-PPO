@@ -36,7 +36,7 @@ SAT_STRATEGY = "ratio-based"
 
 
 class Environment:
-    def __init__(self, all_cooked_time, all_cooked_bw, random_seed=RANDOM_SEED, num_agents=NUM_AGENTS):
+    def __init__(self, all_cooked_time, all_cooked_bw, all_cooked_name=None, random_seed=RANDOM_SEED, num_agents=NUM_AGENTS):
         assert len(all_cooked_time) == len(all_cooked_bw)
         self.log = structlog.get_logger()
 
@@ -45,6 +45,7 @@ class Environment:
 
         self.all_cooked_time = all_cooked_time
         self.all_cooked_bw = all_cooked_bw
+        self.all_cooked_name = all_cooked_name
 
         # pick a random trace file
         self.trace_idx = 0
@@ -154,7 +155,7 @@ class Environment:
                         self.unexpected_change = True
 
             if self.unexpected_change:
-                is_handover, new_sat_id, bit_rate = self.run_mpc_v1(agent, "DualMPC-v1")
+                is_handover, new_sat_id, bit_rate = self.run_mpc_v1(agent, "DualMPC")
                 if is_handover:
                     ho_stamp = 0
                     runner_up_sat_id = new_sat_id
@@ -889,6 +890,9 @@ class Environment:
                         user = agent
 
         return user
+
+    def get_file_name(self):
+        return self.all_cooked_name[self.trace_idx]
 
     def get_next_sat_info(self, agent, mahimahi_ptr=None):
         best_sat_id = None
@@ -3740,6 +3744,8 @@ class Environment:
         if id_list is None:
             sat_id = self.next_sat_id[agent]
 
+        if sat is None:
+            return
         if sat == 1:
             if sat_id == self.cur_sat_id[agent] or sat_id is None:
                 # print("Can't do handover. Only one visible satellite")

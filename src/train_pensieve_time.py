@@ -1,8 +1,8 @@
 import multiprocessing as mp
 import numpy as np
 import os
-from env.multi_bw_share.env_time import ABREnv
-from models.rl_multi_bw_share.ppo_spec import ppo_implicit as network
+from env.multi_bw_share.env_pensieve_time import ABREnv
+from models.rl_multi_bw_share.ppo_spec import pensieve as network
 import tensorflow.compat.v1 as tf
 import structlog
 import logging
@@ -12,27 +12,29 @@ from util.constants import A_DIM, NUM_AGENTS
 os.environ['CUDA_VISIBLE_DEVICES'] = '-1'
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 
-S_DIM = [6 + 1 + 4, 8]
+S_DIM = [6, 8]
 A_SAT = 2
 ACTOR_LR_RATE = 1e-4
 TRAIN_SEQ_LEN = 300  # take as a train batch
 TRAIN_EPOCH = 500000
 MODEL_SAVE_INTERVAL = 300
 RANDOM_SEED = 42
-SUMMARY_DIR = './ppo_imp'
+SUMMARY_DIR = './pensieve'
 MODEL_DIR = '..'
 TRAIN_TRACES = 'data/sat_data/train/'
-TEST_LOG_FOLDER = './test_results_imp'
+TEST_LOG_FOLDER = './test_results_pensieve'
 PPO_TRAINING_EPO = 5
 
 import argparse
 
 parser = argparse.ArgumentParser(description='PyTorch Synthetic Benchmark',
                                  formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-parser.add_argument('--user', type=int, default=1)
+parser.add_argument('--user', type=int, default=2)
 args = parser.parse_args()
 USERS = args.user
 # A_SAT = USERS + 1
+
+HO_TYPE = "MRSS"
 
 TEST_LOG_FOLDER += str(USERS) + '/'
 SUMMARY_DIR += str(USERS)
@@ -61,9 +63,8 @@ def testing(epoch, nn_model, log_file):
     if not os.path.exists(TEST_LOG_FOLDER):
         os.makedirs(TEST_LOG_FOLDER)
     # run test script
-    log.info('python test_implicit_time.py ', nn_model=nn_model + ' ' + str(USERS))
-    os.system('python test_implicit_time.py ' + nn_model + ' ' + str(USERS))
-    log.info('End testing')
+    log.info('python test_pensieve_time.py ', nn_model=nn_model + ' ' + str(USERS) + ' ' + HO_TYPE)
+    os.system('python test_pensieve_time.py ' + nn_model + ' ' + str(USERS) + ' ' + HO_TYPE)
 
     # append test performance to the log
     rewards, entropies = [], []
@@ -185,7 +186,7 @@ def central_agent(net_params_queues, exp_queues):
 
 
 def agent(agent_id, net_params_queue, exp_queue):
-    env = ABREnv(agent_id, num_agents=USERS)
+    env = ABREnv(agent_id, num_agents=USERS, ho_type=HO_TYPE)
     with tf.Session() as sess:
         actor = network.Network(sess,
                                 state_dim=S_DIM, action_dim=A_DIM * A_SAT,

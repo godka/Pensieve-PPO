@@ -25,6 +25,8 @@ def load_trace(cooked_trace_folder=COOKED_TRACE_FOLDER, split_condition=None):
         satellite_bw = {}
         cooked_time = []
 
+        if cooked_file.startswith('.'):
+            continue
         with open(file_path, mode='r') as csv_file:
             csv_reader = csv.DictReader(csv_file)
             line_count = 0

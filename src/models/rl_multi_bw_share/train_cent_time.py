@@ -2,27 +2,29 @@ import multiprocessing as mp
 import numpy as np
 import os
 from env.multi_bw_share.env_time import ABREnv
-from models.rl_multi_bw_share.ppo_spec import ppo_implicit as network
+from models.rl_multi_bw_share.ppo_spec import ppo_cent as network
 import tensorflow.compat.v1 as tf
-import structlog
-import logging
 
 from util.constants import A_DIM, NUM_AGENTS
 
 os.environ['CUDA_VISIBLE_DEVICES'] = '-1'
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 
-S_DIM = [6 + 1 + 4, 8]
+# S_DIM = [10 + 1 + 3 + 6 * 5, 8]
 A_SAT = 2
+PAST_LEN = 8
+MAX_SAT = 8
+PAST_SAT_LOG_LEN = 3
 ACTOR_LR_RATE = 1e-4
+NUM_AGENTS = 1
 TRAIN_SEQ_LEN = 300  # take as a train batch
 TRAIN_EPOCH = 500000
 MODEL_SAVE_INTERVAL = 300
 RANDOM_SEED = 42
-SUMMARY_DIR = './ppo_imp'
+SUMMARY_DIR = './ppo_cent'
 MODEL_DIR = '..'
 TRAIN_TRACES = 'data/sat_data/train/'
-TEST_LOG_FOLDER = './test_results_imp'
+TEST_LOG_FOLDER = './test_results_cent'
 PPO_TRAINING_EPO = 5
 
 import argparse
@@ -33,6 +35,7 @@ parser.add_argument('--user', type=int, default=1)
 args = parser.parse_args()
 USERS = args.user
 # A_SAT = USERS + 1
+S_DIM = [10 + MAX_SAT - A_SAT + USERS * PAST_SAT_LOG_LEN, 8]
 
 TEST_LOG_FOLDER += str(USERS) + '/'
 SUMMARY_DIR += str(USERS)
@@ -44,14 +47,6 @@ if not os.path.exists(SUMMARY_DIR):
 
 NN_MODEL = None
 
-structlog.configure(
-    wrapper_class=structlog.make_filtering_bound_logger(logging.INFO),
-)
-log = structlog.get_logger()
-log.debug('Train init')
-
-best_rewards = -10000
-
 
 def testing(epoch, nn_model, log_file):
     # clean up the test results folder
@@ -61,9 +56,8 @@ def testing(epoch, nn_model, log_file):
     if not os.path.exists(TEST_LOG_FOLDER):
         os.makedirs(TEST_LOG_FOLDER)
     # run test script
-    log.info('python test_implicit_time.py ', nn_model=nn_model + ' ' + str(USERS))
-    os.system('python test_implicit_time.py ' + nn_model + ' ' + str(USERS))
-    log.info('End testing')
+    print('python test_cent.py ' + nn_model + ' ' + str(USERS))
+    os.system('python test_cent.py ' + nn_model + ' ' + str(USERS))
 
     # append test performance to the log
     rewards, entropies = [], []
@@ -117,7 +111,7 @@ def central_agent(net_params_queues, exp_queues):
 
         actor = network.Network(sess,
                                 state_dim=S_DIM, action_dim=A_DIM * A_SAT,
-                                learning_rate=ACTOR_LR_RATE)
+                                learning_rate=ACTOR_LR_RATE, num_of_users=USERS)
 
         sess.run(tf.global_variables_initializer())
         writer = tf.summary.FileWriter(SUMMARY_DIR, sess.graph)  # training monitor
@@ -189,7 +183,7 @@ def agent(agent_id, net_params_queue, exp_queue):
     with tf.Session() as sess:
         actor = network.Network(sess,
                                 state_dim=S_DIM, action_dim=A_DIM * A_SAT,
-                                learning_rate=ACTOR_LR_RATE)
+                                learning_rate=ACTOR_LR_RATE, num_of_users=USERS)
 
         # initial synchronization of the network parameters from the coordinator
         actor_net_params = net_params_queue.get()
@@ -217,7 +211,7 @@ def agent(agent_id, net_params_queue, exp_queue):
                 sat[agent] = bit_rate[agent] // A_DIM
 
                 env.set_sat(agent, sat[agent])
-
+    
             s_batch, a_batch, p_batch, r_batch = [], [], [], []
             s_batch_user, a_batch_user, p_batch_user, r_batch_user = \
                 [[] for _ in range(USERS)], [[] for _ in range(USERS)], \

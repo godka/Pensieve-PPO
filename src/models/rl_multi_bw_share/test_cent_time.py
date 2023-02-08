@@ -1,38 +1,32 @@
 import os
 import sys
+from util.encode import encode_other_sat_info
 
 from util.constants import CHUNK_TIL_VIDEO_END_CAP, BUFFER_NORM_FACTOR, VIDEO_BIT_RATE, REBUF_PENALTY, SMOOTH_PENALTY, \
     DEFAULT_QUALITY, BITRATE_WEIGHT, M_IN_K, A_DIM, S_LEN, PAST_LEN
 
-os.environ['CUDA_VISIBLE_DEVICES'] = '-1'
+os.environ['CUDA_VISIBLE_DEVICES']='-1'
 import numpy as np
 import tensorflow.compat.v1 as tf
-from env.multi_bw_share import fixed_env_time as env
-from env.multi_bw_share import load_trace as load_trace
-from models.rl_multi_bw_share.ppo_spec import ppo_implicit as network
-import structlog
-import logging
+from env.multi_bw_share import fixed_env_time as env, load_trace
+from models.rl_multi_bw_share.ppo_spec import ppo_cent as network
 
-S_INFO = 6 + 1 + 4  # bit_rate, buffer_size, next_chunk_size, bandwidth_measurement(throughput and time), chunk_til_video_end
+# S_INFO = 10 + 1 + 3 + 6 * 5  # Original + nums of sat + bw of sats + decisions of users
+PAST_SAT_LOG_LEN = 2
 A_SAT = 2
+MAX_SAT = 8
 ACTOR_LR_RATE = 1e-4
 # CRITIC_LR_RATE = 0.001
 RANDOM_SEED = 42
 TEST_TRACES = 'data/sat_data/test/'
 NN_MODEL = sys.argv[1]
 USERS = int(sys.argv[2])
-SUMMARY_DIR = './test_results_imp' + str(USERS)
+SUMMARY_DIR = './test_results_cent' + str(USERS)
 
 LOG_FILE = SUMMARY_DIR + '/log_sim_ppo'
 SUMMARY_PATH = SUMMARY_DIR + '/summary'
 
 # A_SAT = NUM_AGENTS
-structlog.configure(
-    wrapper_class=structlog.make_filtering_bound_logger(logging.INFO),
-)
-
-log = structlog.get_logger()
-log.debug('Test init')
 
 
 def main():
@@ -65,7 +59,7 @@ def main():
 
         actor = network.Network(sess,
                                 state_dim=[S_INFO, S_LEN], action_dim=A_DIM * A_SAT,
-                                learning_rate=ACTOR_LR_RATE)
+                                learning_rate=ACTOR_LR_RATE, num_of_users=NUM_AGENTS)
 
         sess.run(tf.global_variables_initializer())
         saver = tf.train.Saver()  # save neural net parameters
@@ -222,11 +216,23 @@ def main():
             if is_handover:
                 state[agent][8:9, 0:S_LEN] = np.zeros((1, S_LEN))
                 state[agent][9:10, 0:S_LEN] = np.zeros((1, S_LEN))
-            state[agent][8:9, -1] = np.array(cur_sat_user_num) / 10
-            state[agent][9:10, -1] = np.array(next_sat_user_num) / 10
-            state[agent][10, :2] = [float(connected_time[0]) / BUFFER_NORM_FACTOR / 10,
-                                    float(connected_time[1]) / BUFFER_NORM_FACTOR / 10]
+            state[agent][8, :A_SAT] = np.array([cur_sat_user_num, next_sat_user_num]) / 10
+            state[agent][9, :A_SAT] = [float(connected_time[0]) / BUFFER_NORM_FACTOR / 10, float(connected_time[1]) / BUFFER_NORM_FACTOR / 10]
 
+            other_user_sat_decisions, other_sat_num_users, other_sat_bws, cur_user_sat_decisions \
+                = encode_other_sat_info(net_env.sat_decision_log, NUM_AGENTS, cur_sat_id, next_sat_id, agent,
+                                        other_sat_users, other_sat_bw_logs, PAST_SAT_LOG_LEN)
+
+            # state[agent][10, :MAX_SAT - A_SAT] = np.array(other_sat_num_users) / 10
+
+            state[agent][10:(10 + MAX_SAT - A_SAT), :PAST_LEN] = np.array(other_sat_bws) / 10
+
+            state[agent][(10 + MAX_SAT - A_SAT):(10 + MAX_SAT - A_SAT + PAST_SAT_LOG_LEN),
+            0:3] = np.reshape(cur_user_sat_decisions, (-1, 3))
+
+            state[agent][(10 + MAX_SAT - A_SAT + PAST_SAT_LOG_LEN):(10 + MAX_SAT - A_SAT + PAST_SAT_LOG_LEN
+                                                                    + (NUM_AGENTS-1) * PAST_SAT_LOG_LEN),
+            0:3] = np.reshape(other_user_sat_decisions, (-1, 3))
             # if len(next_sat_user_num) < PAST_LEN:
             #     next_sat_user_num = [0] * (PAST_LEN - len(next_sat_user_num)) + next_sat_user_num
 
