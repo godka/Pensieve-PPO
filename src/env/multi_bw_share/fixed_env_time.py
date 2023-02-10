@@ -14,7 +14,8 @@ from env.object.user import User
 from util.constants import EPSILON, MPC_FUTURE_CHUNK_COUNT, QUALITY_FACTOR, REBUF_PENALTY, SMOOTH_PENALTY, \
     MPC_PAST_CHUNK_COUNT, HO_NUM, TOTAL_VIDEO_CHUNKS, CHUNK_TIL_VIDEO_END_CAP, DEFAULT_QUALITY, INNER_PROCESS_NUMS, \
     VIDEO_CHUNCK_LEN, BITRATE_WEIGHT, SNR_MIN, BUF_RATIO, NO_EXHAUSTIVE, ADAPTIVE_BUF, VIDEO_BIT_RATE, BITRATE_LEVELS, \
-    MILLISECONDS_IN_SECOND, B_IN_MB, M_IN_K, BITS_IN_BYTE, PAST_LEN, CENT_MPC_MODELS, DIST_MPC_MODELS, SEP_MPC_MODELS
+    MILLISECONDS_IN_SECOND, B_IN_MB, M_IN_K, BITS_IN_BYTE, PAST_LEN, CENT_MPC_MODELS, DIST_MPC_MODELS, SEP_MPC_MODELS, \
+    BITRATE_REWARD
 
 RANDOM_SEED = 42
 BUFFER_THRESH = 60.0 * MILLISECONDS_IN_SECOND  # millisec, max buffer limit
@@ -36,12 +37,13 @@ SAT_STRATEGY = "ratio-based"
 
 
 class Environment:
-    def __init__(self, all_cooked_time, all_cooked_bw, all_cooked_name=None, random_seed=RANDOM_SEED, num_agents=NUM_AGENTS):
+    def __init__(self, all_cooked_time, all_cooked_bw, all_cooked_name=None, random_seed=RANDOM_SEED, num_agents=NUM_AGENTS, reward_func="LIN"):
         assert len(all_cooked_time) == len(all_cooked_bw)
         self.log = structlog.get_logger()
 
         np.random.seed(random_seed)
         self.num_agents = num_agents
+        self.reward_func = reward_func
 
         self.all_cooked_time = all_cooked_time
         self.all_cooked_bw = all_cooked_bw
@@ -2238,17 +2240,29 @@ class Environment:
 
                     # bitrate_sum += VIDEO_BIT_RATE[chunk_quality]
                     # smoothness_diffs += abs(VIDEO_BIT_RATE[chunk_quality] - VIDEO_BIT_RATE[last_quality])
-                    bitrate_sum += VIDEO_BIT_RATE[chunk_quality]
-                    smoothness_diff += abs(
-                        VIDEO_BIT_RATE[chunk_quality] - VIDEO_BIT_RATE[last_quality])
-                    last_quality = chunk_quality
+                    if self.reward_func == "LIN":
+                        bitrate_sum += VIDEO_BIT_RATE[chunk_quality]
+                        smoothness_diff += abs(
+                            VIDEO_BIT_RATE[chunk_quality] - VIDEO_BIT_RATE[last_quality])
+                        last_quality = chunk_quality
+                    elif self.reward_func == "HD":
+                        bitrate_sum += BITRATE_REWARD[chunk_quality]
+                        smoothness_diff += abs(
+                            BITRATE_REWARD[chunk_quality] - BITRATE_REWARD[last_quality])
+                        last_quality = chunk_quality
+                    else:
+                        raise Exception
                 # compute reward for this combination (one reward per 5-chunk combo)
 
                 # bitrates are in Mbits/s, rebuffer in seconds, and smoothness_diffs in Mbits/s
 
-                # 10~140 - 0~100 - 0~130
-                rewards.append(bitrate_sum * QUALITY_FACTOR / M_IN_K - (REBUF_PENALTY * curr_rebuffer_time) \
-                               - SMOOTH_PENALTY * smoothness_diff / M_IN_K)
+                if self.reward_func == "LIN":
+                    rewards.append(bitrate_sum * QUALITY_FACTOR / M_IN_K - (REBUF_PENALTY * curr_rebuffer_time) \
+                                   - SMOOTH_PENALTY * smoothness_diff / M_IN_K)
+                elif self.reward_func == "HD":
+                    rewards.append(bitrate_sum - (8 * curr_rebuffer_time) - smoothness_diff)
+                else:
+                    raise Exception
 
             if np.nanmean(rewards) > np.nanmean(max_rewards):
                 best_combos = combos
@@ -2407,17 +2421,29 @@ class Environment:
 
                     # bitrate_sum += VIDEO_BIT_RATE[chunk_quality]
                     # smoothness_diffs += abs(VIDEO_BIT_RATE[chunk_quality] - VIDEO_BIT_RATE[last_quality])
-                    bitrate_sum += VIDEO_BIT_RATE[chunk_quality]
-                    smoothness_diff += abs(
-                        VIDEO_BIT_RATE[chunk_quality] - VIDEO_BIT_RATE[last_quality])
-                    last_quality = chunk_quality
+                    if self.reward_func == "LIN":
+                        bitrate_sum += VIDEO_BIT_RATE[chunk_quality]
+                        smoothness_diff += abs(
+                            VIDEO_BIT_RATE[chunk_quality] - VIDEO_BIT_RATE[last_quality])
+                        last_quality = chunk_quality
+                    elif self.reward_func == "HD":
+                        bitrate_sum += BITRATE_REWARD[chunk_quality]
+                        smoothness_diff += abs(
+                            BITRATE_REWARD[chunk_quality] - BITRATE_REWARD[last_quality])
+                        last_quality = chunk_quality
+                    else:
+                        raise Exception
                 # compute reward for this combination (one reward per 5-chunk combo)
 
                 # bitrates are in Mbits/s, rebuffer in seconds, and smoothness_diffs in Mbits/s
 
-                # 10~140 - 0~100 - 0~130
-                rewards.append(bitrate_sum * QUALITY_FACTOR / M_IN_K - (REBUF_PENALTY * curr_rebuffer_time) \
-                               - SMOOTH_PENALTY * smoothness_diff / M_IN_K)
+                if self.reward_func == "LIN":
+                    rewards.append(bitrate_sum * QUALITY_FACTOR / M_IN_K - (REBUF_PENALTY * curr_rebuffer_time) \
+                                   - SMOOTH_PENALTY * smoothness_diff / M_IN_K)
+                elif self.reward_func == "HD":
+                    rewards.append(bitrate_sum - (8 * curr_rebuffer_time) - smoothness_diff)
+                else:
+                    raise Exception
 
             if np.nanmean(rewards) > np.nanmean(max_rewards):
                 best_combos = combos
@@ -2972,18 +2998,31 @@ class Environment:
 
                             # bitrate_sum += VIDEO_BIT_RATE[chunk_quality]
                             # smoothness_diffs += abs(VIDEO_BIT_RATE[chunk_quality] - VIDEO_BIT_RATE[last_quality])
-                            bitrate_sum += VIDEO_BIT_RATE[chunk_quality]
-                            smoothness_diffs += abs(
-                                VIDEO_BIT_RATE[chunk_quality] - VIDEO_BIT_RATE[last_quality])
-                            last_quality = chunk_quality
+                            if self.reward_func == "LIN":
+                                bitrate_sum += VIDEO_BIT_RATE[chunk_quality]
+                                smoothness_diffs += abs(
+                                    VIDEO_BIT_RATE[chunk_quality] - VIDEO_BIT_RATE[last_quality])
+                                last_quality = chunk_quality
+                            elif self.reward_func == "HD":
+                                bitrate_sum += BITRATE_REWARD[chunk_quality]
+                                smoothness_diffs += abs(
+                                    BITRATE_REWARD[chunk_quality] - BITRATE_REWARD[last_quality])
+                                last_quality = chunk_quality
+                            else:
+                                raise Exception
                         # compute reward for this combination (one reward per 5-chunk combo)
 
                         # bitrates are in Mbits/s, rebuffer in seconds, and smoothness_diffs in Mbits/s
 
                         # 10~140 - 0~100 - 0~130
-                        reward = bitrate_sum * QUALITY_FACTOR / M_IN_K - (REBUF_PENALTY * curr_rebuffer_time) \
-                                 - SMOOTH_PENALTY * smoothness_diffs / M_IN_K
-
+                        if self.reward_func == "LIN":
+                            reward = bitrate_sum * QUALITY_FACTOR / M_IN_K - (REBUF_PENALTY * curr_rebuffer_time) \
+                                     - SMOOTH_PENALTY * smoothness_diffs / M_IN_K
+                        elif self.reward_func == "HD":
+                            reward = bitrate_sum - (8 * curr_rebuffer_time) \
+                                     - smoothness_diffs
+                        else:
+                            raise Exception
                         if centralized:
                             for agent_id in range(self.num_agents):
                                 if agent_id == agent or self.user_qoe_log[agent_id] == {}:
@@ -3415,17 +3454,31 @@ class Environment:
 
                 # bitrate_sum += VIDEO_BIT_RATE[chunk_quality]
                 # smoothness_diffs += abs(VIDEO_BIT_RATE[chunk_quality] - VIDEO_BIT_RATE[last_quality])
-                bitrate_sum += VIDEO_BIT_RATE[chunk_quality]
-                smoothness_diffs += abs(
-                    VIDEO_BIT_RATE[chunk_quality] - VIDEO_BIT_RATE[last_quality])
-                last_quality = chunk_quality
+                if self.reward_func == "LIN":
+                    bitrate_sum += VIDEO_BIT_RATE[chunk_quality]
+                    smoothness_diffs += abs(
+                        VIDEO_BIT_RATE[chunk_quality] - VIDEO_BIT_RATE[last_quality])
+                    last_quality = chunk_quality
+                elif self.reward_func == "HD":
+                    bitrate_sum += BITRATE_REWARD[chunk_quality]
+                    smoothness_diffs += abs(
+                        BITRATE_REWARD[chunk_quality] - BITRATE_REWARD[last_quality])
+                    last_quality = chunk_quality
+                else:
+                    raise Exception
             # compute reward for this combination (one reward per 5-chunk combo)
 
             # bitrates are in Mbits/s, rebuffer in seconds, and smoothness_diffs in Mbits/s
 
             # 10~140 - 0~100 - 0~130
-            reward = bitrate_sum * QUALITY_FACTOR / M_IN_K - (REBUF_PENALTY * curr_rebuffer_time) \
-                     - SMOOTH_PENALTY * smoothness_diffs / M_IN_K
+            if self.reward_func == "LIN":
+                reward = bitrate_sum * QUALITY_FACTOR / M_IN_K - (REBUF_PENALTY * curr_rebuffer_time) \
+                         - SMOOTH_PENALTY * smoothness_diffs / M_IN_K
+            elif self.reward_func == "HD":
+                reward = bitrate_sum - (8 * curr_rebuffer_time) \
+                         - smoothness_diffs
+            else:
+                raise Exception
 
             if reward > max_reward:
                 best_combo = combo

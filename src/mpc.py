@@ -10,14 +10,13 @@ import logging
 
 from util.constants import VIDEO_BIT_RATE, BUFFER_NORM_FACTOR, CHUNK_TIL_VIDEO_END_CAP, M_IN_K, REBUF_PENALTY, \
     SMOOTH_PENALTY, DEFAULT_QUALITY, MPC_FUTURE_CHUNK_COUNT, size_video1, size_video2, size_video3, size_video4, \
-    size_video5, size_video6
+    size_video5, size_video6, BITRATE_REWARD
 
 S_INFO = 5  # bit_rate, buffer_size, rebuffering_time, bandwidth_measurement, chunk_til_video_end
 S_LEN = 8  # take how many frames in the past
 A_DIM = 6
 ACTOR_LR_RATE = 0.0001
 CRITIC_LR_RATE = 0.001
-BITRATE_REWARD = [1, 2, 3, 12, 15, 20]
 RANDOM_SEED = 42
 RAND_RANGE = 1000000
 SUMMARY_DIR = 'cent_mpc_res/'
@@ -28,6 +27,7 @@ SUMMARY_PATH = SUMMARY_DIR + 'summary'
 # NN_MODEL = './models/nn_model_ep_5900.ckpt'
 
 CHUNK_COMBO_OPTIONS = []
+REWARD_FUNC = "HD"  # LIN
 
 import argparse
 
@@ -39,8 +39,8 @@ args = parser.parse_args()
 USERS = args.user
 # MPC_TYPE = "DualMPC"
 # MPC_TYPE = "DualMPC-Centralization-Exhaustive"
-# MPC_TYPE = "DualMPC-Centralization-Reduced-v2"
-MPC_TYPE = "Oracle-v4"
+# MPC_TYPE = "DualMPC-Centralization-Reduced"
+# MPC_TYPE = "Oracle"
 # DualMPC-Centralization
 
 structlog.configure(
@@ -67,7 +67,8 @@ def main():
     net_env = env.Environment(all_cooked_time=all_cooked_time,
                               all_cooked_bw=all_cooked_bw,
                               all_cooked_name=all_file_names,
-                              num_agents=USERS)
+                              num_agents=USERS,
+                              reward_func=REWARD_FUNC)
 
     log_path = LOG_FILE + '_' + all_file_names[net_env.trace_idx]
 
@@ -198,15 +199,24 @@ def main():
             best_user_infos.append(best_user_info)
 
         # reward is video quality - rebuffer penalty
-        reward = VIDEO_BIT_RATE[quality] / M_IN_K \
-                 - REBUF_PENALTY * rebuf \
-                 - SMOOTH_PENALTY * np.abs(VIDEO_BIT_RATE[quality] -
-                                           VIDEO_BIT_RATE[last_bit_rate[agent]]) / M_IN_K
-        tmp_reward_1.append(VIDEO_BIT_RATE[quality] / M_IN_K)
-        tmp_reward_2.append(-REBUF_PENALTY * rebuf)
-        tmp_reward_3.append(- SMOOTH_PENALTY * np.abs(VIDEO_BIT_RATE[quality] -
-                                                      VIDEO_BIT_RATE[last_bit_rate[agent]]) / M_IN_K)
+        if REWARD_FUNC == "LIN":
+            reward = VIDEO_BIT_RATE[quality] / M_IN_K \
+                     - REBUF_PENALTY * rebuf \
+                     - SMOOTH_PENALTY * np.abs(VIDEO_BIT_RATE[quality] -
+                                               VIDEO_BIT_RATE[last_bit_rate[agent]]) / M_IN_K
+            tmp_reward_1.append(VIDEO_BIT_RATE[quality] / M_IN_K)
+            tmp_reward_2.append(-REBUF_PENALTY * rebuf)
+            tmp_reward_3.append(- SMOOTH_PENALTY * np.abs(VIDEO_BIT_RATE[quality] -
+                                                          VIDEO_BIT_RATE[last_bit_rate[agent]]) / M_IN_K)
+        elif REWARD_FUNC == "HD":
+            reward = BITRATE_REWARD[quality] \
+                     - 8 * rebuf - np.abs(BITRATE_REWARD[quality] - BITRATE_REWARD[last_bit_rate[agent]])
 
+            tmp_reward_1.append(BITRATE_REWARD[quality])
+            tmp_reward_2.append(-8 * rebuf)
+            tmp_reward_3.append(-np.abs(BITRATE_REWARD[quality] - BITRATE_REWARD[last_bit_rate[agent]]))
+        else:
+            raise Exception
         tmp_results.append(reward)
 
         # print(net_env.video_chunk_counter)

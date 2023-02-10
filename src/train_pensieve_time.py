@@ -35,6 +35,7 @@ USERS = args.user
 # A_SAT = USERS + 1
 
 HO_TYPE = "MRSS-Smart"
+REWARD_FUNC = "HD"
 
 TEST_LOG_FOLDER += str(USERS) + '/'
 SUMMARY_DIR += str(USERS)
@@ -184,7 +185,7 @@ def central_agent(net_params_queues, exp_queues):
 
 
 def agent(agent_id, net_params_queue, exp_queue):
-    env = ABREnv(agent_id, num_agents=USERS, ho_type=HO_TYPE)
+    env = ABREnv(agent_id, num_agents=USERS, ho_type=HO_TYPE, reward_func=REWARD_FUNC)
     with tf.Session() as sess:
         actor = network.Network(sess,
                                 state_dim=S_DIM, action_dim=A_DIM * A_SAT,

@@ -2,7 +2,7 @@
 import numpy as np
 
 from util.constants import DEFAULT_QUALITY, REBUF_PENALTY, SMOOTH_PENALTY, VIDEO_BIT_RATE, BUFFER_NORM_FACTOR, \
-    BITRATE_WEIGHT, CHUNK_TIL_VIDEO_END_CAP, M_IN_K, S_LEN, A_DIM, PAST_LEN
+    BITRATE_WEIGHT, CHUNK_TIL_VIDEO_END_CAP, M_IN_K, S_LEN, A_DIM, PAST_LEN, BITRATE_REWARD
 from . import core_time as abrenv
 from . import load_trace as load_trace
 
@@ -21,7 +21,7 @@ SAT_DIM = A_SAT
 
 class ABREnv():
 
-    def __init__(self, random_seed=RANDOM_SEED, num_agents=NUM_AGENTS):
+    def __init__(self, random_seed=RANDOM_SEED, num_agents=NUM_AGENTS, reward_func=REWARD_FUNC):
         self.num_agents = num_agents
         # SAT_DIM = num_agents
         # A_SAT = num_agents
@@ -40,7 +40,8 @@ class ABREnv():
         self.buffer_size = [0 for _ in range(self.num_agents)]
         self.state = [np.zeros((S_INFO, S_LEN))for _ in range(self.num_agents)]
         self.sat_decision_log = [[] for _ in range(self.num_agents)]
-        
+        self.reward_func = reward_func
+
     def seed(self, num):
         np.random.seed(num)
 
@@ -162,10 +163,16 @@ class ABREnv():
         self.time_stamp += sleep_time  # in ms
 
         # reward is video quality - rebuffer penalty - smooth penalty
-        reward = VIDEO_BIT_RATE[bit_rate] / M_IN_K \
-            - REBUF_PENALTY * rebuf \
-            - SMOOTH_PENALTY * np.abs(VIDEO_BIT_RATE[bit_rate] -
-                                      VIDEO_BIT_RATE[self.last_bit_rate]) / M_IN_K
+        if self.reward_func == "LIN":
+            reward = VIDEO_BIT_RATE[bit_rate] / M_IN_K \
+                     - REBUF_PENALTY * rebuf \
+                     - SMOOTH_PENALTY * np.abs(VIDEO_BIT_RATE[bit_rate] -
+                                               VIDEO_BIT_RATE[self.last_bit_rate]) / M_IN_K
+        elif self.reward_func == "HD":
+            reward = BITRATE_REWARD[bit_rate] \
+                     - 8 * rebuf - np.abs(BITRATE_REWARD[bit_rate] - BITRATE_REWARD[self.last_bit_rate])
+        else:
+            raise Exception
 
         self.last_bit_rate = bit_rate
         state = np.roll(self.state[agent], -1, axis=1)

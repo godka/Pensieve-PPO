@@ -2,7 +2,7 @@ import os
 import sys
 
 from util.constants import CHUNK_TIL_VIDEO_END_CAP, BUFFER_NORM_FACTOR, VIDEO_BIT_RATE, REBUF_PENALTY, SMOOTH_PENALTY, \
-    DEFAULT_QUALITY, BITRATE_WEIGHT, M_IN_K, A_DIM, S_LEN, PAST_LEN
+    DEFAULT_QUALITY, BITRATE_WEIGHT, M_IN_K, A_DIM, S_LEN, PAST_LEN, BITRATE_REWARD
 
 os.environ['CUDA_VISIBLE_DEVICES'] = '-1'
 import numpy as np
@@ -34,6 +34,7 @@ structlog.configure(
 log = structlog.get_logger()
 log.debug('Test init')
 
+REWARD_FUNC = "HD"
 
 def main():
     np.random.seed(RANDOM_SEED)
@@ -163,14 +164,25 @@ def main():
             time_stamp[agent] += sleep_time  # in ms
 
             # reward is video quality - rebuffer penalty
-            reward = VIDEO_BIT_RATE[bit_rate[agent]] / M_IN_K \
-                     - REBUF_PENALTY * rebuf \
-                     - SMOOTH_PENALTY * np.abs(VIDEO_BIT_RATE[bit_rate[agent]] -
-                                               VIDEO_BIT_RATE[last_bit_rate[agent]]) / M_IN_K
-            tmp_reward_1.append(VIDEO_BIT_RATE[bit_rate[agent]] / M_IN_K)
-            tmp_reward_2.append(-REBUF_PENALTY * rebuf)
-            tmp_reward_3.append(- SMOOTH_PENALTY * np.abs(VIDEO_BIT_RATE[bit_rate[agent]] -
-                                               VIDEO_BIT_RATE[last_bit_rate[agent]]) / M_IN_K)
+            if REWARD_FUNC == "LIN":
+                reward = VIDEO_BIT_RATE[bit_rate[agent]] / M_IN_K \
+                         - REBUF_PENALTY * rebuf \
+                         - SMOOTH_PENALTY * np.abs(VIDEO_BIT_RATE[quality] -
+                                                   VIDEO_BIT_RATE[last_bit_rate[agent]]) / M_IN_K
+                tmp_reward_1.append(VIDEO_BIT_RATE[bit_rate[agent]] / M_IN_K)
+                tmp_reward_2.append(-REBUF_PENALTY * rebuf)
+                tmp_reward_3.append(- SMOOTH_PENALTY * np.abs(VIDEO_BIT_RATE[bit_rate[agent]] -
+                                                              VIDEO_BIT_RATE[last_bit_rate[agent]]) / M_IN_K)
+            elif REWARD_FUNC == "HD":
+                reward = BITRATE_REWARD[bit_rate[agent]] \
+                         - 8 * rebuf - np.abs(BITRATE_REWARD[bit_rate[agent]] - BITRATE_REWARD[last_bit_rate[agent]])
+
+                tmp_reward_1.append(BITRATE_REWARD[quality])
+                tmp_reward_2.append(-8 * rebuf)
+                tmp_reward_3.append(-np.abs(BITRATE_REWARD[quality] - BITRATE_REWARD[last_bit_rate[agent]]))
+            else:
+                raise Exception
+
             r_batch[agent].append(reward)
             tmp_results.append(reward)
 

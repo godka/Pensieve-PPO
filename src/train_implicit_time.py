@@ -42,7 +42,8 @@ LOG_FILE = SUMMARY_DIR + '/log'
 if not os.path.exists(SUMMARY_DIR):
     os.makedirs(SUMMARY_DIR)
 
-NN_MODEL = None    
+NN_MODEL = None
+REWARD_FUNC = "HD"
 
 structlog.configure(
     wrapper_class=structlog.make_filtering_bound_logger(logging.INFO),
@@ -184,7 +185,7 @@ def central_agent(net_params_queues, exp_queues):
 
 
 def agent(agent_id, net_params_queue, exp_queue):
-    env = ABREnv(agent_id, num_agents=USERS)
+    env = ABREnv(agent_id, num_agents=USERS, reward_func=REWARD_FUNC)
     with tf.Session() as sess:
         actor = network.Network(sess,
                                 state_dim=S_DIM, action_dim=A_DIM * A_SAT,
