@@ -168,7 +168,7 @@ def main():
             if REWARD_FUNC == "LIN":
                 reward = VIDEO_BIT_RATE[bit_rate[agent]] / M_IN_K \
                          - REBUF_PENALTY * rebuf \
-                         - SMOOTH_PENALTY * np.abs(VIDEO_BIT_RATE[quality] -
+                         - SMOOTH_PENALTY * np.abs(VIDEO_BIT_RATE[bit_rate[agent]] -
                                                    VIDEO_BIT_RATE[last_bit_rate[agent]]) / M_IN_K
                 tmp_reward_1.append(VIDEO_BIT_RATE[bit_rate[agent]] / M_IN_K)
                 tmp_reward_2.append(-REBUF_PENALTY * rebuf)
@@ -178,9 +178,9 @@ def main():
                 reward = BITRATE_REWARD[bit_rate[agent]] \
                          - 8 * rebuf - np.abs(BITRATE_REWARD[bit_rate[agent]] - BITRATE_REWARD[last_bit_rate[agent]])
 
-                tmp_reward_1.append(BITRATE_REWARD[quality])
+                tmp_reward_1.append(BITRATE_REWARD[bit_rate[agent]])
                 tmp_reward_2.append(-8 * rebuf)
-                tmp_reward_3.append(-np.abs(BITRATE_REWARD[quality] - BITRATE_REWARD[last_bit_rate[agent]]))
+                tmp_reward_3.append(-np.abs(BITRATE_REWARD[bit_rate[agent]] - BITRATE_REWARD[last_bit_rate[agent]]))
             else:
                 raise Exception
 
