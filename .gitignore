@@ -1,10 +1,29 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# C extensions
+*.so
+
 src/__pycache__
 src/*.pyc
 src/test_results/
 src/results/
 src/ppo_gumbel/
-src/models/
 src/*.tar.gz
 src/ppo/
 src/test_smo.py
 src/ppo-smo/
+
+/src/test_results3/
+/src/test_results6/
+/src/test_results_cent2/
+/src/test_results_cent22/
+/src/test_results_cent33/
+/src/test_results_mpc/
+/src/test_results_mpc_exhaustive/
+/src/test_results_mpc_exhaustive_ratio/
+
+/src/test_results_mpc_exhaustive_test2/
+/data/

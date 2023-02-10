@@ -2,3 +2,6 @@ matplotlib==3.5.1
 tensorflow==2.8.1
 tflearn==0.5.0
 tqdm==4.62.3
+structlog
+scipy
+statsmodels
