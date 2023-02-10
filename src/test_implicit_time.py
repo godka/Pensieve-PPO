@@ -34,7 +34,8 @@ structlog.configure(
 log = structlog.get_logger()
 log.debug('Test init')
 
-REWARD_FUNC = "HD"
+REWARD_FUNC = "LIN"
+
 
 def main():
     np.random.seed(RANDOM_SEED)
@@ -287,6 +288,7 @@ def main():
     reward_file.write('\n')
     reward_file.write(' '.join(str(elem) for elem in reward_3))
     reward_file.write('\n')
+
 
 if __name__ == '__main__':
     main()

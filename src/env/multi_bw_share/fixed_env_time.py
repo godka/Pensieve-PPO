@@ -259,7 +259,7 @@ class Environment:
             throughput = self.cur_satellite[self.cur_sat_id[agent]].data_rate(self.cur_user[agent], self.mahimahi_ptr[
                 agent]) * B_IN_MB / BITS_IN_BYTE
             assert throughput != 0
-        elif model_type == "MRSS":
+        elif ho_stamp == "MRSS":
             tmp_best_id = self.get_best_sat_id(agent)
             if tmp_best_id != self.cur_sat_id[agent]:
                 is_handover = True
@@ -273,7 +273,7 @@ class Environment:
             throughput = self.cur_satellite[self.cur_sat_id[agent]].data_rate(self.cur_user[agent], self.mahimahi_ptr[
                 agent]) * B_IN_MB / BITS_IN_BYTE
             assert throughput != 0
-        elif model_type == "MRSS-Smart":
+        elif ho_stamp == "MRSS-Smart":
             runner_up_sat_id, _ = self.get_runner_up_sat_id(
                 agent, method="harmonic-mean", cur_sat_id=self.cur_sat_id[agent])
             cur_user_num = self.get_num_of_user_sat(self.mahimahi_ptr[agent], self.cur_sat_id[agent])

@@ -43,7 +43,7 @@ if not os.path.exists(SUMMARY_DIR):
     os.makedirs(SUMMARY_DIR)
 
 NN_MODEL = None
-REWARD_FUNC = "HD"
+REWARD_FUNC = "LIN"
 
 structlog.configure(
     wrapper_class=structlog.make_filtering_bound_logger(logging.INFO),
@@ -70,7 +70,7 @@ def testing(epoch, nn_model, log_file):
     rewards, entropies = [], []
     test_log_files = os.listdir(TEST_LOG_FOLDER)
     for test_log_file in test_log_files:
-        if test_log_file == "summary":
+        if test_log_file.startswith("summary"):
             continue
         reward, entropy = [], []
         with open(TEST_LOG_FOLDER + test_log_file, 'rb') as f:

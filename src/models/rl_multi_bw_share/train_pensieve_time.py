@@ -24,7 +24,7 @@ RANDOM_SEED = 42
 SUMMARY_DIR = './pensieve'
 MODEL_DIR = '..'
 TRAIN_TRACES = 'data/sat_data/train/'
-TEST_LOG_FOLDER = './test_results_pensieve'
+TEST_LOG_FOLDER = './test_results_pensieve1'
 PPO_TRAINING_EPO = 5
 
 import argparse

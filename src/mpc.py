@@ -27,7 +27,7 @@ SUMMARY_PATH = SUMMARY_DIR + 'summary'
 # NN_MODEL = './models/nn_model_ep_5900.ckpt'
 
 CHUNK_COMBO_OPTIONS = []
-REWARD_FUNC = "HD"  # LIN
+REWARD_FUNC = "LIN"  # LIN
 
 import argparse
 
@@ -37,7 +37,7 @@ parser.add_argument('--user', type=int, default=3)
 args = parser.parse_args()
 
 USERS = args.user
-# MPC_TYPE = "DualMPC"
+MPC_TYPE = "DualMPC"
 # MPC_TYPE = "DualMPC-Centralization-Exhaustive"
 # MPC_TYPE = "DualMPC-Centralization-Reduced"
 # MPC_TYPE = "Oracle"
