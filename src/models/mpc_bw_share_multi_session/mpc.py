@@ -36,9 +36,9 @@ parser = argparse.ArgumentParser(description='PyTorch Synthetic Benchmark',
 parser.add_argument('--user', type=int, default=3)
 args = parser.parse_args()
 
-# MPC_TYPE = "DualMPC-v1"
+# MPC_TYPE = "DualMPC"
 # MPC_TYPE = "DualMPC-Centralization-Exhaustive"
-MPC_TYPE = "DualMPC-Centralization-Reduced-v2"
+MPC_TYPE = "DualMPC-Centralization-Reduced"
 
 # DualMPC-Centralization
 

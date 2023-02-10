@@ -20,7 +20,7 @@ CRITIC_LR_RATE = 0.001
 BITRATE_REWARD = [1, 2, 3, 12, 15, 20]
 RANDOM_SEED = 42
 RAND_RANGE = 1000000
-SUMMARY_DIR = 'test_results_cent_res/'
+SUMMARY_DIR = 'cent_mpc_res/'
 LOG_FILE = SUMMARY_DIR + 'log_sim_cent'
 TEST_TRACES = 'data/sat_data/test/'
 SUMMARY_PATH = SUMMARY_DIR + 'summary'
@@ -37,7 +37,7 @@ parser.add_argument('--user', type=int, default=3)
 args = parser.parse_args()
 
 USERS = args.user
-# MPC_TYPE = "DualMPC-v1"
+# MPC_TYPE = "DualMPC"
 # MPC_TYPE = "DualMPC-Centralization-Exhaustive"
 # MPC_TYPE = "DualMPC-Centralization-Reduced-v2"
 MPC_TYPE = "Oracle-v4"

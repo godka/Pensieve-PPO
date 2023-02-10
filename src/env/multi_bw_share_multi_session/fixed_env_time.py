@@ -156,7 +156,7 @@ class Environment:
                         self.unexpected_change = True
 
             if self.unexpected_change:
-                is_handover, new_sat_id, bit_rate = self.run_mpc_v1(agent, "DualMPC-v1")
+                is_handover, new_sat_id, bit_rate = self.run_mpc_v1(agent, "DualMPC")
                 if is_handover:
                     ho_stamp = 0
                     runner_up_sat_id = new_sat_id
@@ -945,13 +945,13 @@ class Environment:
         self.cur_sat_id[agent] = cur_sat_id
 
     def run_mpc_v1(self, agent, model_type):
-        if model_type == "ManifoldMPC-v1":
+        if model_type == "ManifoldMPC":
             is_handover, new_sat_id, bit_rate = self.qoe_v2(
                 agent, only_runner_up=False)
-        elif model_type == "DualMPC-v1":
+        elif model_type == "DualMPC":
             is_handover, new_sat_id, bit_rate = self.qoe_v2(
                 agent, only_runner_up=True)
-        elif model_type == "DualMPC-Centralization-v1":
+        elif model_type == "DualMPC-Centralization":
             is_handover, new_sat_id, bit_rate = self.qoe_v2(
                 agent, centralized=True)
         return is_handover, new_sat_id, bit_rate

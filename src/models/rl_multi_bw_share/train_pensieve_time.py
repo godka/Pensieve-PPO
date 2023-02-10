@@ -167,16 +167,14 @@ def central_agent(net_params_queues, exp_queues):
                     os.system('mv ' + TEST_LOG_FOLDER + '/summary_reward_parts ' + SUMMARY_DIR)
                     os.system('mv ' + TEST_LOG_FOLDER + '/summary ' + SUMMARY_DIR)
                     os.system('cp ' + SUMMARY_DIR + "/nn_model_ep_" +
-                              str(epoch) + ".ckpt.index " + SUMMARY_DIR + "/best_model_ep_" +
-                              str(epoch) + ".ckpt.index")
+                                       str(epoch) + ".ckpt.index " + SUMMARY_DIR + "/best_model.ckpt.index")
                     os.system('cp ' + SUMMARY_DIR + "/nn_model_ep_" +
-                              str(epoch) + ".ckpt.meta " + SUMMARY_DIR + "/best_model_ep_" +
-                              str(epoch) + ".ckpt.meta")
+                                       str(epoch) + ".ckpt.meta " + SUMMARY_DIR + "/best_model.ckpt.meta")
 
                     os.system('cp ' + SUMMARY_DIR + "/nn_model_ep_" +
-                              str(epoch) + ".ckpt.data-00000-of-00001 " + SUMMARY_DIR + "/best_model_ep_" +
-                              str(epoch) + ".ckpt.data-00000-of-00001")
+                                       str(epoch) + ".ckpt.data-00000-of-00001 " + SUMMARY_DIR + "/best_model.ckpt.data-00000-of-00001")
                     best_rewards = avg_reward
+
 
                 summary_str = sess.run(summary_ops, feed_dict={
                     summary_vars[0]: actor._entropy_weight,
