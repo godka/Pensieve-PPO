@@ -8,14 +8,12 @@ from . import load_trace as load_trace
 
 # bit_rate, buffer_size, next_chunk_size, bandwidth_measurement(throughput and time), chunk_til_video_end
 S_INFO = 6
-A_SAT = 2
 RANDOM_SEED = 42
 RAND_RANGE = 1000
 EPS = 1e-6
 
 NUM_AGENTS = None
-SAT_DIM = A_SAT
-HO_TYPE = "MRSS"
+HO_TYPE = "MRSS-Smart"
 REWARD_FUNC = "LIN"
 
 
@@ -137,7 +135,7 @@ class ABREnv():
         delay, sleep_time, self.buffer_size[agent], rebuf, video_chunk_size, next_video_chunk_sizes, \
             end_of_video, video_chunk_remain, is_handover, num_of_user_sat, next_sat_bandwidth, next_sat_bw_logs, \
             cur_sat_user_num, next_sat_user_nums, cur_sat_bw_logs, connected_time, cur_sat_id, _, _, _, _ = \
-            self.net_env.get_video_chunk(bit_rate, agent, None)
+            self.net_env.get_video_chunk(bit_rate, agent, None, ho_stamp=self.ho_type)
         self.time_stamp += delay  # in ms
         self.time_stamp += sleep_time  # in ms
 

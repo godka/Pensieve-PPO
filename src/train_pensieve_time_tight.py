@@ -1,7 +1,7 @@
 import multiprocessing as mp
 import numpy as np
 import os
-from env.multi_bw_share.env_pensieve_time import ABREnv
+from env.multi_bw_share.env_pensieve_tight_time import ABREnv
 from models.rl_multi_bw_share.ppo_spec import pensieve as network
 import tensorflow.compat.v1 as tf
 import structlog
@@ -19,10 +19,10 @@ TRAIN_SEQ_LEN = 300  # take as a train batch
 TRAIN_EPOCH = 500000
 MODEL_SAVE_INTERVAL = 300
 RANDOM_SEED = 42
-SUMMARY_DIR = './pensieve'
+SUMMARY_DIR = './pensieve_tight'
 MODEL_DIR = '..'
 TRAIN_TRACES = 'data/sat_data/train/'
-TEST_LOG_FOLDER = './test_results_pensieve'
+TEST_LOG_FOLDER = './test_results_pensieve_tight'
 PPO_TRAINING_EPO = 5
 
 import argparse
@@ -64,8 +64,8 @@ def testing(epoch, nn_model, log_file):
     if not os.path.exists(TEST_LOG_FOLDER):
         os.makedirs(TEST_LOG_FOLDER)
     # run test script
-    log.info('python test_pensieve_time.py ', nn_model=nn_model + ' ' + str(USERS) + ' ' + HO_TYPE)
-    os.system('python test_pensieve_time.py ' + nn_model + ' ' + str(USERS) + ' ' + HO_TYPE)
+    log.info('python test_pensieve_time_tight.py ', nn_model=nn_model + ' ' + str(USERS) + ' ' + HO_TYPE)
+    os.system('python test_pensieve_time_tight.py ' + nn_model + ' ' + str(USERS) + ' ' + HO_TYPE)
 
     # append test performance to the log
     rewards, entropies = [], []
@@ -173,6 +173,7 @@ def central_agent(net_params_queues, exp_queues):
                     os.system('cp ' + SUMMARY_DIR + "/nn_model_ep_" +
                                        str(epoch) + ".ckpt.data-00000-of-00001 " + SUMMARY_DIR + "/best_model.ckpt.data-00000-of-00001")
                     best_rewards = avg_reward
+
 
                 summary_str = sess.run(summary_ops, feed_dict={
                     summary_vars[0]: actor._entropy_weight,

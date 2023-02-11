@@ -145,7 +145,7 @@ class ABREnv():
 
     def step(self, action, agent):
         bit_rate = int(action) % A_DIM
-        sat = int(action) // A_DIM
+        # sat = int(action) // A_DIM
 
         # For testing with mpc
         # bit_rate /= BITRATE_WEIGHT

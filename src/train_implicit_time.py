@@ -16,7 +16,7 @@ S_DIM = [6 + 1 + 4, 8]
 A_SAT = 2
 ACTOR_LR_RATE = 1e-4
 TRAIN_SEQ_LEN = 300  # take as a train batch
-TRAIN_EPOCH = 500000
+TRAIN_EPOCH = 2000000
 MODEL_SAVE_INTERVAL = 300
 RANDOM_SEED = 42
 SUMMARY_DIR = './ppo_imp'
@@ -85,7 +85,7 @@ def testing(epoch, nn_model, log_file):
                     break
         rewards.append(np.mean(reward[1:]))
         entropies.append(np.mean(entropy[1:]))
-
+    print(rewards)
     rewards = np.array(rewards)
 
     rewards_min = np.min(rewards)
@@ -104,12 +104,10 @@ def testing(epoch, nn_model, log_file):
                    str(rewards_max) + '\n')
     log_file.flush()
 
-
     return rewards_mean, np.mean(entropies)
 
 
 def central_agent(net_params_queues, exp_queues):
-
     assert len(net_params_queues) == NUM_AGENTS
     assert len(exp_queues) == NUM_AGENTS
     tf_config = tf.ConfigProto(intra_op_parallelism_threads=1,
@@ -294,7 +292,6 @@ def build_summaries():
 
 
 def main():
-
     np.random.seed(RANDOM_SEED)
 
     # inter-process communication queues
