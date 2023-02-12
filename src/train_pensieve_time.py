@@ -130,7 +130,7 @@ def central_agent(net_params_queues, exp_queues):
         if nn_model is not None:  # nn_model is the path to file
             saver.restore(sess, nn_model)
             print("Model restored.")
-        epoch=0
+        epoch=-1
         while True:  # assemble experiences from agents, compute the gradients
             epoch+=1
             # for epoch in range(TRAIN_EPOCH):
