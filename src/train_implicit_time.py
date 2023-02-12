@@ -44,7 +44,6 @@ NN_MODEL = SUMMARY_DIR + '/best_model.ckpt'
 if not os.path.exists(SUMMARY_DIR):
     os.makedirs(SUMMARY_DIR)
 
-NN_MODEL = None
 REWARD_FUNC = "LIN"
 
 structlog.configure(
