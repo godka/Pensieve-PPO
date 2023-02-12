@@ -80,11 +80,9 @@ def testing(epoch, nn_model, log_file):
                 parse = line.split()
                 if not parse:
                     break
-                try:
-                    entropy.append(float(parse[-2]))
-                    reward.append(float(parse[-6]))
-                except IndexError:
-                    break
+                entropy.append(float(parse[-2]))
+                reward.append(float(parse[-6]))
+
         rewards.append(np.mean(reward[1:]))
         entropies.append(np.mean(entropy[1:]))
     print(rewards)
