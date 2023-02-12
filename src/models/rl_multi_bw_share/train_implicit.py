@@ -8,13 +8,13 @@ import tensorflow.compat.v1 as tf
 os.environ['CUDA_VISIBLE_DEVICES'] = '-1'
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 
-S_DIM = [6 + 1 + 4, 8]
+S_DIM = [6 + 3, 8]
 A_DIM = 6
 A_SAT = 2
 ACTOR_LR_RATE = 1e-4
 NUM_AGENTS = 16
 TRAIN_SEQ_LEN = 1000  # take as a train batch
-TRAIN_EPOCH = 500000
+TRAIN_EPOCH = 5000000
 MODEL_SAVE_INTERVAL = 1000
 RANDOM_SEED = 42
 SUMMARY_DIR = './ppo_imp'

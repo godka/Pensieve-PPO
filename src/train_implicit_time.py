@@ -12,7 +12,7 @@ from util.constants import A_DIM, NUM_AGENTS
 os.environ['CUDA_VISIBLE_DEVICES'] = '-1'
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 
-S_DIM = [6 + 1 + 4, 8]
+S_DIM = [6 + 3, 8]
 A_SAT = 2
 ACTOR_LR_RATE = 1e-4
 TRAIN_SEQ_LEN = 300  # take as a train batch
@@ -38,7 +38,8 @@ TEST_LOG_FOLDER += str(USERS) + '/'
 SUMMARY_DIR += str(USERS)
 LOG_FILE = SUMMARY_DIR + '/log'
 
-NN_MODEL = SUMMARY_DIR + '/best_model.ckpt'
+# NN_MODEL = SUMMARY_DIR + '/best_model.ckpt'
+NN_MODEL = None
 
 # create result directory
 if not os.path.exists(SUMMARY_DIR):

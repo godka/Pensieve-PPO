@@ -6,7 +6,7 @@ import tensorflow.compat.v1 as tf
 from env.multi_bw_share import fixed_env as env, load_trace
 from models.rl_multi_bw_share.ppo_spec import ppo_implicit as network
 
-S_INFO = 6 + 1 + 4  # bit_rate, buffer_size, next_chunk_size, bandwidth_measurement(throughput and time), chunk_til_video_end
+S_INFO = 6 + 3 # bit_rate, buffer_size, next_chunk_size, bandwidth_measurement(throughput and time), chunk_til_video_end
 S_LEN = 8  # take how many frames in the past
 A_DIM = 6
 PAST_LEN = 8

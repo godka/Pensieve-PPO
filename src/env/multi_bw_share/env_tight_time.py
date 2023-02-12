@@ -7,7 +7,7 @@ from . import core_time as abrenv
 from . import load_trace_tight as load_trace
 
 # bit_rate, buffer_size, next_chunk_size, bandwidth_measurement(throughput and time), chunk_til_video_end
-S_INFO = 6 + 1 + 4
+S_INFO = 6 + 4
 A_SAT = 2
 MAX_SAT = 5
 

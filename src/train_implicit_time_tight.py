@@ -12,9 +12,9 @@ from util.constants import A_DIM, NUM_AGENTS
 os.environ['CUDA_VISIBLE_DEVICES'] = '-1'
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 
-S_DIM = [6 + 1 + 4, 8]
+S_DIM = [6 + 3, 8]
 A_SAT = 2
-ACTOR_LR_RATE = 1e-4
+ACTOR_LR_RATE = 1e-x
 TRAIN_SEQ_LEN = 300  # take as a train batch
 TRAIN_EPOCH = 2000000
 MODEL_SAVE_INTERVAL = 300

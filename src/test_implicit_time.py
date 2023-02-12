@@ -13,7 +13,7 @@ from models.rl_multi_bw_share.ppo_spec import ppo_implicit as network
 import structlog
 import logging
 
-S_INFO = 6 + 1 + 4  # bit_rate, buffer_size, next_chunk_size, bandwidth_measurement(throughput and time), chunk_til_video_end
+S_INFO = 6 + 3  # bit_rate, buffer_size, next_chunk_size, bandwidth_measurement(throughput and time), chunk_til_video_end
 A_SAT = 2
 ACTOR_LR_RATE = 1e-4
 # CRITIC_LR_RATE = 0.001
@@ -234,12 +234,12 @@ def main():
 
             state[agent][7, :PAST_LEN] = np.array(cur_sat_bw_logs[:PAST_LEN]) / 10
 
-            if is_handover:
-                state[agent][8:9, 0:S_LEN] = np.zeros((1, S_LEN))
-                state[agent][9:10, 0:S_LEN] = np.zeros((1, S_LEN))
-            state[agent][8:9, -1] = np.array(cur_sat_user_num) / 10
-            state[agent][9:10, -1] = np.array(next_sat_user_num) / 10
-            state[agent][10, :2] = [float(connected_time[0]) / BUFFER_NORM_FACTOR / 10,
+            # if is_handover:
+            #     state[agent][8:9, 0:S_LEN] = np.zeros((1, S_LEN))
+            #     state[agent][9:10, 0:S_LEN] = np.zeros((1, S_LEN))
+            # state[agent][8:9, -1] = np.array(cur_sat_user_num) / 10
+            # state[agent][9:10, -1] = np.array(next_sat_user_num) / 10
+            state[agent][8, :2] = [float(connected_time[0]) / BUFFER_NORM_FACTOR / 10,
                                     float(connected_time[1]) / BUFFER_NORM_FACTOR / 10]
 
             # if len(next_sat_user_num) < PAST_LEN:
