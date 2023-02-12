@@ -132,8 +132,8 @@ def central_agent(net_params_queues, exp_queues):
             saver.restore(sess, nn_model)
             print("Model restored.")
 
-        # while True:  # assemble experiences from agents, compute the gradients
-        for epoch in range(TRAIN_EPOCH):
+        while True:  # assemble experiences from agents, compute the gradients
+        # for epoch in range(TRAIN_EPOCH):
             # synchronize the network parameters of work agent
             actor_net_params = actor.get_network_params()
             for i in range(NUM_AGENTS):

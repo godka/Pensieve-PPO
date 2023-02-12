@@ -14,7 +14,7 @@ os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 
 S_DIM = [6 + 3, 8]
 A_SAT = 2
-ACTOR_LR_RATE = 1e-x
+ACTOR_LR_RATE = 1e-4
 TRAIN_SEQ_LEN = 300  # take as a train batch
 TRAIN_EPOCH = 2000000
 MODEL_SAVE_INTERVAL = 300
@@ -106,23 +106,21 @@ def testing(epoch, nn_model, log_file):
                    str(rewards_max) + '\n')
     log_file.flush()
 
-
     return rewards_mean, np.mean(entropies)
 
 
 def central_agent(net_params_queues, exp_queues):
-
     assert len(net_params_queues) == NUM_AGENTS
     assert len(exp_queues) == NUM_AGENTS
     tf_config = tf.ConfigProto(intra_op_parallelism_threads=1,
-                            inter_op_parallelism_threads=1)
+                               inter_op_parallelism_threads=1)
     best_rewards = -1000
     with tf.Session(config=tf_config) as sess, open(LOG_FILE + '_test.txt', 'w') as test_log_file:
         summary_ops, summary_vars = build_summaries()
 
         actor = network.Network(sess,
-                state_dim=S_DIM, action_dim=A_DIM * A_SAT,
-                learning_rate=ACTOR_LR_RATE)
+                                state_dim=S_DIM, action_dim=A_DIM * A_SAT,
+                                learning_rate=ACTOR_LR_RATE)
 
         sess.run(tf.global_variables_initializer())
         writer = tf.summary.FileWriter(SUMMARY_DIR, sess.graph)  # training monitor
@@ -133,9 +131,9 @@ def central_agent(net_params_queues, exp_queues):
         if nn_model is not None:  # nn_model is the path to file
             saver.restore(sess, nn_model)
             print("Model restored.")
-        
-        # while True:  # assemble experiences from agents, compute the gradients
-        for epoch in range(TRAIN_EPOCH):
+
+        while True:  # assemble experiences from agents, compute the gradients
+            # for epoch in range(TRAIN_EPOCH):
             # synchronize the network parameters of work agent
             actor_net_params = actor.get_network_params()
             for i in range(NUM_AGENTS):
@@ -156,25 +154,25 @@ def central_agent(net_params_queues, exp_queues):
             # print(s_batch[0], a_batch[0], p_batch[0], v_batch[0], epoch)
             for _ in range(PPO_TRAINING_EPO):
                 actor.train(s_batch, a_batch, p_batch, v_batch, epoch)
-            
+
             if epoch % MODEL_SAVE_INTERVAL == 0:
                 # Save the neural net parameters to disk.
                 save_path = saver.save(sess, SUMMARY_DIR + "/nn_model_ep_" +
                                        str(epoch) + ".ckpt")
                 avg_reward, avg_entropy = testing(epoch,
-                    SUMMARY_DIR + "/nn_model_ep_" + str(epoch) + ".ckpt", 
-                    test_log_file)
+                                                  SUMMARY_DIR + "/nn_model_ep_" + str(epoch) + ".ckpt",
+                                                  test_log_file)
 
                 if best_rewards < avg_reward:
                     os.system('mv ' + TEST_LOG_FOLDER + '/summary_reward_parts ' + SUMMARY_DIR)
                     os.system('mv ' + TEST_LOG_FOLDER + '/summary ' + SUMMARY_DIR)
                     os.system('cp ' + SUMMARY_DIR + "/nn_model_ep_" +
-                                       str(epoch) + ".ckpt.index " + SUMMARY_DIR + "/best_model.ckpt.index")
+                              str(epoch) + ".ckpt.index " + SUMMARY_DIR + "/best_model.ckpt.index")
                     os.system('cp ' + SUMMARY_DIR + "/nn_model_ep_" +
-                                       str(epoch) + ".ckpt.meta " + SUMMARY_DIR + "/best_model.ckpt.meta")
+                              str(epoch) + ".ckpt.meta " + SUMMARY_DIR + "/best_model.ckpt.meta")
 
                     os.system('cp ' + SUMMARY_DIR + "/nn_model_ep_" +
-                                       str(epoch) + ".ckpt.data-00000-of-00001 " + SUMMARY_DIR + "/best_model.ckpt.data-00000-of-00001")
+                              str(epoch) + ".ckpt.data-00000-of-00001 " + SUMMARY_DIR + "/best_model.ckpt.data-00000-of-00001")
                     best_rewards = avg_reward
 
                 summary_str = sess.run(summary_ops, feed_dict={
@@ -203,37 +201,37 @@ def agent(agent_id, net_params_queue, exp_queue):
             bit_rate = [0 for _ in range(USERS)]
             sat = [0 for _ in range(USERS)]
             action_prob = [[] for _ in range(USERS)]
-            
+
             obs = env.reset()
-            
+
             for agent in range(USERS):
                 obs[agent] = env.reset_agent(agent)
 
                 action_prob[agent] = actor.predict(
                     np.reshape(obs[agent], (1, S_DIM[0], S_DIM[1])))
-            
+
                 # gumbel noise
                 noise = np.random.gumbel(size=len(action_prob[agent]))
                 bit_rate[agent] = np.argmax(np.log(action_prob[agent]) + noise)
 
                 sat[agent] = bit_rate[agent] // A_DIM
-                
+
                 env.set_sat(agent, sat[agent])
-    
+
             s_batch, a_batch, p_batch, r_batch = [], [], [], []
             s_batch_user, a_batch_user, p_batch_user, r_batch_user = \
-                [[]for _ in range(USERS)], [[]for _ in range(USERS)], \
-                [[]for _ in range(USERS)], [[]for _ in range(USERS)]
-            
+                [[] for _ in range(USERS)], [[] for _ in range(USERS)], \
+                [[] for _ in range(USERS)], [[] for _ in range(USERS)]
+
             for step in range(TRAIN_SEQ_LEN):
                 agent = env.get_first_agent()
                 log.debug("agent", agent=agent)
-                
+
                 if agent == -1:
                     break
 
                 s_batch_user[agent].append(obs[agent])
-                    
+
                 obs[agent], rew, done, info = env.step(bit_rate[agent], agent)
 
                 action_vec = np.zeros(A_DIM * A_SAT)
@@ -243,26 +241,25 @@ def agent(agent_id, net_params_queue, exp_queue):
                 p_batch_user[agent].append(action_prob[agent])
 
                 if not done:
-                    
                     action_prob[agent] = actor.predict(
                         np.reshape(obs[agent], (1, S_DIM[0], S_DIM[1])))
-                
+
                     # gumbel noise
                     noise = np.random.gumbel(size=len(action_prob[agent]))
                     bit_rate[agent] = np.argmax(np.log(action_prob[agent]) + noise)
 
                     sat[agent] = bit_rate[agent] // A_DIM
-                    
+
                     env.set_sat(agent, sat[agent])
-                    
+
                 if env.check_end():
                     break
-                
+
                 # if agent_id == 0:
                 #     print(ppo_spec.net_env.video_chunk_counter)
                 #     print([len(batch_user) for batch_user in s_batch_user])
                 #     print([len(batch_user) for batch_user in r_batch_user])
-                    
+
             for batch_user in s_batch_user:
                 s_batch += batch_user
             for batch_user in a_batch_user:
@@ -271,7 +268,7 @@ def agent(agent_id, net_params_queue, exp_queue):
                 p_batch += batch_user
             for batch_user in r_batch_user:
                 r_batch += batch_user
-                
+
             # if agent_id == 0:
             #     print(len(s_batch), len(a_batch), len(r_batch))
             v_batch = actor.compute_v(s_batch, a_batch, r_batch, env.check_end())
@@ -296,7 +293,6 @@ def build_summaries():
 
 
 def main():
-
     np.random.seed(RANDOM_SEED)
 
     # inter-process communication queues
