@@ -7,7 +7,7 @@ from . import core_time as abrenv
 from . import load_trace_tight as load_trace
 
 # bit_rate, buffer_size, next_chunk_size, bandwidth_measurement(throughput and time), chunk_til_video_end
-S_INFO = 6 + 4
+S_INFO = 6 + 3
 A_SAT = 2
 MAX_SAT = 5
 
@@ -75,14 +75,14 @@ class ABREnv():
             cur_sat_bw_logs = [0] * (PAST_LEN - len(cur_sat_bw_logs)) + cur_sat_bw_logs
 
         state[7, :PAST_LEN] = np.array(cur_sat_bw_logs[:PAST_LEN])
-        if self.is_handover:
-            state[8:9, 0:S_LEN] = np.zeros((1, S_LEN))
-            state[9:10, 0:S_LEN] = np.zeros((1, S_LEN))
+        # if self.is_handover:
+        #     state[8:9, 0:S_LEN] = np.zeros((1, S_LEN))
+        #     state[9:10, 0:S_LEN] = np.zeros((1, S_LEN))
 
-        state[8:9, -1] = np.array(cur_sat_user_num) / 10
-        state[9:10, -1] = np.array(next_sat_user_nums) / 10
+        # state[8:9, -1] = np.array(cur_sat_user_num) / 10
+        # state[9:10, -1] = np.array(next_sat_user_nums) / 10
 
-        state[10, :2] = [float(connected_time[0]) / BUFFER_NORM_FACTOR / 10, float(connected_time[1]) / BUFFER_NORM_FACTOR / 10]
+        state[8, :2] = [float(connected_time[0]) / BUFFER_NORM_FACTOR / 10, float(connected_time[1]) / BUFFER_NORM_FACTOR / 10]
         # if len(next_sat_user_nums) < PAST_LEN:
         #     next_sat_user_nums = [0] * (PAST_LEN - len(next_sat_user_nums)) + next_sat_user_nums
 
@@ -198,13 +198,13 @@ class ABREnv():
             cur_sat_bw_logs = [0] * (PAST_LEN - len(cur_sat_bw_logs)) + cur_sat_bw_logs
 
         state[7, :PAST_LEN] = np.array(cur_sat_bw_logs[:PAST_LEN]) / 10
-        if self.is_handover:
-            state[8:9, 0:S_LEN] = np.zeros((1, S_LEN))
-            state[9:10, 0:S_LEN] = np.zeros((1, S_LEN))
+        # if self.is_handover:
+        #     state[8:9, 0:S_LEN] = np.zeros((1, S_LEN))
+        #     state[9:10, 0:S_LEN] = np.zeros((1, S_LEN))
 
-        state[8:9, -1] = np.array(cur_sat_user_num) / 10
-        state[9:10, -1] = np.array(next_sat_user_nums) / 10
-        state[10, :2] = [float(connected_time[0]) / BUFFER_NORM_FACTOR / 10, float(connected_time[1]) / BUFFER_NORM_FACTOR / 10]
+        # state[8:9, -1] = np.array(cur_sat_user_num) / 10
+        # state[9:10, -1] = np.array(next_sat_user_nums) / 10
+        state[8, :2] = [float(connected_time[0]) / BUFFER_NORM_FACTOR / 10, float(connected_time[1]) / BUFFER_NORM_FACTOR / 10]
 
         # if len(next_sat_user_nums) < PAST_LEN:
         #     next_sat_user_nums = [0] * (PAST_LEN - len(next_sat_user_nums)) + next_sat_user_nums

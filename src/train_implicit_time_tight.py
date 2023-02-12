@@ -39,7 +39,7 @@ SUMMARY_DIR += str(USERS)
 LOG_FILE = SUMMARY_DIR + '/log'
 
 NN_MODEL = SUMMARY_DIR + '/best_model.ckpt'
-
+NN_MODEL = None
 # create result directory
 if not os.path.exists(SUMMARY_DIR):
     os.makedirs(SUMMARY_DIR)
