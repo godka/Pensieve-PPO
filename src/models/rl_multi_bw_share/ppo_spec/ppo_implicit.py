@@ -6,14 +6,14 @@ import time
 os.environ['CUDA_VISIBLE_DEVICES'] = '2'
 import tflearn
 
-FEATURE_NUM = 512
+FEATURE_NUM = 256
 ACTION_EPS = 1e-4
 PAST_LEN = 8
 A_SAT = 2
 GAMMA = 0.99
 # PPO2
 EPS = 0.2
-DIM_SIZE = 4
+DIM_SIZE = 1
 ENTROPY_WEIGHT = 0.1
 
 

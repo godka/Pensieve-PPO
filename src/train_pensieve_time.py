@@ -133,6 +133,7 @@ def central_agent(net_params_queues, exp_queues):
         epoch=-1
         while True:  # assemble experiences from agents, compute the gradients
             epoch+=1
+            print(epoch)
             # for epoch in range(TRAIN_EPOCH):
             # synchronize the network parameters of work agent
             actor_net_params = actor.get_network_params()
@@ -198,6 +199,7 @@ def agent(agent_id, net_params_queue, exp_queue):
         time_stamp = 0
 
         for epoch in range(TRAIN_EPOCH):
+            print("agent: ", epoch)
             bit_rate = [0 for _ in range(USERS)]
             sat = [0 for _ in range(USERS)]
             action_prob = [[] for _ in range(USERS)]

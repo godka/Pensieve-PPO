@@ -33,7 +33,7 @@ HANDOVER_WEIGHT = 1
 NUM_AGENTS = None
 
 SAT_STRATEGY = "resource-fair"
-SAT_STRATEGY = "ratio-based"
+# SAT_STRATEGY = "ratio-based"
 
 
 class Environment:
