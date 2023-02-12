@@ -34,7 +34,7 @@ CHUNK_COMBO_OPTIONS = []
 
 parser = argparse.ArgumentParser(description='PyTorch Synthetic Benchmark',
                                  formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-realparser.add_argument('--user', type=int, default=3)
+parser.add_argument('--user', type=int, default=3)
 args = parser.parse_args()
 NUM_AGENTS = args.user
 
