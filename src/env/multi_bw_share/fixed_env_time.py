@@ -1061,9 +1061,10 @@ class Environment:
 
     def qoe_v2(self, agent, only_runner_up=True, centralized=False):
         is_handover = False
-        best_sat_id = self.cur_sat_id[agent]
+        # best_sat_id = self.cur_sat_id[agent]
+        best_sat_id = None
         # start_time = time.time()
-        ho_sat_id, ho_stamp, best_combo, max_reward = self.calculate_mpc_with_handover_dual(
+        ho_sat_id, ho_stamp, best_combo, max_reward = self.calculate_mpc_with_handover_dist(
             agent, only_runner_up=only_runner_up, centralized=centralized)
 
         if ho_stamp == 0:
@@ -2878,7 +2879,7 @@ class Environment:
 
         return cur_sat_ids, runner_up_sat_ids, best_ho_position, best_combos, max_rewards, best_user_info
 
-    def calculate_mpc_with_handover_dual(self, agent, robustness=True, only_runner_up=True,
+    def calculate_mpc_with_handover_dist(self, agent, robustness=True, only_runner_up=True,
                                          method="harmonic-mean", centralized=True):
         # future chunks length (try 4 if that many remaining)
         video_chunk_remain = self.video_chunk_remain[agent]
@@ -2933,6 +2934,8 @@ class Environment:
 
             elif only_runner_up and runner_up_sat_id != next_sat_id:
                 # Only consider the next-best satellite
+                continue
+            elif next_sat_bw[self.mahimahi_ptr[agent]] == 0:
                 continue
             else:
                 next_download_bw = None
@@ -3584,10 +3587,13 @@ class Environment:
             past_bws = past_bws[1:]
 
         bandwidth_sum = 0
+        bandwidth_index = 0
         for past_val in past_bws:
-            bandwidth_sum += (1 / float(past_val))
+            if past_val != 0:
+                bandwidth_sum += (1 / float(past_val))
+                bandwidth_index += 1
 
-        harmonic_bw = 1.0 / (bandwidth_sum / len(past_bws))
+        harmonic_bw = 1.0 / (bandwidth_sum / bandwidth_index)
 
         if sat_id not in self.past_bw_ests[agent].keys():
             self.past_bw_ests[agent][sat_id] = []
@@ -3653,10 +3659,13 @@ class Environment:
             past_bws = past_bws[1:]
 
         bandwidth_sum = 0
+        bandwidth_index = 0
         for past_val in past_bws:
-            bandwidth_sum += (1 / float(past_val))
+            if past_val != 0:
+                bandwidth_sum += (1 / float(past_val))
+                bandwidth_index += 1
 
-        harmonic_bw = 1.0 / (bandwidth_sum / len(past_bws))
+        harmonic_bw = 1.0 / (bandwidth_sum / bandwidth_index)
 
         if sat_id not in self.past_bw_ests[agent].keys():
             self.past_bw_ests[agent][sat_id] = []

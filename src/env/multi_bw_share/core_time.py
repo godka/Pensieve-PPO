@@ -600,10 +600,13 @@ class Environment:
             past_bws = past_bws[1:]
 
         bandwidth_sum = 0
+        bandwidth_index = 0
         for past_val in past_bws:
-            bandwidth_sum += (1 / float(past_val))
+            if past_val != 0:
+                bandwidth_sum += (1 / float(past_val))
+                bandwidth_index += 1
 
-        harmonic_bw = 1.0 / (bandwidth_sum / len(past_bws))
+        harmonic_bw = 1.0 / (bandwidth_sum / bandwidth_index)
 
         if sat_id not in self.past_bw_ests[agent].keys():
             self.past_bw_ests[agent][sat_id] = []
@@ -667,12 +670,14 @@ class Environment:
 
         while past_bws[0] == 0.0:
             past_bws = past_bws[1:]
-
         bandwidth_sum = 0
+        bandwidth_index = 0
         for past_val in past_bws:
-            bandwidth_sum += (1 / float(past_val))
+            if past_val != 0:
+                bandwidth_sum += (1 / float(past_val))
+                bandwidth_index += 1
 
-        harmonic_bw = 1.0 / (bandwidth_sum / len(past_bws))
+        harmonic_bw = 1.0 / (bandwidth_sum / bandwidth_index)
 
         if sat_id not in self.past_bw_ests[agent].keys():
             self.past_bw_ests[agent][sat_id] = []

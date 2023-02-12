@@ -29,7 +29,7 @@ import argparse
 
 parser = argparse.ArgumentParser(description='PyTorch Synthetic Benchmark',
                                  formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-parser.add_argument('--user', type=int, default=1)
+parser.add_argument('--user', type=int, default=3)
 args = parser.parse_args()
 USERS = args.user
 # A_SAT = USERS + 1
@@ -131,10 +131,11 @@ def central_agent(net_params_queues, exp_queues):
         if nn_model is not None:  # nn_model is the path to file
             saver.restore(sess, nn_model)
             print("Model restored.")
-        
+        epoch=-1
         while True:  # assemble experiences from agents, compute the gradients
         # for epoch in range(TRAIN_EPOCH):
             # synchronize the network parameters of work agent
+            epoch+=1
             actor_net_params = actor.get_network_params()
             for i in range(NUM_AGENTS):
                 net_params_queues[i].put(actor_net_params)
