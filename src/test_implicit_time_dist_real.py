@@ -224,23 +224,6 @@ def main():
 
             state[agent][5, -1] = np.minimum(video_chunk_remain, CHUNK_TIL_VIDEO_END_CAP) / float(
                 CHUNK_TIL_VIDEO_END_CAP)
-            if len(next_sat_bw_logs) < PAST_LEN:
-                next_sat_bw_logs = [0] * (PAST_LEN - len(next_sat_bw_logs)) + next_sat_bw_logs
-
-            state[agent][6, :PAST_LEN] = np.array(next_sat_bw_logs[:PAST_LEN]) / 10
-
-            if len(cur_sat_bw_logs) < PAST_LEN:
-                cur_sat_bw_logs = [0] * (PAST_LEN - len(cur_sat_bw_logs)) + cur_sat_bw_logs
-
-            state[agent][7, :PAST_LEN] = np.array(cur_sat_bw_logs[:PAST_LEN]) / 10
-
-            # if is_handover:
-            #     state[agent][8:9, 0:S_LEN] = np.zeros((1, S_LEN))
-            #     state[agent][9:10, 0:S_LEN] = np.zeros((1, S_LEN))
-            # state[agent][8:9, -1] = np.array(cur_sat_user_num) / 10
-            # state[agent][9:10, -1] = np.array(next_sat_user_num) / 10
-            state[agent][8, :2] = [float(connected_time[0]) / BUFFER_NORM_FACTOR / 10,
-                                    float(connected_time[1]) / BUFFER_NORM_FACTOR / 10]
 
             # if len(next_sat_user_num) < PAST_LEN:
             #     next_sat_user_num = [0] * (PAST_LEN - len(next_sat_user_num)) + next_sat_user_num
