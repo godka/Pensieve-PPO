@@ -13,7 +13,7 @@ from models.rl_multi_bw_share.ppo_spec import ppo_implicit_dist as network
 import structlog
 import logging
 
-S_INFO = 6  # bit_rate, buffer_size, next_chunk_size, bandwidth_measurement(throughput and time), chunk_til_video_end
+S_INFO = 6 + 1 # bit_rate, buffer_size, next_chunk_size, bandwidth_measurement(throughput and time), chunk_til_video_end
 A_SAT = 2
 ACTOR_LR_RATE = 1e-4
 # CRITIC_LR_RATE = 0.001
@@ -224,6 +224,7 @@ def main():
 
             state[agent][5, -1] = np.minimum(video_chunk_remain, CHUNK_TIL_VIDEO_END_CAP) / float(
                 CHUNK_TIL_VIDEO_END_CAP)
+            state[agent][6, -1] = float(connected_time[0]) / BUFFER_NORM_FACTOR / 10
 
             # if len(next_sat_user_num) < PAST_LEN:
             #     next_sat_user_num = [0] * (PAST_LEN - len(next_sat_user_num)) + next_sat_user_num

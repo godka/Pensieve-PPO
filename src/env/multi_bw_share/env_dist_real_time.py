@@ -7,7 +7,7 @@ from . import core_time as abrenv
 from . import load_trace_real as load_trace
 
 # bit_rate, buffer_size, next_chunk_size, bandwidth_measurement(throughput and time), chunk_til_video_end
-S_INFO = 6
+S_INFO = 7
 A_SAT = 2
 MAX_SAT = 5
 
@@ -169,6 +169,7 @@ class ABREnv():
         state[4, :A_DIM] = np.array([next_video_chunk_sizes[index] for index in [0,2,4]]) / M_IN_K / M_IN_K  # mega byte
         state[5, -1] = np.minimum(video_chunk_remain,
                                   CHUNK_TIL_VIDEO_END_CAP) / float(CHUNK_TIL_VIDEO_END_CAP)
+        state[6, -1] = float(connected_time[0]) / BUFFER_NORM_FACTOR / 10
 
         self.state[agent] = state
 
