@@ -1,8 +1,8 @@
 import multiprocessing as mp
 import numpy as np
 import os
-from env.multi_bw_share.env_time import ABREnv
-from models.rl_multi_bw_share.ppo_spec import ppo_implicit as network
+from env.multi_bw_share.env_time_dist import ABREnv
+from models.rl_multi_bw_share.ppo_spec import ppo_implicit_dist as network
 import tensorflow.compat.v1 as tf
 import structlog
 import logging
@@ -12,17 +12,17 @@ from util.constants import A_DIM, NUM_AGENTS
 os.environ['CUDA_VISIBLE_DEVICES'] = '-1'
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 
-S_DIM = [6 + 3, 8]
+S_DIM = [6, 8]
 A_SAT = 2
 ACTOR_LR_RATE = 1e-4
 TRAIN_SEQ_LEN = 3000  # take as a train batch
 TRAIN_EPOCH = 2000000
 MODEL_SAVE_INTERVAL = 3000
 RANDOM_SEED = 42
-SUMMARY_DIR = './ppo_imp'
+SUMMARY_DIR = './ppo_imp_dist'
 MODEL_DIR = '..'
 TRAIN_TRACES = 'data/sat_data/train/'
-TEST_LOG_FOLDER = './test_results_imp'
+TEST_LOG_FOLDER = './test_results_imp_dist'
 PPO_TRAINING_EPO = 5
 
 import argparse
@@ -64,8 +64,8 @@ def testing(epoch, nn_model, log_file):
     if not os.path.exists(TEST_LOG_FOLDER):
         os.makedirs(TEST_LOG_FOLDER)
     # run test script
-    log.info('python test_implicit_time.py ', nn_model=nn_model + ' ' + str(USERS))
-    os.system('python test_implicit_time.py ' + nn_model + ' ' + str(USERS))
+    log.info('python test_implicit_time_dist.py ', nn_model=nn_model + ' ' + str(USERS))
+    os.system('python test_implicit_time_dist.py ' + nn_model + ' ' + str(USERS))
     log.info('End testing')
 
     # append test performance to the log
@@ -111,7 +111,7 @@ def central_agent(net_params_queues, exp_queues):
     assert len(net_params_queues) == NUM_AGENTS
     assert len(exp_queues) == NUM_AGENTS
     tf_config = tf.ConfigProto(intra_op_parallelism_threads=1,
-                            inter_op_parallelism_threads=1)
+                               inter_op_parallelism_threads=1)
     best_rewards = -1000
     with tf.Session(config=tf_config) as sess, open(LOG_FILE + '_test.txt', 'w') as test_log_file:
         summary_ops, summary_vars = build_summaries()

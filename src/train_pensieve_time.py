@@ -15,9 +15,9 @@ os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 S_DIM = [6, 8]
 # A_SAT = 2
 ACTOR_LR_RATE = 1e-4
-TRAIN_SEQ_LEN = 300  # take as a train batch
+TRAIN_SEQ_LEN = 3000  # take as a train batch
 TRAIN_EPOCH = 5000000
-MODEL_SAVE_INTERVAL = 300
+MODEL_SAVE_INTERVAL = 3000
 RANDOM_SEED = 42
 SUMMARY_DIR = './pensieve'
 MODEL_DIR = '..'
@@ -79,11 +79,9 @@ def testing(epoch, nn_model, log_file):
                 parse = line.split()
                 if not parse:
                     break
-                try:
-                    entropy.append(float(parse[-2]))
-                    reward.append(float(parse[-6]))
-                except IndexError:
-                    break
+                entropy.append(float(parse[-2]))
+                reward.append(float(parse[-6]))
+
         rewards.append(np.mean(reward[1:]))
         entropies.append(np.mean(entropy[1:]))
 
@@ -133,7 +131,6 @@ def central_agent(net_params_queues, exp_queues):
         epoch=-1
         while True:  # assemble experiences from agents, compute the gradients
             epoch+=1
-            print(epoch)
             # for epoch in range(TRAIN_EPOCH):
             # synchronize the network parameters of work agent
             actor_net_params = actor.get_network_params()
