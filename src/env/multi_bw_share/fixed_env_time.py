@@ -37,7 +37,8 @@ SAT_STRATEGY = "resource-fair"
 
 
 class Environment:
-    def __init__(self, all_cooked_time, all_cooked_bw, all_cooked_name=None, random_seed=RANDOM_SEED, num_agents=NUM_AGENTS, reward_func="LIN"):
+    def __init__(self, all_cooked_time, all_cooked_bw, all_cooked_name=None, random_seed=RANDOM_SEED,
+                 num_agents=NUM_AGENTS, reward_func="LIN"):
         assert len(all_cooked_time) == len(all_cooked_bw)
         self.log = structlog.get_logger()
 
@@ -219,6 +220,7 @@ class Environment:
             best_combo, max_reward, best_case = self.run_mpc_sep(agent, model_type)
             quality = best_combo[0]
             runner_up_sat_ids, ho_stamps, best_combos, best_user_info, final_rate = None, None, None, None, None
+            ho_stamp = model_type
 
         else:
             runner_up_sat_ids, ho_stamps, best_combos, best_user_info, final_rate = None, None, None, None, None
