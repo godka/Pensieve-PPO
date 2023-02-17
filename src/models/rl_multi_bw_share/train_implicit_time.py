@@ -18,7 +18,7 @@ S_DIM = [6 + 3, 8]
 A_SAT = 2
 ACTOR_LR_RATE = 1e-4
 TRAIN_SEQ_LEN = 300  # take as a train batch
-TRAIN_EPOCH = 2000000
+TRAIN_EPOCH = 20000000
 MODEL_SAVE_INTERVAL = 300
 RANDOM_SEED = 42
 SUMMARY_DIR = './ppo_imp'
@@ -202,19 +202,19 @@ def agent(agent_id, net_params_queue, exp_queue):
 
             obs = env.reset()
 
-            for agent in range(USERS):
-                obs[agent] = env.reset_agent(agent)
+            for user_id in range(USERS):
+                obs[user_id] = env.reset_agent(user_id)
 
-                action_prob[agent] = actor.predict(
-                    np.reshape(obs[agent], (1, S_DIM[0], S_DIM[1])))
+                action_prob[user_id] = actor.predict(
+                    np.reshape(obs[user_id], (1, S_DIM[0], S_DIM[1])))
 
                 # gumbel noise
-                noise = np.random.gumbel(size=len(action_prob[agent]))
-                bit_rate[agent] = np.argmax(np.log(action_prob[agent]) + noise)
+                noise = np.random.gumbel(size=len(action_prob[user_id]))
+                bit_rate[user_id] = np.argmax(np.log(action_prob[user_id]) + noise)
 
-                sat[agent] = bit_rate[agent] // A_DIM
+                sat[user_id] = bit_rate[user_id] // A_DIM
 
-                env.set_sat(agent, sat[agent])
+                env.set_sat(user_id, sat[user_id])
 
             s_batch, a_batch, p_batch, r_batch = [], [], [], []
             s_batch_user, a_batch_user, p_batch_user, r_batch_user = \
