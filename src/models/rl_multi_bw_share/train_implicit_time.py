@@ -17,9 +17,9 @@ os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 S_DIM = [6 + 3, 8]
 A_SAT = 2
 ACTOR_LR_RATE = 1e-4
-TRAIN_SEQ_LEN = 3000  # take as a train batch
+TRAIN_SEQ_LEN = 300  # take as a train batch
 TRAIN_EPOCH = 2000000
-MODEL_SAVE_INTERVAL = 3000
+MODEL_SAVE_INTERVAL = 300
 RANDOM_SEED = 42
 SUMMARY_DIR = './ppo_imp'
 MODEL_DIR = '..'
@@ -114,10 +114,9 @@ def central_agent(net_params_queues, exp_queues):
     assert len(exp_queues) == NUM_AGENTS
     tf_config = tf.ConfigProto(intra_op_parallelism_threads=1,
                                inter_op_parallelism_threads=1)
-    best_rewards = -1000
     with tf.Session(config=tf_config) as sess, open(LOG_FILE + '_test.txt', 'w') as test_log_file:
         summary_ops, summary_vars = build_summaries()
-
+        best_rewards = -1000
         actor = network.Network(sess,
                                 state_dim=S_DIM, action_dim=A_DIM * A_SAT,
                                 learning_rate=ACTOR_LR_RATE)
@@ -131,10 +130,8 @@ def central_agent(net_params_queues, exp_queues):
         if nn_model is not None:  # nn_model is the path to file
             saver.restore(sess, nn_model)
             print("Model restored.")
-        epoch = -1
-        while True:  # assemble experiences from agents, compute the gradients
-            epoch += 1
-            # for epoch in range(TRAIN_EPOCH):
+        for epoch in range(TRAIN_EPOCH):
+            print(epoch)
             # synchronize the network parameters of work agent
             actor_net_params = actor.get_network_params()
             for i in range(NUM_AGENTS):
