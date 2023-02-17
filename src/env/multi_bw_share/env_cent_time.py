@@ -22,7 +22,7 @@ SAT_DIM = A_SAT
 
 class ABREnv():
 
-    def __init__(self, random_seed=RANDOM_SEED, num_agents=NUM_AGENTS, reward_func="LIN"):
+    def __init__(self, random_seed=RANDOM_SEED, num_agents=NUM_AGENTS, reward_func="LIN", train_traces=None):
         self.num_agents = num_agents
         global S_INFO
         S_INFO = 9 + self.num_agents - 1 + (self.num_agents - 1) * PAST_SAT_LOG_LEN + (self.num_agents - 1)
@@ -34,7 +34,7 @@ class ABREnv():
         self.prev_sat_id = None
         self.cur_sat_id = None
         np.random.seed(random_seed)
-        all_cooked_time, all_cooked_bw, _ = load_trace.load_trace()
+        all_cooked_time, all_cooked_bw, _ = load_trace.load_trace(train_traces)
         self.net_env = abrenv.Environment(all_cooked_time=all_cooked_time,
                                           all_cooked_bw=all_cooked_bw,
                                           random_seed=random_seed,
