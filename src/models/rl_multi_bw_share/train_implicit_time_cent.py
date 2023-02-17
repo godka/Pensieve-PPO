@@ -1,6 +1,10 @@
 import multiprocessing as mp
 import numpy as np
 import os
+import sys
+root_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+sys.path.insert(0, root_dir + '/../')
+
 from env.multi_bw_share.env_cent_time import ABREnv
 from models.rl_multi_bw_share.ppo_spec import ppo_cent_his3 as network
 import tensorflow.compat.v1 as tf
