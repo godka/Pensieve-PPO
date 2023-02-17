@@ -24,7 +24,7 @@ MODEL_SAVE_INTERVAL = 300
 RANDOM_SEED = 42
 SUMMARY_DIR = './ppo_imp_cent'
 MODEL_DIR = '..'
-TRAIN_TRACES = 'data/sat_data/train/'
+TRAIN_TRACES = '../../data/sat_data/train/'
 TEST_LOG_FOLDER = './test_results_imp_cent'
 PPO_TRAINING_EPO = 5
 
