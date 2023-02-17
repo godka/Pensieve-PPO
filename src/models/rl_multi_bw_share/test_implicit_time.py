@@ -14,7 +14,7 @@ import structlog
 import logging
 import sys
 root_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-sys.path.insert(0, root_dir)
+sys.path.insert(0, root_dir + '/../')
 
 S_INFO = 6 + 3  # bit_rate, buffer_size, next_chunk_size, bandwidth_measurement(throughput and time), chunk_til_video_end
 A_SAT = 2

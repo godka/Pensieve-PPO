@@ -8,7 +8,7 @@ import structlog
 import logging
 import sys
 root_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-sys.path.insert(0, root_dir)
+sys.path.insert(0, root_dir + '/../')
 from util.constants import A_DIM, NUM_AGENTS
 
 os.environ['CUDA_VISIBLE_DEVICES'] = '-1'
