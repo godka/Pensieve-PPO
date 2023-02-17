@@ -46,8 +46,8 @@ class Network():
                  split_9_flat], 'concat')
 
             pi_net = tflearn.fully_connected(merge_net, FEATURE_NUM, activation='relu')
-            pi_net2 = tflearn.fully_connected(pi_net, FEATURE_NUM/2, activation='relu')
-            pi_net3 = tflearn.fully_connected(pi_net2, FEATURE_NUM/4, activation='relu')
+            pi_net2 = tflearn.fully_connected(pi_net, int(FEATURE_NUM/2), activation='relu')
+            pi_net3 = tflearn.fully_connected(pi_net2, int(FEATURE_NUM/4), activation='relu')
 
             pi = tflearn.fully_connected(pi_net3, self.a_dim, activation='softmax')
 
@@ -77,8 +77,8 @@ class Network():
                 [split_0, split_1, split_2_flat, split_3_flat, split_4_flat, split_5, split_6_flat, split_7_flat,
                  split_9_flat], 'concat')
             pi_net = tflearn.fully_connected(merge_net, FEATURE_NUM, activation='relu')
-            pi_net2 = tflearn.fully_connected(pi_net, FEATURE_NUM/2, activation='relu')
-            pi_net3 = tflearn.fully_connected(pi_net2, FEATURE_NUM/4, activation='relu')
+            pi_net2 = tflearn.fully_connected(pi_net, int(FEATURE_NUM/2), activation='relu')
+            pi_net3 = tflearn.fully_connected(pi_net2, int(FEATURE_NUM/4), activation='relu')
             # value_net2 = tflearn.fully_connected(value_net, FEATURE_NUM, activation='relu')
 
             value = tflearn.fully_connected(pi_net3, 1, activation='linear')
