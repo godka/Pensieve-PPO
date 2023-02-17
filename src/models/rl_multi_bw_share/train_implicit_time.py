@@ -23,7 +23,7 @@ MODEL_SAVE_INTERVAL = 3000
 RANDOM_SEED = 42
 SUMMARY_DIR = './ppo_imp'
 MODEL_DIR = '..'
-TRAIN_TRACES = 'data/sat_data/train/'
+TRAIN_TRACES = '../../data/sat_data/train/'
 TEST_LOG_FOLDER = './test_results_imp'
 PPO_TRAINING_EPO = 5
 
@@ -186,7 +186,7 @@ def central_agent(net_params_queues, exp_queues):
 
 
 def agent(agent_id, net_params_queue, exp_queue):
-    env = ABREnv(agent_id, num_agents=USERS, reward_func=REWARD_FUNC)
+    env = ABREnv(agent_id, num_agents=USERS, reward_func=REWARD_FUNC, train_traces=TRAIN_TRACES)
     with tf.Session() as sess:
         actor = network.Network(sess,
                                 state_dim=S_DIM, action_dim=A_DIM * A_SAT,
