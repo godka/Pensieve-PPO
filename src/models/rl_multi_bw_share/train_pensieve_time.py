@@ -7,24 +7,22 @@ import tensorflow.compat.v1 as tf
 import structlog
 import logging
 
-from util.constants import A_DIM
-
-NUM_AGENTS = 16
+from util.constants import A_DIM, NUM_AGENTS
 
 os.environ['CUDA_VISIBLE_DEVICES'] = '-1'
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 
 S_DIM = [6, 8]
-A_SAT = 2
+# A_SAT = 2
 ACTOR_LR_RATE = 1e-4
-TRAIN_SEQ_LEN = 300  # take as a train batch
-TRAIN_EPOCH = 50000
-MODEL_SAVE_INTERVAL = 300
+TRAIN_SEQ_LEN = 3000  # take as a train batch
+TRAIN_EPOCH = 5000000
+MODEL_SAVE_INTERVAL = 3000
 RANDOM_SEED = 42
 SUMMARY_DIR = './pensieve'
 MODEL_DIR = '..'
 TRAIN_TRACES = 'data/sat_data/train/'
-TEST_LOG_FOLDER = './test_results_pensieve1'
+TEST_LOG_FOLDER = './test_results_pensieve'
 PPO_TRAINING_EPO = 5
 
 import argparse
@@ -36,7 +34,8 @@ args = parser.parse_args()
 USERS = args.user
 # A_SAT = USERS + 1
 
-HO_TYPE = "MRSS"
+HO_TYPE = "MRSS-Smart"
+REWARD_FUNC = "LIN"
 
 TEST_LOG_FOLDER += str(USERS) + '/'
 SUMMARY_DIR += str(USERS)
@@ -80,11 +79,9 @@ def testing(epoch, nn_model, log_file):
                 parse = line.split()
                 if not parse:
                     break
-                try:
-                    entropy.append(float(parse[-2]))
-                    reward.append(float(parse[-6]))
-                except IndexError:
-                    break
+                entropy.append(float(parse[-2]))
+                reward.append(float(parse[-6]))
+
         rewards.append(np.mean(reward[1:]))
         entropies.append(np.mean(entropy[1:]))
 
@@ -119,7 +116,7 @@ def central_agent(net_params_queues, exp_queues):
         summary_ops, summary_vars = build_summaries()
 
         actor = network.Network(sess,
-                                state_dim=S_DIM, action_dim=A_DIM * A_SAT,
+                                state_dim=S_DIM, action_dim=A_DIM,
                                 learning_rate=ACTOR_LR_RATE)
 
         sess.run(tf.global_variables_initializer())
@@ -131,9 +128,10 @@ def central_agent(net_params_queues, exp_queues):
         if nn_model is not None:  # nn_model is the path to file
             saver.restore(sess, nn_model)
             print("Model restored.")
-
+        epoch=-1
         while True:  # assemble experiences from agents, compute the gradients
-        # for epoch in range(TRAIN_EPOCH):
+            epoch+=1
+            # for epoch in range(TRAIN_EPOCH):
             # synchronize the network parameters of work agent
             actor_net_params = actor.get_network_params()
             for i in range(NUM_AGENTS):
@@ -175,7 +173,6 @@ def central_agent(net_params_queues, exp_queues):
                                        str(epoch) + ".ckpt.data-00000-of-00001 " + SUMMARY_DIR + "/best_model.ckpt.data-00000-of-00001")
                     best_rewards = avg_reward
 
-
                 summary_str = sess.run(summary_ops, feed_dict={
                     summary_vars[0]: actor._entropy_weight,
                     summary_vars[1]: avg_reward,
@@ -186,10 +183,10 @@ def central_agent(net_params_queues, exp_queues):
 
 
 def agent(agent_id, net_params_queue, exp_queue):
-    env = ABREnv(agent_id, num_agents=USERS, ho_type=HO_TYPE)
+    env = ABREnv(agent_id, num_agents=USERS, ho_type=HO_TYPE, reward_func=REWARD_FUNC)
     with tf.Session() as sess:
         actor = network.Network(sess,
-                                state_dim=S_DIM, action_dim=A_DIM * A_SAT,
+                                state_dim=S_DIM, action_dim=A_DIM,
                                 learning_rate=ACTOR_LR_RATE)
 
         # initial synchronization of the network parameters from the coordinator
@@ -199,6 +196,7 @@ def agent(agent_id, net_params_queue, exp_queue):
         time_stamp = 0
 
         for epoch in range(TRAIN_EPOCH):
+            print("agent: ", epoch)
             bit_rate = [0 for _ in range(USERS)]
             sat = [0 for _ in range(USERS)]
             action_prob = [[] for _ in range(USERS)]
@@ -215,9 +213,9 @@ def agent(agent_id, net_params_queue, exp_queue):
                 noise = np.random.gumbel(size=len(action_prob[agent]))
                 bit_rate[agent] = np.argmax(np.log(action_prob[agent]) + noise)
 
-                sat[agent] = bit_rate[agent] // A_DIM
+                # sat[agent] = bit_rate[agent] // A_DIM
 
-                env.set_sat(agent, sat[agent])
+                # env.set_sat(agent, sat[agent])
 
             s_batch, a_batch, p_batch, r_batch = [], [], [], []
             s_batch_user, a_batch_user, p_batch_user, r_batch_user = \
@@ -235,7 +233,7 @@ def agent(agent_id, net_params_queue, exp_queue):
 
                 obs[agent], rew, done, info = env.step(bit_rate[agent], agent)
 
-                action_vec = np.zeros(A_DIM * A_SAT)
+                action_vec = np.zeros(A_DIM)
                 action_vec[bit_rate[agent]] = 1
                 a_batch_user[agent].append(action_vec)
                 r_batch_user[agent].append(rew)
@@ -249,9 +247,9 @@ def agent(agent_id, net_params_queue, exp_queue):
                     noise = np.random.gumbel(size=len(action_prob[agent]))
                     bit_rate[agent] = np.argmax(np.log(action_prob[agent]) + noise)
 
-                    sat[agent] = bit_rate[agent] // A_DIM
+                    # sat[agent] = bit_rate[agent] // A_DIM
 
-                    env.set_sat(agent, sat[agent])
+                    # env.set_sat(agent, sat[agent])
 
                 if env.check_end():
                     break

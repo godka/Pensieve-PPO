@@ -2,7 +2,7 @@ import os
 import sys
 
 from util.constants import CHUNK_TIL_VIDEO_END_CAP, BUFFER_NORM_FACTOR, VIDEO_BIT_RATE, REBUF_PENALTY, SMOOTH_PENALTY, \
-    DEFAULT_QUALITY, BITRATE_WEIGHT, M_IN_K, A_DIM, S_LEN, PAST_LEN
+    DEFAULT_QUALITY, BITRATE_WEIGHT, M_IN_K, A_DIM, S_LEN, PAST_LEN, BITRATE_REWARD
 
 os.environ['CUDA_VISIBLE_DEVICES'] = '-1'
 import numpy as np
@@ -14,7 +14,7 @@ import structlog
 import logging
 
 S_INFO = 6  # bit_rate, buffer_size, next_chunk_size, bandwidth_measurement(throughput and time), chunk_til_video_end
-A_SAT = 2
+# A_SAT = 2
 ACTOR_LR_RATE = 1e-4
 # CRITIC_LR_RATE = 0.001
 RANDOM_SEED = 42
@@ -34,6 +34,8 @@ structlog.configure(
 
 log = structlog.get_logger()
 log.debug('Test init')
+
+REWARD_FUNC = "LIN"
 
 
 def main():
@@ -65,7 +67,7 @@ def main():
     with tf.Session() as sess:
 
         actor = network.Network(sess,
-                                state_dim=[S_INFO, S_LEN], action_dim=A_DIM * A_SAT,
+                                state_dim=[S_INFO, S_LEN], action_dim=A_DIM,
                                 learning_rate=ACTOR_LR_RATE)
 
         sess.run(tf.global_variables_initializer())
@@ -82,7 +84,7 @@ def main():
         bit_rate = [DEFAULT_QUALITY for _ in range(USERS)]
         sat = [0 for _ in range(USERS)]
 
-        action_vec = [np.zeros(A_DIM * A_SAT) for _ in range(USERS)]
+        action_vec = [np.zeros(A_DIM) for _ in range(USERS)]
         for i in range(USERS):
             action_vec[i][bit_rate] = 1
 
@@ -157,20 +159,31 @@ def main():
             video_chunk_size, next_video_chunk_sizes, \
             end_of_video, video_chunk_remain, is_handover, _, _, next_sat_bw_logs, \
             cur_sat_user_num, next_sat_user_num, cur_sat_bw_logs, connected_time, cur_sat_id, _, _, _, _, _ = \
-                net_env.get_video_chunk(bit_rate[agent], agent, model_type=HO_TYPE)
+                net_env.get_video_chunk(bit_rate[agent], agent, None, ho_stamp=HO_TYPE)
 
             time_stamp[agent] += delay  # in ms
             time_stamp[agent] += sleep_time  # in ms
 
             # reward is video quality - rebuffer penalty
-            reward = VIDEO_BIT_RATE[bit_rate[agent]] / M_IN_K \
-                     - REBUF_PENALTY * rebuf \
-                     - SMOOTH_PENALTY * np.abs(VIDEO_BIT_RATE[bit_rate[agent]] -
-                                               VIDEO_BIT_RATE[last_bit_rate[agent]]) / M_IN_K
-            tmp_reward_1.append(VIDEO_BIT_RATE[bit_rate[agent]] / M_IN_K)
-            tmp_reward_2.append(-REBUF_PENALTY * rebuf)
-            tmp_reward_3.append(- SMOOTH_PENALTY * np.abs(VIDEO_BIT_RATE[bit_rate[agent]] -
-                                                          VIDEO_BIT_RATE[last_bit_rate[agent]]) / M_IN_K)
+            if REWARD_FUNC == "LIN":
+                reward = VIDEO_BIT_RATE[bit_rate[agent]] / M_IN_K \
+                         - REBUF_PENALTY * rebuf \
+                         - SMOOTH_PENALTY * np.abs(VIDEO_BIT_RATE[bit_rate[agent]] -
+                                                   VIDEO_BIT_RATE[last_bit_rate[agent]]) / M_IN_K
+                tmp_reward_1.append(VIDEO_BIT_RATE[bit_rate[agent]] / M_IN_K)
+                tmp_reward_2.append(-REBUF_PENALTY * rebuf)
+                tmp_reward_3.append(- SMOOTH_PENALTY * np.abs(VIDEO_BIT_RATE[bit_rate[agent]] -
+                                                              VIDEO_BIT_RATE[last_bit_rate[agent]]) / M_IN_K)
+            elif REWARD_FUNC == "HD":
+                reward = BITRATE_REWARD[bit_rate[agent]] \
+                         - 8 * rebuf - np.abs(BITRATE_REWARD[bit_rate[agent]] - BITRATE_REWARD[last_bit_rate[agent]])
+
+                tmp_reward_1.append(BITRATE_REWARD[bit_rate[agent]])
+                tmp_reward_2.append(-8 * rebuf)
+                tmp_reward_3.append(-np.abs(BITRATE_REWARD[bit_rate[agent]] - BITRATE_REWARD[last_bit_rate[agent]]))
+            else:
+                raise Exception
+
             r_batch[agent].append(reward)
             tmp_results.append(reward)
 
@@ -215,7 +228,7 @@ def main():
             noise = np.random.gumbel(size=len(action_prob))
             action = np.argmax(np.log(action_prob) + noise)
 
-            sat[agent] = action // A_DIM
+            # sat[agent] = action // A_DIM
             bit_rate[agent] = action % A_DIM
 
             # Testing for mpc

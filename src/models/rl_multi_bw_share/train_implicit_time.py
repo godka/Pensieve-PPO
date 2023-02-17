@@ -6,7 +6,9 @@ from models.rl_multi_bw_share.ppo_spec import ppo_implicit as network
 import tensorflow.compat.v1 as tf
 import structlog
 import logging
-
+import sys
+root_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+sys.path.insert(0, root_dir)
 from util.constants import A_DIM, NUM_AGENTS
 
 os.environ['CUDA_VISIBLE_DEVICES'] = '-1'
@@ -15,9 +17,9 @@ os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 S_DIM = [6 + 3, 8]
 A_SAT = 2
 ACTOR_LR_RATE = 1e-4
-TRAIN_SEQ_LEN = 300  # take as a train batch
-TRAIN_EPOCH = 5000000
-MODEL_SAVE_INTERVAL = 300
+TRAIN_SEQ_LEN = 3000  # take as a train batch
+TRAIN_EPOCH = 2000000
+MODEL_SAVE_INTERVAL = 3000
 RANDOM_SEED = 42
 SUMMARY_DIR = './ppo_imp'
 MODEL_DIR = '..'
@@ -29,7 +31,7 @@ import argparse
 
 parser = argparse.ArgumentParser(description='PyTorch Synthetic Benchmark',
                                  formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-parser.add_argument('--user', type=int, default=1)
+parser.add_argument('--user', type=int, default=3)
 args = parser.parse_args()
 USERS = args.user
 # A_SAT = USERS + 1
@@ -38,11 +40,14 @@ TEST_LOG_FOLDER += str(USERS) + '/'
 SUMMARY_DIR += str(USERS)
 LOG_FILE = SUMMARY_DIR + '/log'
 
+# NN_MODEL = SUMMARY_DIR + '/best_model.ckpt'
+NN_MODEL = None
+
 # create result directory
 if not os.path.exists(SUMMARY_DIR):
     os.makedirs(SUMMARY_DIR)
 
-NN_MODEL = None
+REWARD_FUNC = "LIN"
 
 structlog.configure(
     wrapper_class=structlog.make_filtering_bound_logger(logging.INFO),
@@ -77,11 +82,9 @@ def testing(epoch, nn_model, log_file):
                 parse = line.split()
                 if not parse:
                     break
-                try:
-                    entropy.append(float(parse[-2]))
-                    reward.append(float(parse[-6]))
-                except IndexError:
-                    break
+                entropy.append(float(parse[-2]))
+                reward.append(float(parse[-6]))
+
         rewards.append(np.mean(reward[1:]))
         entropies.append(np.mean(entropy[1:]))
 
@@ -128,9 +131,10 @@ def central_agent(net_params_queues, exp_queues):
         if nn_model is not None:  # nn_model is the path to file
             saver.restore(sess, nn_model)
             print("Model restored.")
-
+        epoch = -1
         while True:  # assemble experiences from agents, compute the gradients
-        # for epoch in range(TRAIN_EPOCH):
+            epoch += 1
+            # for epoch in range(TRAIN_EPOCH):
             # synchronize the network parameters of work agent
             actor_net_params = actor.get_network_params()
             for i in range(NUM_AGENTS):
@@ -161,17 +165,16 @@ def central_agent(net_params_queues, exp_queues):
                                                   test_log_file)
 
                 if best_rewards < avg_reward:
-                    os.system('mv ' + TEST_LOG_FOLDER + '/summary_reward_parts ' + SUMMARY_DIR)
-                    os.system('mv ' + TEST_LOG_FOLDER + '/summary ' + SUMMARY_DIR)
+                    os.system('cp ' + TEST_LOG_FOLDER + '/summary_reward_parts ' + SUMMARY_DIR)
+                    os.system('cp ' + TEST_LOG_FOLDER + '/summary ' + SUMMARY_DIR)
                     os.system('cp ' + SUMMARY_DIR + "/nn_model_ep_" +
-                                       str(epoch) + ".ckpt.index " + SUMMARY_DIR + "/best_model.ckpt.index")
+                              str(epoch) + ".ckpt.index " + SUMMARY_DIR + "/best_model.ckpt.index")
                     os.system('cp ' + SUMMARY_DIR + "/nn_model_ep_" +
-                                       str(epoch) + ".ckpt.meta " + SUMMARY_DIR + "/best_model.ckpt.meta")
+                              str(epoch) + ".ckpt.meta " + SUMMARY_DIR + "/best_model.ckpt.meta")
 
                     os.system('cp ' + SUMMARY_DIR + "/nn_model_ep_" +
-                                       str(epoch) + ".ckpt.data-00000-of-00001 " + SUMMARY_DIR + "/best_model.ckpt.data-00000-of-00001")
+                              str(epoch) + ".ckpt.data-00000-of-00001 " + SUMMARY_DIR + "/best_model.ckpt.data-00000-of-00001")
                     best_rewards = avg_reward
-
 
                 summary_str = sess.run(summary_ops, feed_dict={
                     summary_vars[0]: actor._entropy_weight,
@@ -183,7 +186,7 @@ def central_agent(net_params_queues, exp_queues):
 
 
 def agent(agent_id, net_params_queue, exp_queue):
-    env = ABREnv(agent_id, num_agents=USERS)
+    env = ABREnv(agent_id, num_agents=USERS, reward_func=REWARD_FUNC)
     with tf.Session() as sess:
         actor = network.Network(sess,
                                 state_dim=S_DIM, action_dim=A_DIM * A_SAT,

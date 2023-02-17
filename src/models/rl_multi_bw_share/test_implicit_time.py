@@ -2,7 +2,7 @@ import os
 import sys
 
 from util.constants import CHUNK_TIL_VIDEO_END_CAP, BUFFER_NORM_FACTOR, VIDEO_BIT_RATE, REBUF_PENALTY, SMOOTH_PENALTY, \
-    DEFAULT_QUALITY, BITRATE_WEIGHT, M_IN_K, A_DIM, S_LEN, PAST_LEN
+    DEFAULT_QUALITY, BITRATE_WEIGHT, M_IN_K, A_DIM, S_LEN, PAST_LEN, BITRATE_REWARD
 
 os.environ['CUDA_VISIBLE_DEVICES'] = '-1'
 import numpy as np
@@ -12,8 +12,11 @@ from env.multi_bw_share import load_trace as load_trace
 from models.rl_multi_bw_share.ppo_spec import ppo_implicit as network
 import structlog
 import logging
+import sys
+root_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+sys.path.insert(0, root_dir)
 
-S_INFO = 6 + 3 # bit_rate, buffer_size, next_chunk_size, bandwidth_measurement(throughput and time), chunk_til_video_end
+S_INFO = 6 + 3  # bit_rate, buffer_size, next_chunk_size, bandwidth_measurement(throughput and time), chunk_til_video_end
 A_SAT = 2
 ACTOR_LR_RATE = 1e-4
 # CRITIC_LR_RATE = 0.001
@@ -33,6 +36,8 @@ structlog.configure(
 
 log = structlog.get_logger()
 log.debug('Test init')
+
+REWARD_FUNC = "LIN"
 
 
 def main():
@@ -133,6 +138,7 @@ def main():
                 results += tmp_results
                 tmp_results = []
                 time_stamp = [0 for _ in range(USERS)]
+
                 reward_1.append(np.mean(tmp_reward_1))
                 reward_2.append(np.mean(tmp_reward_2))
                 reward_3.append(np.mean(tmp_reward_3))
@@ -162,14 +168,25 @@ def main():
             time_stamp[agent] += sleep_time  # in ms
 
             # reward is video quality - rebuffer penalty
-            reward = VIDEO_BIT_RATE[bit_rate[agent]] / M_IN_K \
-                     - REBUF_PENALTY * rebuf \
-                     - SMOOTH_PENALTY * np.abs(VIDEO_BIT_RATE[bit_rate[agent]] -
-                                               VIDEO_BIT_RATE[last_bit_rate[agent]]) / M_IN_K
-            tmp_reward_1.append(VIDEO_BIT_RATE[bit_rate[agent]] / M_IN_K)
-            tmp_reward_2.append(-REBUF_PENALTY * rebuf)
-            tmp_reward_3.append(- SMOOTH_PENALTY * np.abs(VIDEO_BIT_RATE[bit_rate[agent]] -
-                                               VIDEO_BIT_RATE[last_bit_rate[agent]]) / M_IN_K)
+            if REWARD_FUNC == "LIN":
+                reward = VIDEO_BIT_RATE[bit_rate[agent]] / M_IN_K \
+                         - REBUF_PENALTY * rebuf \
+                         - SMOOTH_PENALTY * np.abs(VIDEO_BIT_RATE[bit_rate[agent]] -
+                                                   VIDEO_BIT_RATE[last_bit_rate[agent]]) / M_IN_K
+                tmp_reward_1.append(VIDEO_BIT_RATE[bit_rate[agent]] / M_IN_K)
+                tmp_reward_2.append(-REBUF_PENALTY * rebuf)
+                tmp_reward_3.append(- SMOOTH_PENALTY * np.abs(VIDEO_BIT_RATE[bit_rate[agent]] -
+                                                              VIDEO_BIT_RATE[last_bit_rate[agent]]) / M_IN_K)
+            elif REWARD_FUNC == "HD":
+                reward = BITRATE_REWARD[bit_rate[agent]] \
+                         - 8 * rebuf - np.abs(BITRATE_REWARD[bit_rate[agent]] - BITRATE_REWARD[last_bit_rate[agent]])
+
+                tmp_reward_1.append(BITRATE_REWARD[bit_rate[agent]])
+                tmp_reward_2.append(-8 * rebuf)
+                tmp_reward_3.append(-np.abs(BITRATE_REWARD[bit_rate[agent]] - BITRATE_REWARD[last_bit_rate[agent]]))
+            else:
+                raise Exception
+
             r_batch[agent].append(reward)
             tmp_results.append(reward)
 
@@ -219,12 +236,13 @@ def main():
                 cur_sat_bw_logs = [0] * (PAST_LEN - len(cur_sat_bw_logs)) + cur_sat_bw_logs
 
             state[agent][7, :PAST_LEN] = np.array(cur_sat_bw_logs[:PAST_LEN]) / 10
-            if is_handover:
-                state[agent][8:9, 0:S_LEN] = np.zeros((1, S_LEN))
-                state[agent][9:10, 0:S_LEN] = np.zeros((1, S_LEN))
+
+            # if is_handover:
+            #     state[agent][8:9, 0:S_LEN] = np.zeros((1, S_LEN))
+            #     state[agent][9:10, 0:S_LEN] = np.zeros((1, S_LEN))
             # state[agent][8:9, -1] = np.array(cur_sat_user_num) / 10
             # state[agent][9:10, -1] = np.array(next_sat_user_num) / 10
-            state[agent][10, :2] = [float(connected_time[0]) / BUFFER_NORM_FACTOR / 10,
+            state[agent][8, :2] = [float(connected_time[0]) / BUFFER_NORM_FACTOR / 10,
                                     float(connected_time[1]) / BUFFER_NORM_FACTOR / 10]
 
             # if len(next_sat_user_num) < PAST_LEN:
@@ -273,6 +291,7 @@ def main():
     reward_file.write('\n')
     reward_file.write(' '.join(str(elem) for elem in reward_3))
     reward_file.write('\n')
+
 
 if __name__ == '__main__':
     main()

@@ -19,7 +19,7 @@ ACTOR_LR_RATE = 0.0001
 CRITIC_LR_RATE = 0.001
 RANDOM_SEED = 42
 RAND_RANGE = 1000000
-SUMMARY_DIR = 'cent_mpc_real_res5/'
+SUMMARY_DIR = 'MRSS1/'
 LOG_FILE = SUMMARY_DIR + 'log_sim_cent'
 TEST_TRACES = 'data/sat_data/real_test/'
 SUMMARY_PATH = SUMMARY_DIR + 'summary'
@@ -33,7 +33,7 @@ import argparse
 
 parser = argparse.ArgumentParser(description='PyTorch Synthetic Benchmark',
                                  formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-parser.add_argument('--user', type=int, default=2)
+parser.add_argument('--user', type=int, default=1)
 args = parser.parse_args()
 
 USERS = args.user
@@ -41,7 +41,7 @@ MPC_TYPE = "DualMPC"
 # MPC_TYPE = "DualMPC-Centralization-Exhaustive"
 # MPC_TYPE = "DualMPC-Centralization-Reduced"
 # MPC_TYPE = "Oracle"
-MPC_TYPE = "MVT"
+MPC_TYPE = "MRSS"
 # DualMPC-Centralization
 
 structlog.configure(
