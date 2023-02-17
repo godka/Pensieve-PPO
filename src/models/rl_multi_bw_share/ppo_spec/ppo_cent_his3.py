@@ -9,7 +9,7 @@ from util.constants import PAST_SAT_LOG_LEN
 os.environ['CUDA_VISIBLE_DEVICES'] = '2'
 import tflearn
 
-FEATURE_NUM = 256
+FEATURE_NUM = 128
 ACTION_EPS = 1e-4
 PAST_LEN = 8
 A_SAT = 2
@@ -62,7 +62,10 @@ class Network():
             merge_net = tflearn.merge(merged_list, 'concat')
 
             pi_net = tflearn.fully_connected(merge_net, FEATURE_NUM, activation='relu')
-            pi = tflearn.fully_connected(pi_net, self.a_dim, activation='softmax')
+            pi_net2 = tflearn.fully_connected(pi_net, int(FEATURE_NUM/2), activation='relu')
+            pi_net3 = tflearn.fully_connected(pi_net2, int(FEATURE_NUM/4), activation='relu')
+
+            pi = tflearn.fully_connected(pi_net3, self.a_dim, activation='softmax')
 
         with tf.variable_scope('critic'):
             split_0 = tflearn.fully_connected(inputs[:, 0:1, -1], FEATURE_NUM, activation='relu')
@@ -104,7 +107,10 @@ class Network():
             merge_net = tflearn.merge(merged_list, 'concat')
 
             value_net = tflearn.fully_connected(merge_net, FEATURE_NUM, activation='relu')
-            value = tflearn.fully_connected(value_net, 1, activation='linear')
+            value_net2 = tflearn.fully_connected(value_net, int(FEATURE_NUM/2), activation='relu')
+            value_net3 = tflearn.fully_connected(value_net2, int(FEATURE_NUM/4), activation='relu')
+
+            value = tflearn.fully_connected(value_net3, 1, activation='linear')
             return pi, value
 
     def get_network_params(self):

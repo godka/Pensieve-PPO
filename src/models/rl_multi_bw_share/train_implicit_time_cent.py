@@ -14,14 +14,14 @@ os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 
 A_SAT = 2
 ACTOR_LR_RATE = 1e-4
-TRAIN_SEQ_LEN = 3000  # take as a train batch
-TRAIN_EPOCH = 2000000
-MODEL_SAVE_INTERVAL = 3000
+TRAIN_SEQ_LEN = 300  # take as a train batch
+TRAIN_EPOCH = 20000000
+MODEL_SAVE_INTERVAL = 300
 RANDOM_SEED = 42
-SUMMARY_DIR = './ppo_imp'
+SUMMARY_DIR = './ppo_imp_cent'
 MODEL_DIR = '..'
 TRAIN_TRACES = 'data/sat_data/train/'
-TEST_LOG_FOLDER = './test_results_imp'
+TEST_LOG_FOLDER = './test_results_imp_cent'
 PPO_TRAINING_EPO = 5
 
 import argparse
