@@ -142,7 +142,6 @@ def central_agent(net_params_queues, exp_queues):
                 s, a, p, g = [], [], [], []
                 for i in range(NUM_AGENTS):
                     s_, a_, p_, g_ = exp_queues[i].get(timeout=10)
-                    print(s_, a_, p_, g_)
                     s += s_
                     a += a_
                     p += p_
@@ -282,14 +281,14 @@ def agent(agent_id, net_params_queue, exp_queue):
             v_batch = actor.compute_v(s_batch[1:], a_batch[1:], r_batch[1:], env.check_end())
             exp_queue.put([s_batch[1:], a_batch[1:], p_batch[1:], v_batch])
             
+            actor_net_params = net_params_queue.get()
+            actor.set_network_params(actor_net_params)
+
             del s_batch[:]
             del a_batch[:]
             del r_batch[:]
             del p_batch[:]
             del v_batch[:]
-            
-            actor_net_params = net_params_queue.get()
-            actor.set_network_params(actor_net_params)
 
 
 def build_summaries():
