@@ -34,7 +34,7 @@ import argparse
 
 parser = argparse.ArgumentParser(description='PyTorch Synthetic Benchmark',
                                  formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-parser.add_argument('--user', type=int, default=3)
+parser.add_argument('--user', type=int, default=5)
 args = parser.parse_args()
 USERS = args.user
 # A_SAT = USERS + 1
@@ -205,15 +205,15 @@ def agent(agent_id, net_params_queue, exp_queue):
         actor.set_network_params(actor_net_params)
 
         time_stamp = 0
-
+        tmp_users = random.randint(1, USERS)
         for epoch in range(TRAIN_EPOCH):
-            bit_rate = [0 for _ in range(USERS)]
-            sat = [0 for _ in range(USERS)]
-            action_prob = [[] for _ in range(USERS)]
+            bit_rate = [0 for _ in range(tmp_users)]
+            sat = [0 for _ in range(tmp_users)]
+            action_prob = [[] for _ in range(tmp_users)]
 
             obs = env.reset()
 
-            for user_id in range(USERS):
+            for user_id in range(tmp_users):
                 obs[user_id] = env.reset_agent(user_id)
 
                 action_prob[user_id] = actor.predict(
@@ -229,8 +229,8 @@ def agent(agent_id, net_params_queue, exp_queue):
 
             s_batch, a_batch, p_batch, r_batch = [], [], [], []
             s_batch_user, a_batch_user, p_batch_user, r_batch_user = \
-                [[] for _ in range(USERS)], [[] for _ in range(USERS)], \
-                [[] for _ in range(USERS)], [[] for _ in range(USERS)]
+                [[] for _ in range(tmp_users)], [[] for _ in range(tmp_users)], \
+                [[] for _ in range(tmp_users)], [[] for _ in range(tmp_users)]
 
             for step in range(TRAIN_SEQ_LEN):
                 agent = env.get_first_agent()
@@ -278,7 +278,7 @@ def agent(agent_id, net_params_queue, exp_queue):
             for batch_user in r_batch_user:
                 r_batch += batch_user
             """
-            tmp_i = random.randint(0, USERS - 1)
+            tmp_i = random.randint(0, tmp_users - 1)
             # if agent_id == 0:
             #     print(len(s_batch), len(a_batch), len(r_batch))
             v_batch = actor.compute_v(s_batch_user[tmp_i][1:], a_batch_user[tmp_i][1:], r_batch_user[tmp_i][1:], env.check_end())
