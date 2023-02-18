@@ -187,6 +187,10 @@ def central_agent(net_params_queues, exp_queues):
                 writer.add_summary(summary_str, epoch)
                 writer.flush()
 
+            del s[:]
+            del a[:]
+            del p[:]
+            del g[:]
 
 def agent(agent_id, net_params_queue, exp_queue):
     env = ABREnv(agent_id, num_agents=USERS, reward_func=REWARD_FUNC, train_traces=TRAIN_TRACES)
@@ -276,11 +280,14 @@ def agent(agent_id, net_params_queue, exp_queue):
             # if agent_id == 0:
             #     print(len(s_batch), len(a_batch), len(r_batch))
             v_batch = actor.compute_v(s_batch[1:], a_batch[1:], r_batch[1:], env.check_end())
-            exp_queue.put([s_batch[1:], a_batch[1:], p_batch[1:], v_batch])
-            
-            actor_net_params = net_params_queue.get()
-            actor.set_network_params(actor_net_params)
+            try:
+                exp_queue.put([s_batch[1:], a_batch[1:], p_batch[1:], v_batch], timeout=10)
 
+                actor_net_params = net_params_queue.get(timeout=10)
+                actor.set_network_params(actor_net_params)
+            except queue.Empty:
+                log.info("Queue Empty in 284 line")
+                continue
             del s_batch[:]
             del a_batch[:]
             del r_batch[:]
