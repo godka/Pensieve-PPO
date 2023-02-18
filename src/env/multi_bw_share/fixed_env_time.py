@@ -2466,18 +2466,15 @@ class Environment:
                     # cur_sat_user_num = sat_user_nums[cur_sat_id]
                     # next_sat_user_num = sat_user_nums[next_sat_id]
                     if best_ho_positions[agent_id] > position:
-                        cur_future_sat_user_num = future_sat_user_nums[cur_sat_id][position]
-                        harmonic_bw = cur_bws[agent_id] / cur_future_sat_user_num
+                        harmonic_bw = cur_bws[agent_id]
 
                     elif best_ho_positions[agent_id] == position:
-                        next_future_sat_user_num = future_sat_user_nums[next_sat_id][position]
-                        harmonic_bw = next_bws[agent_id] / next_future_sat_user_num
+                        harmonic_bw = next_bws[agent_id]
 
                         # Give them a penalty
                         download_time += HANDOVER_DELAY
                     else:
-                        next_future_sat_user_num = future_sat_user_nums[next_sat_id][position]
-                        harmonic_bw = next_bws[agent_id] / next_future_sat_user_num
+                        harmonic_bw = next_bws[agent_id]
                     # assert harmonic_bw != 0
                     download_time += (self.video_size[chunk_quality][index] / B_IN_MB) \
                                      / harmonic_bw * BITS_IN_BYTE  # this is MB/MB/s --> seconds
