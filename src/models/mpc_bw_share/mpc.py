@@ -3,8 +3,11 @@ import structlog
 import sys
 import pathlib
 import os
+import sys
+root_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+sys.path.insert(0, root_dir + '/../')
 
-from env.multi_bw_share import fixed_env_time as env, load_trace_real as load_trace
+from env.multi_bw_share import fixed_env_time_smart as env, load_trace_real as load_trace
 import itertools
 import logging
 
@@ -33,7 +36,7 @@ import argparse
 
 parser = argparse.ArgumentParser(description='PyTorch Synthetic Benchmark',
                                  formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-parser.add_argument('--user', type=int, default=1)
+parser.add_argument('--user', type=int, default=2)
 args = parser.parse_args()
 
 USERS = args.user
@@ -41,7 +44,7 @@ MPC_TYPE = "DualMPC"
 # MPC_TYPE = "DualMPC-Centralization-Exhaustive"
 # MPC_TYPE = "DualMPC-Centralization-Reduced"
 # MPC_TYPE = "Oracle"
-MPC_TYPE = "MRSS"
+MPC_TYPE = "MRSS-Smart"
 # DualMPC-Centralization
 
 structlog.configure(
