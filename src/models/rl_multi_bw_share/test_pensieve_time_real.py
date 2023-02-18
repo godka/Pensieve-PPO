@@ -1,5 +1,8 @@
 import os
 import sys
+import sys
+root_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+sys.path.insert(0, root_dir + '/../')
 
 from util.constants import CHUNK_TIL_VIDEO_END_CAP, BUFFER_NORM_FACTOR, VIDEO_BIT_RATE, REBUF_PENALTY, SMOOTH_PENALTY, \
     DEFAULT_QUALITY, BITRATE_WEIGHT, M_IN_K, A_DIM, S_LEN, PAST_LEN, BITRATE_REWARD, TEST_TRACES, TRAIN_REAL_TRACES, \
@@ -8,9 +11,6 @@ from util.constants import CHUNK_TIL_VIDEO_END_CAP, BUFFER_NORM_FACTOR, VIDEO_BI
 os.environ['CUDA_VISIBLE_DEVICES'] = '-1'
 import numpy as np
 import tensorflow.compat.v1 as tf
-import sys
-root_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-sys.path.insert(0, root_dir + '/../')
 from env.multi_bw_share import fixed_env_time as env
 from env.multi_bw_share import load_trace_real as load_trace
 from models.rl_multi_bw_share.ppo_spec import pensieve as network
