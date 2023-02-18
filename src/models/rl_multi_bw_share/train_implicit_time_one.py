@@ -1,35 +1,40 @@
 import multiprocessing as mp
+import queue
+import random
+
 import numpy as np
 import os
-from env.multi_bw_share.env_dist_real_time import ABREnv
-from models.rl_multi_bw_share.ppo_spec import ppo_implicit_dist as network
+import sys
+root_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+sys.path.insert(0, root_dir + '/../')
+from env.multi_bw_share.env_time import ABREnv
+from models.rl_multi_bw_share.ppo_spec import ppo_implicit as network
 import tensorflow.compat.v1 as tf
 import structlog
 import logging
-
-from util.constants import A_DIM, NUM_AGENTS
+from util.constants import A_DIM, NUM_AGENTS, TRAIN_TRACES
 
 os.environ['CUDA_VISIBLE_DEVICES'] = '-1'
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 
-S_DIM = [7, 8]
+S_DIM = [6 + 3, 8]
 A_SAT = 2
 ACTOR_LR_RATE = 1e-4
-TRAIN_SEQ_LEN = 3000  # take as a train batch
-TRAIN_EPOCH = 2000000
-MODEL_SAVE_INTERVAL = 30000
+TRAIN_SEQ_LEN = 300  # take as a train batch
+TRAIN_EPOCH = 20000000
+MODEL_SAVE_INTERVAL = 3000
 RANDOM_SEED = 42
-SUMMARY_DIR = './ppo_imp_dist_real'
+SUMMARY_DIR = './ppo_imp_one'
 MODEL_DIR = '..'
-TRAIN_TRACES = 'data/sat_data/real_train/'
-TEST_LOG_FOLDER = './test_results_imp_dist_real'
+
+TEST_LOG_FOLDER = './test_results_imp'
 PPO_TRAINING_EPO = 5
 
 import argparse
 
 parser = argparse.ArgumentParser(description='PyTorch Synthetic Benchmark',
                                  formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-parser.add_argument('--user', type=int, default=1)
+parser.add_argument('--user', type=int, default=2)
 args = parser.parse_args()
 USERS = args.user
 # A_SAT = USERS + 1
@@ -38,13 +43,13 @@ TEST_LOG_FOLDER += str(USERS) + '/'
 SUMMARY_DIR += str(USERS)
 LOG_FILE = SUMMARY_DIR + '/log'
 
-NN_MODEL = SUMMARY_DIR + '/best_model.ckpt'
+# NN_MODEL = SUMMARY_DIR + '/best_model.ckpt'
 NN_MODEL = None
+
 # create result directory
 if not os.path.exists(SUMMARY_DIR):
     os.makedirs(SUMMARY_DIR)
 
-NN_MODEL = None
 REWARD_FUNC = "LIN"
 
 structlog.configure(
@@ -52,8 +57,6 @@ structlog.configure(
 )
 log = structlog.get_logger()
 log.debug('Train init')
-
-best_rewards = -10000
 
 
 def testing(epoch, nn_model, log_file):
@@ -64,8 +67,8 @@ def testing(epoch, nn_model, log_file):
     if not os.path.exists(TEST_LOG_FOLDER):
         os.makedirs(TEST_LOG_FOLDER)
     # run test script
-    log.info('python test_implicit_time_dist_real.py ', nn_model=nn_model + ' ' + str(USERS))
-    os.system('python test_implicit_time_dist_real.py ' + nn_model + ' ' + str(USERS))
+    log.info('python test_implicit_time.py ', nn_model=nn_model + ' ' + str(USERS))
+    os.system('python test_implicit_time.py ' + nn_model + ' ' + str(USERS))
     log.info('End testing')
 
     # append test performance to the log
@@ -110,18 +113,18 @@ def testing(epoch, nn_model, log_file):
 def central_agent(net_params_queues, exp_queues):
     assert len(net_params_queues) == NUM_AGENTS
     assert len(exp_queues) == NUM_AGENTS
-    tf_config = tf.ConfigProto(intra_op_parallelism_threads=1,
-                               inter_op_parallelism_threads=1)
-    best_rewards = -1000
+    tf_config = tf.ConfigProto(intra_op_parallelism_threads=10,
+                               inter_op_parallelism_threads=10)
     with tf.Session(config=tf_config) as sess, open(LOG_FILE + '_test.txt', 'w') as test_log_file:
         summary_ops, summary_vars = build_summaries()
-
+        best_rewards = -1000
         actor = network.Network(sess,
                                 state_dim=S_DIM, action_dim=A_DIM * A_SAT,
                                 learning_rate=ACTOR_LR_RATE)
 
         sess.run(tf.global_variables_initializer())
         writer = tf.summary.FileWriter(SUMMARY_DIR, sess.graph)  # training monitor
+        # saver = tf.train.Saver()  # save neural net parameters
         saver = tf.train.Saver()  # save neural net parameters
 
         # restore neural net parameters
@@ -129,30 +132,32 @@ def central_agent(net_params_queues, exp_queues):
         if nn_model is not None:  # nn_model is the path to file
             saver.restore(sess, nn_model)
             print("Model restored.")
-        epoch=-1
-        while True:  # assemble experiences from agents, compute the gradients
-            epoch+=1
-            # for epoch in range(TRAIN_EPOCH):
+
+        for epoch in range(TRAIN_EPOCH):
             # synchronize the network parameters of work agent
             actor_net_params = actor.get_network_params()
             for i in range(NUM_AGENTS):
                 net_params_queues[i].put(actor_net_params)
 
-            s, a, p, g = [], [], [], []
-            for i in range(NUM_AGENTS):
-                s_, a_, p_, g_ = exp_queues[i].get(timeout=10)
+            try:
+                s, a, p, g = [], [], [], []
+                tmp_i = random.randint(0, NUM_AGENTS-1)
+                s_, a_, p_, g_ = exp_queues[tmp_i].get(timeout=10)
                 s += s_
                 a += a_
                 p += p_
                 g += g_
-            s_batch = np.stack(s, axis=0)
-            a_batch = np.vstack(a)
-            p_batch = np.vstack(p)
-            v_batch = np.vstack(g)
+                s_batch = np.stack(s, axis=0)
+                a_batch = np.vstack(a)
+                p_batch = np.vstack(p)
+                v_batch = np.vstack(g)
 
-            # print(s_batch[0], a_batch[0], p_batch[0], v_batch[0], epoch)
-            for _ in range(PPO_TRAINING_EPO):
-                actor.train(s_batch, a_batch, p_batch, v_batch, None)
+                # print(s_batch[0], a_batch[0], p_batch[0], v_batch[0], epoch)
+                for _ in range(PPO_TRAINING_EPO):
+                    actor.train(s_batch, a_batch, p_batch, v_batch, None)
+            except queue.Empty:
+                log.info("Queue Empty?")
+                continue
 
             if epoch % MODEL_SAVE_INTERVAL == 0:
                 # Save the neural net parameters to disk.
@@ -184,7 +189,7 @@ def central_agent(net_params_queues, exp_queues):
 
 
 def agent(agent_id, net_params_queue, exp_queue):
-    env = ABREnv(agent_id, num_agents=USERS, reward_func=REWARD_FUNC)
+    env = ABREnv(agent_id, num_agents=USERS, reward_func=REWARD_FUNC, train_traces=TRAIN_TRACES)
     with tf.Session() as sess:
         actor = network.Network(sess,
                                 state_dim=S_DIM, action_dim=A_DIM * A_SAT,
@@ -203,19 +208,19 @@ def agent(agent_id, net_params_queue, exp_queue):
 
             obs = env.reset()
 
-            for agent in range(USERS):
-                obs[agent] = env.reset_agent(agent)
+            for user_id in range(USERS):
+                obs[user_id] = env.reset_agent(user_id)
 
-                action_prob[agent] = actor.predict(
-                    np.reshape(obs[agent], (1, S_DIM[0], S_DIM[1])))
+                action_prob[user_id] = actor.predict(
+                    np.reshape(obs[user_id], (1, S_DIM[0], S_DIM[1])))
 
                 # gumbel noise
-                noise = np.random.gumbel(size=len(action_prob[agent]))
-                bit_rate[agent] = np.argmax(np.log(action_prob[agent]) + noise)
+                noise = np.random.gumbel(size=len(action_prob[user_id]))
+                bit_rate[user_id] = np.argmax(np.log(action_prob[user_id]) + noise)
 
-                sat[agent] = bit_rate[agent] // A_DIM
+                sat[user_id] = bit_rate[user_id] // A_DIM
 
-                env.set_sat(agent, sat[agent])
+                env.set_sat(user_id, sat[user_id])
 
             s_batch, a_batch, p_batch, r_batch = [], [], [], []
             s_batch_user, a_batch_user, p_batch_user, r_batch_user = \
@@ -270,11 +275,17 @@ def agent(agent_id, net_params_queue, exp_queue):
 
             # if agent_id == 0:
             #     print(len(s_batch), len(a_batch), len(r_batch))
-            v_batch = actor.compute_v(s_batch, a_batch, r_batch, env.check_end())
-            exp_queue.put([s_batch, a_batch, p_batch, v_batch])
-
+            v_batch = actor.compute_v(s_batch[1:], a_batch[1:], r_batch[1:], env.check_end())
+            exp_queue.put([s_batch[1:], a_batch[1:], p_batch[1:], v_batch])
+            
             actor_net_params = net_params_queue.get()
             actor.set_network_params(actor_net_params)
+
+            del s_batch[:]
+            del a_batch[:]
+            del r_batch[:]
+            del p_batch[:]
+            del v_batch[:]
 
 
 def build_summaries():

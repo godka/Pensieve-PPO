@@ -123,7 +123,7 @@ def central_agent(net_params_queues, exp_queues):
 
         sess.run(tf.global_variables_initializer())
         writer = tf.summary.FileWriter(SUMMARY_DIR, sess.graph)  # training monitor
-        # saver = tf.train.Saver(max_to_keep=1000)  # save neural net parameters
+        # saver = tf.train.Saver()  # save neural net parameters
         saver = tf.train.Saver()  # save neural net parameters
 
         # restore neural net parameters
@@ -157,10 +157,6 @@ def central_agent(net_params_queues, exp_queues):
             except queue.Empty:
                 log.info("Queue Empty?")
                 continue
-            del s_batch[:]
-            del a_batch[:]
-            del p_batch[:]
-            del v_batch[:]
 
             if epoch % MODEL_SAVE_INTERVAL == 0:
                 # Save the neural net parameters to disk.

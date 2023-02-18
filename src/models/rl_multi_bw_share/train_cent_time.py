@@ -114,7 +114,7 @@ def central_agent(net_params_queues, exp_queues):
 
         sess.run(tf.global_variables_initializer())
         writer = tf.summary.FileWriter(SUMMARY_DIR, sess.graph)  # training monitor
-        saver = tf.train.Saver(max_to_keep=1000)  # save neural net parameters
+        saver = tf.train.Saver()  # save neural net parameters
 
         # restore neural net parameters
         nn_model = NN_MODEL
