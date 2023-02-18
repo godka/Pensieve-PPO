@@ -288,6 +288,9 @@ def agent(agent_id, net_params_queue, exp_queue):
             except queue.Empty:
                 log.info("Queue Empty in 284 line")
                 continue
+            except queue.Full:
+                log.info("Queue Full in 284 line")
+                continue
             del s_batch[:]
             del a_batch[:]
             del r_batch[:]
