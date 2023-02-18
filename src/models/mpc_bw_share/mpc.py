@@ -7,7 +7,7 @@ import sys
 root_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, root_dir + '/../')
 
-from env.multi_bw_share import fixed_env_time_smart as env, load_trace_real as load_trace
+from env.multi_bw_share import fixed_env_time as env, load_trace_real as load_trace
 import itertools
 import logging
 

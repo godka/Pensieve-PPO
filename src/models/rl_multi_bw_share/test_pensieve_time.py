@@ -7,7 +7,7 @@ from util.constants import CHUNK_TIL_VIDEO_END_CAP, BUFFER_NORM_FACTOR, VIDEO_BI
 os.environ['CUDA_VISIBLE_DEVICES'] = '-1'
 import numpy as np
 import tensorflow.compat.v1 as tf
-from env.multi_bw_share import fixed_env_time_smart as env
+from env.multi_bw_share import fixed_env_time as env
 from env.multi_bw_share import load_trace as load_trace
 from models.rl_multi_bw_share.ppo_spec import pensieve as network
 import structlog

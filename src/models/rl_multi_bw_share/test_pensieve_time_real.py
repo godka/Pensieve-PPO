@@ -10,7 +10,7 @@ import tensorflow.compat.v1 as tf
 import sys
 root_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, root_dir + '/../')
-from env.multi_bw_share import fixed_env_time_smart as env
+from env.multi_bw_share import fixed_env_time as env
 from env.multi_bw_share import load_trace_real as load_trace
 from models.rl_multi_bw_share.ppo_spec import pensieve as network
 import structlog

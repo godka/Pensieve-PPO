@@ -156,13 +156,8 @@ class Environment:
                 cur_user_num = self.get_num_of_user_sat(self.mahimahi_ptr[agent], self.cur_sat_id[agent])
                 next_user_num = self.get_num_of_user_sat(self.mahimahi_ptr[agent], runner_up_sat_id)
 
-                cur_download_bw = self.predict_bw(self.cur_sat_id[agent], agent, True,
-                                                  mahimahi_ptr=self.mahimahi_ptr[agent], past_len=self.last_delay[agent])
-                next_download_bw = self.predict_bw(runner_up_sat_id, agent, True,
-                                                  mahimahi_ptr=self.mahimahi_ptr[agent], past_len=self.last_delay[agent])
-                cur_download_bw /= cur_user_num
-                if next_user_num != 0:
-                    next_download_bw /= next_user_num
+                cur_download_bw = self.predict_bw_num(self.cur_sat_id[agent], agent, True)
+                next_download_bw = self.predict_bw_num(runner_up_sat_id, agent, True)
                 if cur_download_bw < next_download_bw:
                     is_handover = True
                     delay += HANDOVER_DELAY

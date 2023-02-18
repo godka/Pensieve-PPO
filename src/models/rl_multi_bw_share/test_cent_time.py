@@ -8,7 +8,7 @@ from util.constants import CHUNK_TIL_VIDEO_END_CAP, BUFFER_NORM_FACTOR, VIDEO_BI
 os.environ['CUDA_VISIBLE_DEVICES']='-1'
 import numpy as np
 import tensorflow.compat.v1 as tf
-from env.multi_bw_share import fixed_env_time_smart as env, load_trace
+from env.multi_bw_share import fixed_env_time as env, load_trace
 from models.rl_multi_bw_share.ppo_spec import ppo_cent as network
 
 # S_INFO = 10 + 1 + 3 + 6 * 5  # Original + nums of sat + bw of sats + decisions of users
