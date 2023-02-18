@@ -34,7 +34,7 @@ import argparse
 
 parser = argparse.ArgumentParser(description='PyTorch Synthetic Benchmark',
                                  formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-parser.add_argument('--user', type=int, default=2)
+parser.add_argument('--user', type=int, default=3)
 args = parser.parse_args()
 USERS = args.user
 # A_SAT = USERS + 1
@@ -141,12 +141,12 @@ def central_agent(net_params_queues, exp_queues):
 
             try:
                 s, a, p, g = [], [], [], []
-                tmp_i = random.randint(0, NUM_AGENTS-1)
-                s_, a_, p_, g_ = exp_queues[tmp_i].get(timeout=10)
-                s += s_
-                a += a_
-                p += p_
-                g += g_
+                for i in range(NUM_AGENTS):
+                    s_, a_, p_, g_ = exp_queues[i].get(timeout=10)
+                    s += s_
+                    a += a_
+                    p += p_
+                    g += g_
                 s_batch = np.stack(s, axis=0)
                 a_batch = np.vstack(a)
                 p_batch = np.vstack(p)
@@ -278,7 +278,7 @@ def agent(agent_id, net_params_queue, exp_queue):
             for batch_user in r_batch_user:
                 r_batch += batch_user
             """
-            tmp_i = random.randint(0, NUM_AGENTS - 1)
+            tmp_i = random.randint(0, USERS - 1)
             # if agent_id == 0:
             #     print(len(s_batch), len(a_batch), len(r_batch))
             v_batch = actor.compute_v(s_batch_user[tmp_i][1:], a_batch_user[tmp_i][1:], r_batch_user[tmp_i][1:], env.check_end())
