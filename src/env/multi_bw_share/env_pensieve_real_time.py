@@ -2,7 +2,7 @@
 import numpy as np
 
 from util.constants import DEFAULT_QUALITY, REBUF_PENALTY, SMOOTH_PENALTY, VIDEO_BIT_RATE, BUFFER_NORM_FACTOR, \
-    BITRATE_WEIGHT, CHUNK_TIL_VIDEO_END_CAP, M_IN_K, S_LEN, A_DIM, PAST_LEN, BITRATE_REWARD
+    BITRATE_WEIGHT, CHUNK_TIL_VIDEO_END_CAP, M_IN_K, S_LEN, A_DIM, PAST_LEN, BITRATE_REWARD, TRAIN_TRACES
 from . import core_time as abrenv
 from . import load_trace_real as load_trace
 
@@ -27,7 +27,7 @@ class ABREnv():
         self.is_handover = False
         self.ho_type = ho_type
         np.random.seed(random_seed)
-        all_cooked_time, all_cooked_bw, _ = load_trace.load_trace()
+        all_cooked_time, all_cooked_bw, _ = load_trace.load_trace(TRAIN_TRACES)
         self.net_env = abrenv.Environment(all_cooked_time=all_cooked_time,
                                           all_cooked_bw=all_cooked_bw,
                                           random_seed=random_seed,

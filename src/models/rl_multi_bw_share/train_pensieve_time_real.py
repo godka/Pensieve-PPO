@@ -24,7 +24,6 @@ MODEL_SAVE_INTERVAL = 300
 RANDOM_SEED = 42
 SUMMARY_DIR = './pensieve_real'
 MODEL_DIR = '..'
-TRAIN_TRACES = 'data/sat_data/real_train/'
 TEST_LOG_FOLDER = './test_results_pensieve_real'
 PPO_TRAINING_EPO = 5
 
