@@ -9,7 +9,7 @@ from models.rl_multi_bw_share.ppo_spec import ppo_implicit as network
 import tensorflow.compat.v1 as tf
 import structlog
 import logging
-from util.constants import A_DIM, NUM_AGENTS
+from util.constants import A_DIM, NUM_AGENTS, TRAIN_TRACES
 
 os.environ['CUDA_VISIBLE_DEVICES'] = '-1'
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
@@ -23,7 +23,7 @@ MODEL_SAVE_INTERVAL = 300
 RANDOM_SEED = 42
 SUMMARY_DIR = './ppo_imp'
 MODEL_DIR = '..'
-TRAIN_TRACES = '../../data/sat_data/train/'
+
 TEST_LOG_FOLDER = './test_results_imp'
 PPO_TRAINING_EPO = 5
 
