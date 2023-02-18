@@ -49,8 +49,11 @@ PAST_SAT_LOG_LEN = 3
 BITRATE_WEIGHT = 2
 NO_EXHAUSTIVE = True
 ADAPTIVE_BUF = False
-TEST_TRACES = '../../data/sat_data/real_test/'
+TEST_TRACES = '../../data/sat_data/test/'
 TRAIN_TRACES = '../../data/sat_data/train/'
+TEST_REAL_TRACES = '../../data/sat_data/real_test/'
+TRAIN_REAL_TRACES = '../../data/sat_data/real_train/'
+
 VIDEO_SIZE_FILE = '../../data/video_data/envivio/video_size_'
 
 BUF_RATIO = 0.7
