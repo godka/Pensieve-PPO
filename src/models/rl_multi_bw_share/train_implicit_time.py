@@ -141,7 +141,7 @@ def central_agent(net_params_queues, exp_queues):
             try:
                 s, a, p, g = [], [], [], []
                 for i in range(NUM_AGENTS):
-                    s_, a_, p_, g_ = exp_queues[i].get(timeout=1)
+                    s_, a_, p_, g_ = exp_queues[i].get(timeout=10)
                     print(s_, a_, p_, g_)
                     s += s_
                     a += a_
@@ -157,8 +157,12 @@ def central_agent(net_params_queues, exp_queues):
                     actor.train(s_batch, a_batch, p_batch, v_batch, None)
             except queue.Empty:
                 log.info("Queue Empty?")
-                print(exp_queues[0].get(timeout=1))
-                exit(1)
+                continue
+            del s_batch[:]
+            del a_batch[:]
+            del p_batch[:]
+            del v_batch[:]
+
             if epoch % MODEL_SAVE_INTERVAL == 0:
                 # Save the neural net parameters to disk.
                 save_path = saver.save(sess, SUMMARY_DIR + "/nn_model_ep_" +
@@ -275,9 +279,15 @@ def agent(agent_id, net_params_queue, exp_queue):
 
             # if agent_id == 0:
             #     print(len(s_batch), len(a_batch), len(r_batch))
-            v_batch = actor.compute_v(s_batch, a_batch, r_batch, env.check_end())
-            exp_queue.put([s_batch, a_batch, p_batch, v_batch])
-
+            v_batch = actor.compute_v(s_batch[1:], a_batch[1:], r_batch[1:], env.check_end())
+            exp_queue.put([s_batch[1:], a_batch[1:], p_batch[1:], v_batch])
+            
+            del s_batch[:]
+            del a_batch[:]
+            del r_batch[:]
+            del p_batch[:]
+            del v_batch[:]
+            
             actor_net_params = net_params_queue.get()
             actor.set_network_params(actor_net_params)
 
