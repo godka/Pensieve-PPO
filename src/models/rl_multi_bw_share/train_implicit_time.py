@@ -130,8 +130,8 @@ def central_agent(net_params_queues, exp_queues):
         if nn_model is not None:  # nn_model is the path to file
             saver.restore(sess, nn_model)
             print("Model restored.")
+
         for epoch in range(TRAIN_EPOCH):
-            print(epoch)
             # synchronize the network parameters of work agent
             actor_net_params = actor.get_network_params()
             for i in range(NUM_AGENTS):
@@ -139,7 +139,9 @@ def central_agent(net_params_queues, exp_queues):
 
             s, a, p, g = [], [], [], []
             for i in range(NUM_AGENTS):
+                print("get", i)
                 s_, a_, p_, g_ = exp_queues[i].get()
+                print("finished")
                 s += s_
                 a += a_
                 p += p_
@@ -316,8 +318,9 @@ def main():
         agents[i].start()
 
     # wait unit training is done
+    print("Wait till join")
     coordinator.join()
-
+    print("Join finished!")
 
 if __name__ == '__main__':
     main()
