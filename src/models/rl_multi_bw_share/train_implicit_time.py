@@ -1,4 +1,6 @@
 import multiprocessing as mp
+import queue
+
 import numpy as np
 import os
 import sys
@@ -55,8 +57,6 @@ structlog.configure(
 log = structlog.get_logger()
 log.debug('Train init')
 
-best_rewards = -10000
-
 
 def testing(epoch, nn_model, log_file):
     # clean up the test results folder
@@ -112,8 +112,8 @@ def testing(epoch, nn_model, log_file):
 def central_agent(net_params_queues, exp_queues):
     assert len(net_params_queues) == NUM_AGENTS
     assert len(exp_queues) == NUM_AGENTS
-    tf_config = tf.ConfigProto(intra_op_parallelism_threads=1,
-                               inter_op_parallelism_threads=1)
+    tf_config = tf.ConfigProto(intra_op_parallelism_threads=10,
+                               inter_op_parallelism_threads=10)
     with tf.Session(config=tf_config) as sess, open(LOG_FILE + '_test.txt', 'w') as test_log_file:
         summary_ops, summary_vars = build_summaries()
         best_rewards = -1000
@@ -123,7 +123,8 @@ def central_agent(net_params_queues, exp_queues):
 
         sess.run(tf.global_variables_initializer())
         writer = tf.summary.FileWriter(SUMMARY_DIR, sess.graph)  # training monitor
-        saver = tf.train.Saver(max_to_keep=1000)  # save neural net parameters
+        # saver = tf.train.Saver(max_to_keep=1000)  # save neural net parameters
+        saver = tf.train.Saver()  # save neural net parameters
 
         # restore neural net parameters
         nn_model = NN_MODEL
@@ -137,22 +138,27 @@ def central_agent(net_params_queues, exp_queues):
             for i in range(NUM_AGENTS):
                 net_params_queues[i].put(actor_net_params)
 
-            s, a, p, g = [], [], [], []
-            for i in range(NUM_AGENTS):
-                s_, a_, p_, g_ = exp_queues[i].get()
-                s += s_
-                a += a_
-                p += p_
-                g += g_
-            s_batch = np.stack(s, axis=0)
-            a_batch = np.vstack(a)
-            p_batch = np.vstack(p)
-            v_batch = np.vstack(g)
+            try:
+                s, a, p, g = [], [], [], []
+                for i in range(NUM_AGENTS):
+                    print(exp_queues[i].get(False))
+                    s_, a_, p_, g_ = exp_queues[i].get(False)
+                    s += s_
+                    a += a_
+                    p += p_
+                    g += g_
+                s_batch = np.stack(s, axis=0)
+                a_batch = np.vstack(a)
+                p_batch = np.vstack(p)
+                v_batch = np.vstack(g)
 
-            # print(s_batch[0], a_batch[0], p_batch[0], v_batch[0], epoch)
-            for _ in range(PPO_TRAINING_EPO):
-                actor.train(s_batch, a_batch, p_batch, v_batch, None)
-
+                # print(s_batch[0], a_batch[0], p_batch[0], v_batch[0], epoch)
+                for _ in range(PPO_TRAINING_EPO):
+                    actor.train(s_batch, a_batch, p_batch, v_batch, None)
+            except queue.Empty:
+                log.info("Queue Empty?")
+                print(exp_queues[i].get(False))
+                exit(1)
             if epoch % MODEL_SAVE_INTERVAL == 0:
                 # Save the neural net parameters to disk.
                 save_path = saver.save(sess, SUMMARY_DIR + "/nn_model_ep_" +
@@ -316,9 +322,8 @@ def main():
         agents[i].start()
 
     # wait unit training is done
-    print("Wait till join")
     coordinator.join()
-    print("Join finished!")
+
 
 if __name__ == '__main__':
     main()
