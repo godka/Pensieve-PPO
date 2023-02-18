@@ -280,14 +280,10 @@ def agent(agent_id, net_params_queue, exp_queue):
             # if agent_id == 0:
             #     print(len(s_batch), len(a_batch), len(r_batch))
             v_batch = actor.compute_v(s_batch[1:], a_batch[1:], r_batch[1:], env.check_end())
-            try:
-                exp_queue.put([s_batch[1:], a_batch[1:], p_batch[1:], v_batch], timeout=10)
+            exp_queue.put([s_batch[1:], a_batch[1:], p_batch[1:], v_batch])
 
-                actor_net_params = net_params_queue.get(timeout=10)
-                actor.set_network_params(actor_net_params)
-            except queue.Empty:
-                log.info("Queue Empty in 284 line")
-                continue
+            actor_net_params = net_params_queue.get()
+            actor.set_network_params(actor_net_params)
 
             del s_batch[:]
             del a_batch[:]
