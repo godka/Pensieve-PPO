@@ -194,7 +194,6 @@ def central_agent(net_params_queues, exp_queues):
 
 
 def agent(agent_id, net_params_queue, exp_queue):
-    env = ABREnv(agent_id, num_agents=USERS, reward_func=REWARD_FUNC, train_traces=TRAIN_TRACES)
     with tf.Session() as sess:
         actor = network.Network(sess,
                                 state_dim=S_DIM, action_dim=A_DIM * A_SAT,
@@ -206,6 +205,8 @@ def agent(agent_id, net_params_queue, exp_queue):
 
         time_stamp = 0
         tmp_users = random.randint(1, USERS)
+        env = ABREnv(agent_id, num_agents=tmp_users, reward_func=REWARD_FUNC, train_traces=TRAIN_TRACES)
+
         for epoch in range(TRAIN_EPOCH):
             bit_rate = [0 for _ in range(tmp_users)]
             sat = [0 for _ in range(tmp_users)]
