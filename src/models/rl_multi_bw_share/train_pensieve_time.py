@@ -33,7 +33,7 @@ import argparse
 
 parser = argparse.ArgumentParser(description='PyTorch Synthetic Benchmark',
                                  formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-parser.add_argument('--user', type=int, default=1)
+parser.add_argument('--user', type=int, default=3)
 args = parser.parse_args()
 USERS = args.user
 # A_SAT = USERS + 1
@@ -264,7 +264,7 @@ def agent(agent_id, net_params_queue, exp_queue):
                 #     print(ppo_spec.net_env.video_chunk_counter)
                 #     print([len(batch_user) for batch_user in s_batch_user])
                 #     print([len(batch_user) for batch_user in r_batch_user])
-
+            """
             for batch_user in s_batch_user:
                 s_batch += batch_user
             for batch_user in a_batch_user:
@@ -273,7 +273,8 @@ def agent(agent_id, net_params_queue, exp_queue):
                 p_batch += batch_user
             for batch_user in r_batch_user:
                 r_batch += batch_user
-
+            """
+            tmp_i = random.randint(0, USERS - 1)
             # if agent_id == 0:
             #     print(len(s_batch), len(a_batch), len(r_batch))
             v_batch = actor.compute_v(s_batch_user[tmp_i][1:], a_batch_user[tmp_i][1:], r_batch_user[tmp_i][1:], env.check_end())
@@ -289,6 +290,7 @@ def agent(agent_id, net_params_queue, exp_queue):
             except queue.Empty or queue.Full:
                 log.info("Empty or Full")
                 continue
+
 
 def build_summaries():
     entropy_weight = tf.Variable(0.)

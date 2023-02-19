@@ -1,10 +1,11 @@
 import multiprocessing as mp
+import queue
+import random
 import numpy as np
 import os
 import sys
 root_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, root_dir + '/../')
-
 from env.multi_bw_share.env_cent_time import ABREnv
 from models.rl_multi_bw_share.ppo_spec import ppo_cent_his3 as network
 import tensorflow.compat.v1 as tf
@@ -31,7 +32,7 @@ import argparse
 
 parser = argparse.ArgumentParser(description='PyTorch Synthetic Benchmark',
                                  formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-parser.add_argument('--user', type=int, default=2)
+parser.add_argument('--user', type=int, default=3)
 args = parser.parse_args()
 USERS = args.user
 # A_SAT = USERS + 1\
@@ -54,8 +55,6 @@ structlog.configure(
 )
 log = structlog.get_logger()
 log.debug('Train init')
-
-best_rewards = -10000
 
 
 def testing(epoch, nn_model, log_file):
@@ -112,12 +111,11 @@ def testing(epoch, nn_model, log_file):
 def central_agent(net_params_queues, exp_queues):
     assert len(net_params_queues) == NUM_AGENTS
     assert len(exp_queues) == NUM_AGENTS
-    tf_config = tf.ConfigProto(intra_op_parallelism_threads=1,
-                            inter_op_parallelism_threads=1)
-    best_rewards = -1000
+    tf_config = tf.ConfigProto(intra_op_parallelism_threads=10,
+                               inter_op_parallelism_threads=10)
     with tf.Session(config=tf_config) as sess, open(LOG_FILE + '_test.txt', 'w') as test_log_file:
         summary_ops, summary_vars = build_summaries()
-
+        best_rewards = -1000
         actor = network.Network(sess,
                 state_dim=S_DIM, action_dim=A_DIM * A_SAT,
                 learning_rate=ACTOR_LR_RATE, num_of_users=USERS)
@@ -131,31 +129,32 @@ def central_agent(net_params_queues, exp_queues):
         if nn_model is not None:  # nn_model is the path to file
             saver.restore(sess, nn_model)
             print("Model restored.")
-        epoch=-1
-        while True:  # assemble experiences from agents, compute the gradients
-            epoch+=1
-            # for epoch in range(TRAIN_EPOCH):
+
+        for epoch in range(TRAIN_EPOCH):
             # synchronize the network parameters of work agent
-            actor_net_params = actor.get_network_params()
-            for i in range(NUM_AGENTS):
-                net_params_queues[i].put(actor_net_params)
+            try:
+                actor_net_params = actor.get_network_params()
+                for i in range(NUM_AGENTS):
+                    net_params_queues[i].put(actor_net_params, timeout=60)
+                s, a, p, g = [], [], [], []
+                for i in range(NUM_AGENTS):
+                    s_, a_, p_, g_ = exp_queues[i].get(timeout=10)
+                    s += s_
+                    a += a_
+                    p += p_
+                    g += g_
+                s_batch = np.stack(s, axis=0)
+                a_batch = np.vstack(a)
+                p_batch = np.vstack(p)
+                v_batch = np.vstack(g)
 
-            s, a, p, g = [], [], [], []
-            for i in range(NUM_AGENTS):
-                s_, a_, p_, g_ = exp_queues[i].get(timeout=10)
-                s += s_
-                a += a_
-                p += p_
-                g += g_
-            s_batch = np.stack(s, axis=0)
-            a_batch = np.vstack(a)
-            p_batch = np.vstack(p)
-            v_batch = np.vstack(g)
+                # print(s_batch[0], a_batch[0], p_batch[0], v_batch[0], epoch)
+                for _ in range(PPO_TRAINING_EPO):
+                    actor.train(s_batch, a_batch, p_batch, v_batch, None)
+            except queue.Empty or queue.Full:
+                log.info("Queue Empty or Full?")
+                continue
 
-            # print(s_batch[0], a_batch[0], p_batch[0], v_batch[0], epoch)
-            for _ in range(PPO_TRAINING_EPO):
-                actor.train(s_batch, a_batch, p_batch, v_batch, None)
-            
             if epoch % MODEL_SAVE_INTERVAL == 0:
                 # Save the neural net parameters to disk.
                 save_path = saver.save(sess, SUMMARY_DIR + "/nn_model_ep_" +
@@ -183,6 +182,11 @@ def central_agent(net_params_queues, exp_queues):
                 })
                 writer.add_summary(summary_str, epoch)
                 writer.flush()
+
+            del s[:]
+            del a[:]
+            del p[:]
+            del g[:]
 
 
 def agent(agent_id, net_params_queue, exp_queue):

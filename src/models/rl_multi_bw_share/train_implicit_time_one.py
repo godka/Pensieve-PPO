@@ -1,7 +1,6 @@
 import multiprocessing as mp
 import queue
 import random
-
 import numpy as np
 import os
 import sys
