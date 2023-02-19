@@ -135,11 +135,10 @@ def central_agent(net_params_queues, exp_queues):
 
         for epoch in range(TRAIN_EPOCH):
             # synchronize the network parameters of work agent
-            actor_net_params = actor.get_network_params()
-            for i in range(NUM_AGENTS):
-                net_params_queues[i].put(actor_net_params)
-
             try:
+                actor_net_params = actor.get_network_params()
+                for i in range(NUM_AGENTS):
+                    net_params_queues[i].put(actor_net_params, timeout=60)
                 s, a, p, g = [], [], [], []
                 for i in range(NUM_AGENTS):
                     s_, a_, p_, g_ = exp_queues[i].get(timeout=10)
@@ -155,8 +154,8 @@ def central_agent(net_params_queues, exp_queues):
                 # print(s_batch[0], a_batch[0], p_batch[0], v_batch[0], epoch)
                 for _ in range(PPO_TRAINING_EPO):
                     actor.train(s_batch, a_batch, p_batch, v_batch, None)
-            except queue.Empty:
-                log.info("Queue Empty?")
+            except queue.Empty or queue.Full:
+                log.info("Queue Empty or Full?")
                 continue
 
             if epoch % MODEL_SAVE_INTERVAL == 0:
@@ -283,14 +282,18 @@ def agent(agent_id, net_params_queue, exp_queue):
             # if agent_id == 0:
             #     print(len(s_batch), len(a_batch), len(r_batch))
             v_batch = actor.compute_v(s_batch_user[tmp_i][1:], a_batch_user[tmp_i][1:], r_batch_user[tmp_i][1:], env.check_end())
-            exp_queue.put([s_batch_user[tmp_i][1:], a_batch_user[tmp_i][1:], p_batch_user[tmp_i][1:], v_batch])
+            try:
+                exp_queue.put([s_batch_user[tmp_i][1:], a_batch_user[tmp_i][1:], p_batch_user[tmp_i][1:], v_batch], timeout=60)
 
-            actor_net_params = net_params_queue.get()
-            actor.set_network_params(actor_net_params)
-            del s_batch_user[:]
-            del a_batch_user[:]
-            del r_batch_user[:]
-            del p_batch_user[:]
+                actor_net_params = net_params_queue.get(timeout=60)
+                actor.set_network_params(actor_net_params)
+                del s_batch_user[:]
+                del a_batch_user[:]
+                del r_batch_user[:]
+                del p_batch_user[:]
+            except queue.Empty or queue.Full:
+                log.info("Empty or Full")
+                continue
 
 def build_summaries():
     entropy_weight = tf.Variable(0.)
