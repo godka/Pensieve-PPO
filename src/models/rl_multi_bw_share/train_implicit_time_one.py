@@ -294,6 +294,7 @@ def agent(agent_id, net_params_queue, exp_queue):
                 log.info("Empty or Full")
                 continue
 
+
 def build_summaries():
     entropy_weight = tf.Variable(0.)
     tf.summary.scalar("Entropy Weight", entropy_weight)
