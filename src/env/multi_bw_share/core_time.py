@@ -155,9 +155,9 @@ class Environment:
                 is_handover = True
                 delay += HANDOVER_DELAY
                 self.update_sat_info(self.cur_sat_id[agent], self.last_mahimahi_time[agent], agent, -1)
-                self.update_sat_info(runner_up_sat_id, self.last_mahimahi_time[agent], agent, 1)
+                self.update_sat_info(tmp_best_id, self.last_mahimahi_time[agent], agent, 1)
                 self.prev_sat_id[agent] = self.cur_sat_id[agent]
-                self.cur_sat_id[agent] = runner_up_sat_id
+                self.cur_sat_id[agent] = tmp_best_id
                 self.download_bw[agent] = []
 
             throughput = self.cur_satellite[self.cur_sat_id[agent]].data_rate(self.cur_user[agent], self.mahimahi_ptr[
