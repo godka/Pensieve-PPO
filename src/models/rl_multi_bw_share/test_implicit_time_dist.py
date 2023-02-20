@@ -3,7 +3,7 @@ import sys
 root_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, root_dir + '/../')
 from util.constants import CHUNK_TIL_VIDEO_END_CAP, BUFFER_NORM_FACTOR, VIDEO_BIT_RATE, REBUF_PENALTY, SMOOTH_PENALTY, \
-    DEFAULT_QUALITY, BITRATE_WEIGHT, M_IN_K, A_DIM, S_LEN, PAST_LEN, BITRATE_REWARD
+    DEFAULT_QUALITY, BITRATE_WEIGHT, M_IN_K, A_DIM, S_LEN, PAST_LEN, BITRATE_REWARD, TEST_TRACES
 
 os.environ['CUDA_VISIBLE_DEVICES'] = '-1'
 import numpy as np
@@ -19,7 +19,6 @@ A_SAT = 2
 ACTOR_LR_RATE = 1e-4
 # CRITIC_LR_RATE = 0.001
 RANDOM_SEED = 42
-TEST_TRACES = 'data/sat_data/test/'
 NN_MODEL = sys.argv[1]
 USERS = int(sys.argv[2])
 SUMMARY_DIR = './test_results_imp_dist' + str(USERS)
