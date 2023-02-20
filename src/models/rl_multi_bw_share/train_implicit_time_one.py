@@ -140,7 +140,7 @@ def central_agent(net_params_queues, exp_queues):
                     net_params_queues[i].put(actor_net_params, timeout=60)
                 s, a, p, g = [], [], [], []
                 for i in range(NUM_AGENTS):
-                    s_, a_, p_, g_ = exp_queues[i].get(timeout=10)
+                    s_, a_, p_, g_ = exp_queues[i].get(timeout=60)
                     s += s_
                     a += a_
                     p += p_
