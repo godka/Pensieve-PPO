@@ -20,7 +20,7 @@ os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 
 S_DIM = [6 + 3, 8]
 A_SAT = 2
-ACTOR_LR_RATE = 1e-4
+ACTOR_LR_RATE = 1e-5
 TRAIN_SEQ_LEN = 300  # take as a train batch
 TRAIN_EPOCH = 20000000
 MODEL_SAVE_INTERVAL = 3000
@@ -116,7 +116,7 @@ def central_agent(net_params_queues, exp_queues):
     assert len(exp_queues) == NUM_AGENTS
     tf_config = tf.ConfigProto(intra_op_parallelism_threads=1,
                                inter_op_parallelism_threads=1)
-    with tf.Session(config=tf_config) as sess, open(LOG_FILE + '_test.txt', 'w') as test_log_file:
+    with tf.Session() as sess, open(LOG_FILE + '_test.txt', 'w') as test_log_file:
         summary_ops, summary_vars = build_summaries()
         best_rewards = -1000
         actor = network.Network(sess,
@@ -135,6 +135,7 @@ def central_agent(net_params_queues, exp_queues):
             print("Model restored.")
 
         for epoch in range(TRAIN_EPOCH):
+            start_time = time.time()
             # synchronize the network parameters of work agent
             try:
                 actor_net_params = actor.get_network_params()
@@ -157,12 +158,14 @@ def central_agent(net_params_queues, exp_queues):
                     actor.train(s_batch, a_batch, p_batch, v_batch, None)
             except queue.Empty:
                 log.info("Queue Empty?")
+                print(time.time() - start_time)
                 continue
             except queue.Full:
                 log.info("Queue Full?")
 
                 for i in range(NUM_AGENTS):
                     net_params_queues[i].get(timeout=300)
+                print(time.time() - start_time)
                 continue
 
             if epoch % MODEL_SAVE_INTERVAL == 0:
@@ -319,7 +322,6 @@ def agent(agent_id, net_params_queue, exp_queue):
                 actor.set_network_params(actor_net_params)
                 print(time.time() - start_time)
                 continue
-            print(time.time()-start_time)
 
 
 def build_summaries():

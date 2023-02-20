@@ -19,7 +19,7 @@ os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 
 S_DIM = [6, 8]
 # A_SAT = 2
-ACTOR_LR_RATE = 1e-4
+ACTOR_LR_RATE = 1e-5
 TRAIN_SEQ_LEN = 300  # take as a train batch
 TRAIN_EPOCH = 20000000
 MODEL_SAVE_INTERVAL = 3000
@@ -111,9 +111,7 @@ def testing(epoch, nn_model, log_file):
 def central_agent(net_params_queues, exp_queues):
     assert len(net_params_queues) == NUM_AGENTS
     assert len(exp_queues) == NUM_AGENTS
-    tf_config = tf.ConfigProto(intra_op_parallelism_threads=1,
-                               inter_op_parallelism_threads=1)
-    with tf.Session(config=tf_config) as sess, open(LOG_FILE + '_test.txt', 'w') as test_log_file:
+    with tf.Session() as sess, open(LOG_FILE + '_test.txt', 'w') as test_log_file:
         summary_ops, summary_vars = build_summaries()
         best_rewards = -1000
         actor = network.Network(sess,
@@ -136,6 +134,7 @@ def central_agent(net_params_queues, exp_queues):
                 actor_net_params = actor.get_network_params()
                 for i in range(NUM_AGENTS):
                     net_params_queues[i].put(actor_net_params, timeout=300)
+
                 s, a, p, g = [], [], [], []
                 for i in range(NUM_AGENTS):
                     s_, a_, p_, g_ = exp_queues[i].get(timeout=300)
@@ -156,9 +155,6 @@ def central_agent(net_params_queues, exp_queues):
                 continue
             except queue.Full:
                 log.info("Queue Full?")
-
-                for i in range(NUM_AGENTS):
-                    net_params_queues[i].get(timeout=300)
                 continue
 
             if epoch % MODEL_SAVE_INTERVAL == 0:
@@ -305,7 +301,6 @@ def agent(agent_id, net_params_queue, exp_queue):
                 continue
             except queue.Full:
                 log.info("Full")
-                exp_queue.get()
                 continue
 
 
