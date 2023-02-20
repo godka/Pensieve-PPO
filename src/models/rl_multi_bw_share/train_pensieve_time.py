@@ -12,7 +12,7 @@ import tensorflow.compat.v1 as tf
 import structlog
 import logging
 
-from util.constants import A_DIM, NUM_AGENTS
+from util.constants import A_DIM, NUM_AGENTS, TRAIN_TRACES
 
 os.environ['CUDA_VISIBLE_DEVICES'] = '-1'
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
@@ -190,7 +190,7 @@ def central_agent(net_params_queues, exp_queues):
 
 
 def agent(agent_id, net_params_queue, exp_queue):
-    env = ABREnv(agent_id, num_agents=USERS, ho_type=HO_TYPE, reward_func=REWARD_FUNC)
+    env = ABREnv(agent_id, num_agents=USERS, ho_type=HO_TYPE, reward_func=REWARD_FUNC, train_traces=TRAIN_TRACES)
     with tf.Session() as sess:
         actor = network.Network(sess,
                                 state_dim=S_DIM, action_dim=A_DIM,
@@ -274,21 +274,31 @@ def agent(agent_id, net_params_queue, exp_queue):
             for batch_user in r_batch_user:
                 r_batch += batch_user
             """
-            tmp_i = random.randint(0, USERS - 1)
             # if agent_id == 0:
             #     print(len(s_batch), len(a_batch), len(r_batch))
-            v_batch = actor.compute_v(s_batch_user[tmp_i][1:], a_batch_user[tmp_i][1:], r_batch_user[tmp_i][1:], env.check_end())
+            # tmp_i = random.randint(0, USERS - 1)
+            for user_id in range(USERS):
+                tmp_v_batch = actor.compute_v(s_batch_user[user_id][1:], a_batch_user[user_id][1:], r_batch_user[user_id][1:], env.check_end())
+                v_batch += tmp_v_batch
+
+                s_batch += s_batch_user[user_id][1:]
+                a_batch += a_batch_user[user_id][1:]
+                p_batch += p_batch_user[user_id][1:]
+
             try:
-                exp_queue.put([s_batch_user[tmp_i][1:], a_batch_user[tmp_i][1:], p_batch_user[tmp_i][1:], v_batch], timeout=60)
+                exp_queue.put([s_batch, a_batch, p_batch, v_batch], timeout=60)
 
                 actor_net_params = net_params_queue.get(timeout=60)
                 actor.set_network_params(actor_net_params)
-                del s_batch_user[:]
-                del a_batch_user[:]
-                del r_batch_user[:]
-                del p_batch_user[:]
-            except queue.Empty or queue.Full:
-                log.info("Empty or Full")
+                del s_batch[:]
+                del a_batch[:]
+                del p_batch[:]
+                del v_batch[:]
+            except queue.Empty:
+                log.info("Empty")
+                continue
+            except queue.Full:
+                log.info("Full")
                 continue
 
 
