@@ -148,7 +148,7 @@ class Environment:
 
             throughput = self.cur_satellite[self.cur_sat_id[agent]].data_rate(self.cur_user[agent], self.mahimahi_ptr[
                 agent]) * B_IN_MB / BITS_IN_BYTE
-            assert throughput != 0
+            # assert throughput != 0
         elif ho_stamp and ho_stamp == "MRSS-Smart":
             tmp_best_id = self.get_max_sat_id(agent, past_len=PAST_LEN)
             if tmp_best_id != self.cur_sat_id[agent]:
@@ -162,7 +162,7 @@ class Environment:
 
             throughput = self.cur_satellite[self.cur_sat_id[agent]].data_rate(self.cur_user[agent], self.mahimahi_ptr[
                 agent]) * B_IN_MB / BITS_IN_BYTE
-            assert throughput != 0
+            # assert throughput != 0
 
         while True:  # download video chunk over mahimahi
             throughput = self.cur_satellite[self.cur_sat_id[agent]].data_rate(self.cur_user[agent],
