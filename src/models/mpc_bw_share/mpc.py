@@ -7,13 +7,13 @@ import sys
 root_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, root_dir + '/../')
 
-from env.multi_bw_share import fixed_env_time as env, load_trace_real as load_trace
+from env.multi_bw_share import fixed_env_time as env, load_trace as load_trace
 import itertools
 import logging
 
 from util.constants import VIDEO_BIT_RATE, BUFFER_NORM_FACTOR, CHUNK_TIL_VIDEO_END_CAP, M_IN_K, REBUF_PENALTY, \
     SMOOTH_PENALTY, DEFAULT_QUALITY, MPC_FUTURE_CHUNK_COUNT, size_video1, size_video2, size_video3, size_video4, \
-    size_video5, size_video6, BITRATE_REWARD
+    size_video5, size_video6, BITRATE_REWARD, TEST_TRACES
 
 S_INFO = 5  # bit_rate, buffer_size, rebuffering_time, bandwidth_measurement, chunk_til_video_end
 S_LEN = 8  # take how many frames in the past
@@ -24,7 +24,6 @@ RANDOM_SEED = 42
 RAND_RANGE = 1000000
 SUMMARY_DIR = 'MRSS1/'
 LOG_FILE = SUMMARY_DIR + 'log_sim_cent'
-TEST_TRACES = 'data/sat_data/real_test/'
 SUMMARY_PATH = SUMMARY_DIR + 'summary'
 # log in format of time_stamp bit_rate buffer_size rebuffer_time chunk_size download_time reward
 # NN_MODEL = './models/nn_model_ep_5900.ckpt'
@@ -36,7 +35,7 @@ import argparse
 
 parser = argparse.ArgumentParser(description='PyTorch Synthetic Benchmark',
                                  formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-parser.add_argument('--user', type=int, default=2)
+parser.add_argument('--user', type=int, default=1)
 args = parser.parse_args()
 
 USERS = args.user
@@ -44,7 +43,7 @@ MPC_TYPE = "DualMPC"
 # MPC_TYPE = "DualMPC-Centralization-Exhaustive"
 # MPC_TYPE = "DualMPC-Centralization-Reduced"
 # MPC_TYPE = "Oracle"
-MPC_TYPE = "MRSS-Smart"
+MPC_TYPE = "MRSS"
 # DualMPC-Centralization
 
 structlog.configure(

@@ -289,8 +289,11 @@ def agent(agent_id, net_params_queue, exp_queue):
                 del a_batch_user[:]
                 del r_batch_user[:]
                 del p_batch_user[:]
-            except queue.Empty or queue.Full:
-                log.info("Empty or Full")
+            except queue.Empty:
+                log.info("Empty")
+                continue
+            except queue.Full:
+                log.info("Full")
                 continue
 
 
