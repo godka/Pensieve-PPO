@@ -155,7 +155,7 @@ def agent(agent_id, net_params_queue, exp_queue):
 
         for epoch in range(TRAIN_EPOCH):
             obs = env.reset()
-            s_batch, a_batch, p_batch, r_batch = [], [], [], []
+            s_batch, a_batch, p_batch, r_batch, v_batch = [], [], [], [], []
             for step in range(TRAIN_SEQ_LEN):
                 s_batch.append(obs)
 

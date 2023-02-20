@@ -227,7 +227,7 @@ def agent(agent_id, net_params_queue, exp_queue):
 
                 env.set_sat(user_id, sat[user_id])
 
-            s_batch, a_batch, p_batch, r_batch = [], [], [], []
+            s_batch, a_batch, p_batch, r_batch, v_batch = [], [], [], [], []
             s_batch_user, a_batch_user, p_batch_user, r_batch_user = \
                 [[] for _ in range(tmp_users)], [[] for _ in range(tmp_users)], \
                 [[] for _ in range(tmp_users)], [[] for _ in range(tmp_users)]
