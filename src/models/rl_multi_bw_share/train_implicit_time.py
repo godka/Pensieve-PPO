@@ -1,6 +1,8 @@
 import multiprocessing as mp
 import queue
 import random
+import time
+
 import numpy as np
 import os
 import sys
@@ -137,10 +139,10 @@ def central_agent(net_params_queues, exp_queues):
             try:
                 actor_net_params = actor.get_network_params()
                 for i in range(NUM_AGENTS):
-                    net_params_queues[i].put(actor_net_params, timeout=60)
+                    net_params_queues[i].put(actor_net_params, timeout=300)
                 s, a, p, g = [], [], [], []
                 for i in range(NUM_AGENTS):
-                    s_, a_, p_, g_ = exp_queues[i].get(timeout=60)
+                    s_, a_, p_, g_ = exp_queues[i].get(timeout=300)
                     s += s_
                     a += a_
                     p += p_
@@ -160,7 +162,7 @@ def central_agent(net_params_queues, exp_queues):
                 log.info("Queue Full?")
 
                 for i in range(NUM_AGENTS):
-                    net_params_queues[i].get(timeout=60)
+                    net_params_queues[i].get(timeout=300)
                 continue
 
             if epoch % MODEL_SAVE_INTERVAL == 0:
@@ -205,12 +207,13 @@ def agent(agent_id, net_params_queue, exp_queue):
                                 learning_rate=ACTOR_LR_RATE)
 
         # initial synchronization of the network parameters from the coordinator
-        actor_net_params = net_params_queue.get(timeout=60)
+        actor_net_params = net_params_queue.get(timeout=300)
         actor.set_network_params(actor_net_params)
 
         time_stamp = 0
 
         for epoch in range(TRAIN_EPOCH):
+            start_time = time.time()
             bit_rate = [0 for _ in range(USERS)]
             sat = [0 for _ in range(USERS)]
             action_prob = [[] for _ in range(USERS)]
@@ -294,9 +297,9 @@ def agent(agent_id, net_params_queue, exp_queue):
                 p_batch += p_batch_user[user_id][1:]
 
             try:
-                exp_queue.put([s_batch, a_batch, p_batch, v_batch], timeout=60)
+                exp_queue.put([s_batch, a_batch, p_batch, v_batch], timeout=300)
 
-                actor_net_params = net_params_queue.get(timeout=60)
+                actor_net_params = net_params_queue.get(timeout=300)
                 actor.set_network_params(actor_net_params)
                 del s_batch[:]
                 del a_batch[:]
@@ -304,11 +307,19 @@ def agent(agent_id, net_params_queue, exp_queue):
                 del v_batch[:]
             except queue.Empty:
                 log.info("Empty")
+                actor_net_params = net_params_queue.get(timeout=300)
+                actor.set_network_params(actor_net_params)
+                print(time.time() - start_time)
                 continue
             except queue.Full:
                 log.info("Full")
-                exp_queue.get()
+                print(s_batch, a_batch, p_batch, v_batch)
+                exp_queue.put([s_batch, a_batch, p_batch, v_batch], timeout=300)
+                actor_net_params = net_params_queue.get(timeout=300)
+                actor.set_network_params(actor_net_params)
+                print(time.time() - start_time)
                 continue
+            print(time.time()-start_time)
 
 
 def build_summaries():
