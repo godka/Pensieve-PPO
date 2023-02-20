@@ -547,7 +547,7 @@ class Environment:
                 continue
 
             if method == "harmonic-mean":
-                target_sat_bw = self.predict_bw_num(sat_id, agent, mahimahi_ptr=mahimahi_ptr, plus=False)
+                target_sat_bw = self.predict_bw_num(sat_id, agent, mahimahi_ptr=mahimahi_ptr, past_len=PAST_LEN)
                 real_sat_bw = target_sat_bw  # / (self.get_num_of_user_sat(sat_id) + 1)
             else:
                 print("Cannot happen")
