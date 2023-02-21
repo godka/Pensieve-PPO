@@ -111,8 +111,8 @@ def testing(epoch, nn_model, log_file):
 def central_agent(net_params_queues, exp_queues):
     assert len(net_params_queues) == NUM_AGENTS
     assert len(exp_queues) == NUM_AGENTS
-    tf_config = tf.ConfigProto(intra_op_parallelism_threads=10,
-                               inter_op_parallelism_threads=10)
+    tf_config = tf.ConfigProto(intra_op_parallelism_threads=1,
+                               inter_op_parallelism_threads=1)
     with tf.Session(config=tf_config) as sess, open(LOG_FILE + '_test.txt', 'w') as test_log_file:
         summary_ops, summary_vars = build_summaries()
         best_rewards = -1000
@@ -135,10 +135,10 @@ def central_agent(net_params_queues, exp_queues):
             try:
                 actor_net_params = actor.get_network_params()
                 for i in range(NUM_AGENTS):
-                    net_params_queues[i].put(actor_net_params, )
+                    net_params_queues[i].put(actor_net_params, timeout=300)
                 s, a, p, g = [], [], [], []
                 for i in range(NUM_AGENTS):
-                    s_, a_, p_, g_ = exp_queues[i].get()
+                    s_, a_, p_, g_ = exp_queues[i].get(timeout=300)
                     s += s_
                     a += a_
                     p += p_
@@ -158,7 +158,7 @@ def central_agent(net_params_queues, exp_queues):
                 log.info("Queue Full?")
 
                 for i in range(NUM_AGENTS):
-                    net_params_queues[i].get()
+                    net_params_queues[i].get(timeout=300)
                 continue
 
             if epoch % MODEL_SAVE_INTERVAL == 0:
@@ -203,7 +203,7 @@ def agent(agent_id, net_params_queue, exp_queue):
                                 learning_rate=ACTOR_LR_RATE, num_of_users=USERS)
 
         # initial synchronization of the network parameters from the coordinator
-        actor_net_params = net_params_queue.get()
+        actor_net_params = net_params_queue.get(timeout=300)
         actor.set_network_params(actor_net_params)
 
         time_stamp = 0
@@ -292,9 +292,9 @@ def agent(agent_id, net_params_queue, exp_queue):
                 p_batch += p_batch_user[user_id][1:]
 
             try:
-                exp_queue.put([s_batch, a_batch, p_batch, v_batch])
+                exp_queue.put([s_batch, a_batch, p_batch, v_batch], timeout=300)
 
-                actor_net_params = net_params_queue.get()
+                actor_net_params = net_params_queue.get(timeout=300)
                 actor.set_network_params(actor_net_params)
                 del s_batch[:]
                 del a_batch[:]

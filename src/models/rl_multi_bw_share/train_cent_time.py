@@ -70,9 +70,11 @@ def testing(epoch, nn_model, log_file):
                 parse = line.split()
                 if not parse:
                     break
-                entropy.append(float(parse[-2]))
-                reward.append(float(parse[-6]))
-
+                try:
+                    entropy.append(float(parse[-2]))
+                    reward.append(float(parse[-6]))
+                except IndexError:
+                    break
         rewards.append(np.mean(reward[1:]))
         entropies.append(np.mean(entropy[1:]))
 
@@ -129,7 +131,7 @@ def central_agent(net_params_queues, exp_queues):
 
             s, a, p, g = [], [], [], []
             for i in range(NUM_AGENTS):
-                s_, a_, p_, g_ = exp_queues[i].get()
+                s_, a_, p_, g_ = exp_queues[i].get(timeout=300)
                 s += s_
                 a += a_
                 p += p_
