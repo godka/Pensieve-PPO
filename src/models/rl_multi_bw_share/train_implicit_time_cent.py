@@ -292,7 +292,7 @@ def agent(agent_id, net_params_queue, exp_queue):
                 p_batch += p_batch_user[user_id][1:]
 
             try:
-                exp_queue.put([s_batch, a_batch, p_batch, v_batch], )
+                exp_queue.put([s_batch, a_batch, p_batch, v_batch])
 
                 actor_net_params = net_params_queue.get()
                 actor.set_network_params(actor_net_params)

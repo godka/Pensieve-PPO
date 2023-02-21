@@ -135,7 +135,6 @@ def main():
                 results += tmp_results
                 tmp_results = []
                 time_stamp = [0 for _ in range(USERS)]
-
                 reward_1.append(np.mean(tmp_reward_1))
                 reward_2.append(np.mean(tmp_reward_2))
                 reward_3.append(np.mean(tmp_reward_3))

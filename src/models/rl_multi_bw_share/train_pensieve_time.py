@@ -11,7 +11,6 @@ from models.rl_multi_bw_share.ppo_spec import pensieve as network
 import tensorflow.compat.v1 as tf
 import structlog
 import logging
-
 from util.constants import A_DIM, NUM_AGENTS, TRAIN_TRACES
 
 os.environ['CUDA_VISIBLE_DEVICES'] = '-1'
@@ -68,6 +67,7 @@ def testing(epoch, nn_model, log_file):
     # run test script
     log.info('python test_pensieve_time.py ', nn_model=nn_model + ' ' + str(USERS) + ' ' + HO_TYPE)
     os.system('python test_pensieve_time.py ' + nn_model + ' ' + str(USERS) + ' ' + HO_TYPE)
+    log.info('End testing')
 
     # append test performance to the log
     rewards, entropies = [], []
@@ -120,6 +120,7 @@ def central_agent(net_params_queues, exp_queues):
 
         sess.run(tf.global_variables_initializer())
         writer = tf.summary.FileWriter(SUMMARY_DIR, sess.graph)  # training monitor
+        # saver = tf.train.Saver()  # save neural net parameters
         saver = tf.train.Saver()  # save neural net parameters
 
         # restore neural net parameters
@@ -134,7 +135,6 @@ def central_agent(net_params_queues, exp_queues):
                 actor_net_params = actor.get_network_params()
                 for i in range(NUM_AGENTS):
                     net_params_queues[i].put(actor_net_params)
-
                 s, a, p, g = [], [], [], []
                 for i in range(NUM_AGENTS):
                     s_, a_, p_, g_ = exp_queues[i].get()
@@ -285,7 +285,7 @@ def agent(agent_id, net_params_queue, exp_queue):
                 p_batch += p_batch_user[user_id][1:]
 
             try:
-                exp_queue.put([s_batch, a_batch, p_batch, v_batch], )
+                exp_queue.put([s_batch, a_batch, p_batch, v_batch])
 
                 actor_net_params = net_params_queue.get()
                 actor.set_network_params(actor_net_params)
@@ -297,7 +297,6 @@ def agent(agent_id, net_params_queue, exp_queue):
                 del a_batch_user[:]
                 del p_batch_user[:]
                 del actor_net_params[:]
-
             except queue.Empty:
                 log.info("Empty")
                 continue
