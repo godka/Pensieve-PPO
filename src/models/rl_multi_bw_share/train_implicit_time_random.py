@@ -138,10 +138,10 @@ def central_agent(net_params_queues, exp_queues):
             try:
                 actor_net_params = actor.get_network_params()
                 for i in range(NUM_AGENTS):
-                    net_params_queues[i].put(actor_net_params, timeout=300)
+                    net_params_queues[i].put(actor_net_params)
                 s, a, p, g = [], [], [], []
                 for i in range(NUM_AGENTS):
-                    s_, a_, p_, g_ = exp_queues[i].get(timeout=300)
+                    s_, a_, p_, g_ = exp_queues[i].get()
                     s += s_
                     a += a_
                     p += p_
@@ -283,9 +283,9 @@ def agent(agent_id, net_params_queue, exp_queue):
             #     print(len(s_batch), len(a_batch), len(r_batch))
             v_batch = actor.compute_v(s_batch_user[tmp_i][1:], a_batch_user[tmp_i][1:], r_batch_user[tmp_i][1:], env.check_end())
             try:
-                exp_queue.put([s_batch_user[tmp_i][1:], a_batch_user[tmp_i][1:], p_batch_user[tmp_i][1:], v_batch], timeout=300)
+                exp_queue.put([s_batch_user[tmp_i][1:], a_batch_user[tmp_i][1:], p_batch_user[tmp_i][1:], v_batch], )
 
-                actor_net_params = net_params_queue.get(timeout=300)
+                actor_net_params = net_params_queue.get()
                 actor.set_network_params(actor_net_params)
                 del s_batch_user[:]
                 del a_batch_user[:]

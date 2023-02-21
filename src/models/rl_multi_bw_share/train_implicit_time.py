@@ -140,10 +140,10 @@ def central_agent(net_params_queues, exp_queues):
             try:
                 actor_net_params = actor.get_network_params()
                 for i in range(NUM_AGENTS):
-                    net_params_queues[i].put(actor_net_params, timeout=300)
+                    net_params_queues[i].put(actor_net_params)
                 s, a, p, g = [], [], [], []
                 for i in range(NUM_AGENTS):
-                    s_, a_, p_, g_ = exp_queues[i].get(timeout=300)
+                    s_, a_, p_, g_ = exp_queues[i].get()
                     s += s_
                     a += a_
                     p += p_
@@ -164,7 +164,7 @@ def central_agent(net_params_queues, exp_queues):
                 log.info("Queue Full?")
 
                 for i in range(NUM_AGENTS):
-                    net_params_queues[i].get(timeout=300)
+                    net_params_queues[i].get()
                 print(time.time() - start_time)
                 continue
 
@@ -207,7 +207,7 @@ def agent(agent_id, net_params_queue, exp_queue):
                                 learning_rate=ACTOR_LR_RATE)
 
         # initial synchronization of the network parameters from the coordinator
-        actor_net_params = net_params_queue.get(timeout=300)
+        actor_net_params = net_params_queue.get()
         actor.set_network_params(actor_net_params)
 
         time_stamp = 0
@@ -297,27 +297,22 @@ def agent(agent_id, net_params_queue, exp_queue):
                 p_batch += p_batch_user[user_id][1:]
 
             try:
-                exp_queue.put([s_batch, a_batch, p_batch, v_batch], timeout=300)
+                exp_queue.put([s_batch, a_batch, p_batch, v_batch], )
 
-                actor_net_params = net_params_queue.get(timeout=300)
+                actor_net_params = net_params_queue.get()
                 actor.set_network_params(actor_net_params)
                 del s_batch[:]
                 del a_batch[:]
                 del p_batch[:]
                 del v_batch[:]
+                del s_batch_user[:]
+                del a_batch_user[:]
+                del p_batch_user[:]
             except queue.Empty:
                 log.info("Empty")
-                actor_net_params = net_params_queue.get(timeout=300)
-                actor.set_network_params(actor_net_params)
-                print(time.time() - start_time)
                 continue
             except queue.Full:
                 log.info("Full")
-                print(s_batch, a_batch, p_batch, v_batch)
-                exp_queue.put([s_batch, a_batch, p_batch, v_batch], timeout=300)
-                actor_net_params = net_params_queue.get(timeout=300)
-                actor.set_network_params(actor_net_params)
-                print(time.time() - start_time)
                 continue
 
 
