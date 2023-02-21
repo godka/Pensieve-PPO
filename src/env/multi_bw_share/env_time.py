@@ -17,6 +17,7 @@ EPS = 1e-6
 
 NUM_AGENTS = None
 SAT_DIM = A_SAT
+REWARD_FUNC = None
 
 
 class ABREnv():
