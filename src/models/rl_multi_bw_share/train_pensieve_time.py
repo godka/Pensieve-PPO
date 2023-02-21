@@ -296,6 +296,8 @@ def agent(agent_id, net_params_queue, exp_queue):
                 del s_batch_user[:]
                 del a_batch_user[:]
                 del p_batch_user[:]
+                del actor_net_params[:]
+
             except queue.Empty:
                 log.info("Empty")
                 continue
