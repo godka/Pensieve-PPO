@@ -137,10 +137,10 @@ def central_agent(net_params_queues, exp_queues):
             try:
                 actor_net_params = actor.get_network_params()
                 for i in range(NUM_AGENTS):
-                    net_params_queues[i].put(actor_net_params, timeout=60)
+                    net_params_queues[i].put(actor_net_params, )
                 s, a, p, g = [], [], [], []
                 for i in range(NUM_AGENTS):
-                    s_, a_, p_, g_ = exp_queues[i].get(timeout=60)
+                    s_, a_, p_, g_ = exp_queues[i].get()
                     s += s_
                     a += a_
                     p += p_
@@ -160,7 +160,7 @@ def central_agent(net_params_queues, exp_queues):
                 log.info("Queue Full?")
 
                 for i in range(NUM_AGENTS):
-                    net_params_queues[i].get(timeout=60)
+                    net_params_queues[i].get()
                 continue
 
             if epoch % MODEL_SAVE_INTERVAL == 0:
@@ -174,13 +174,10 @@ def central_agent(net_params_queues, exp_queues):
                 if best_rewards < avg_reward:
                     os.system('cp ' + TEST_LOG_FOLDER + '/summary_reward_parts ' + SUMMARY_DIR)
                     os.system('cp ' + TEST_LOG_FOLDER + '/summary ' + SUMMARY_DIR)
-                    os.system('cp ' + SUMMARY_DIR + "/nn_model_ep_" +
-                              str(epoch) + ".ckpt.index " + SUMMARY_DIR + "/best_model.ckpt.index")
-                    os.system('cp ' + SUMMARY_DIR + "/nn_model_ep_" +
-                              str(epoch) + ".ckpt.meta " + SUMMARY_DIR + "/best_model.ckpt.meta")
+                    # os.system('cp ' + SUMMARY_DIR + "/nn_model_ep_" + str(epoch) + ".ckpt.index " + SUMMARY_DIR + "/best_model.ckpt.index")
+                    # os.system('cp ' + SUMMARY_DIR + "/nn_model_ep_" + str(epoch) + ".ckpt.meta " + SUMMARY_DIR + "/best_model.ckpt.meta")
 
-                    os.system('cp ' + SUMMARY_DIR + "/nn_model_ep_" +
-                              str(epoch) + ".ckpt.data-00000-of-00001 " + SUMMARY_DIR + "/best_model.ckpt.data-00000-of-00001")
+                    # os.system('cp ' + SUMMARY_DIR + "/nn_model_ep_" + str(epoch) + ".ckpt.data-00000-of-00001 " + SUMMARY_DIR + "/best_model.ckpt.data-00000-of-00001")
                     best_rewards = avg_reward
 
                 summary_str = sess.run(summary_ops, feed_dict={
@@ -205,7 +202,7 @@ def agent(agent_id, net_params_queue, exp_queue):
                                 learning_rate=ACTOR_LR_RATE)
 
         # initial synchronization of the network parameters from the coordinator
-        actor_net_params = net_params_queue.get(timeout=60)
+        actor_net_params = net_params_queue.get()
         actor.set_network_params(actor_net_params)
 
         time_stamp = 0
@@ -294,9 +291,9 @@ def agent(agent_id, net_params_queue, exp_queue):
                 p_batch += p_batch_user[user_id][1:]
 
             try:
-                exp_queue.put([s_batch, a_batch, p_batch, v_batch], timeout=60)
+                exp_queue.put([s_batch, a_batch, p_batch, v_batch])
 
-                actor_net_params = net_params_queue.get(timeout=60)
+                actor_net_params = net_params_queue.get()
                 actor.set_network_params(actor_net_params)
                 del s_batch[:]
                 del a_batch[:]
