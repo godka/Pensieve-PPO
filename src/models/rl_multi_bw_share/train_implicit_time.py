@@ -179,10 +179,10 @@ def central_agent(net_params_queues, exp_queues):
                 if best_rewards < avg_reward:
                     os.system('cp ' + TEST_LOG_FOLDER + '/summary_reward_parts ' + SUMMARY_DIR)
                     os.system('cp ' + TEST_LOG_FOLDER + '/summary ' + SUMMARY_DIR)
-                    # os.system('cp ' + SUMMARY_DIR + "/nn_model_ep_" + str(epoch) + ".ckpt.index " + SUMMARY_DIR + "/best_model.ckpt.index")
-                    # os.system('cp ' + SUMMARY_DIR + "/nn_model_ep_" + str(epoch) + ".ckpt.meta " + SUMMARY_DIR + "/best_model.ckpt.meta")
+                    os.system('cp ' + SUMMARY_DIR + "/nn_model_ep_" + str(epoch) + ".ckpt.index " + SUMMARY_DIR + "/best_model.ckpt.index")
+                    os.system('cp ' + SUMMARY_DIR + "/nn_model_ep_" + str(epoch) + ".ckpt.meta " + SUMMARY_DIR + "/best_model.ckpt.meta")
 
-                    # os.system('cp ' + SUMMARY_DIR + "/nn_model_ep_" + str(epoch) + ".ckpt.data-00000-of-00001 " + SUMMARY_DIR + "/best_model.ckpt.data-00000-of-00001")
+                    os.system('cp ' + SUMMARY_DIR + "/nn_model_ep_" + str(epoch) + ".ckpt.data-00000-of-00001 " + SUMMARY_DIR + "/best_model.ckpt.data-00000-of-00001")
                     best_rewards = avg_reward
 
                 summary_str = sess.run(summary_ops, feed_dict={
@@ -209,11 +209,9 @@ def agent(agent_id, net_params_queue, exp_queue):
         # initial synchronization of the network parameters from the coordinator
         actor_net_params = net_params_queue.get()
         actor.set_network_params(actor_net_params)
-
         time_stamp = 0
 
         for epoch in range(TRAIN_EPOCH):
-            start_time = time.time()
             bit_rate = [0 for _ in range(USERS)]
             sat = [0 for _ in range(USERS)]
             action_prob = [[] for _ in range(USERS)]
