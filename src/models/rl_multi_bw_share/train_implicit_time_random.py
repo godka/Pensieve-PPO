@@ -1,7 +1,6 @@
 import multiprocessing as mp
 import queue
 import random
-
 import numpy as np
 import os
 import sys
@@ -306,6 +305,7 @@ def agent(agent_id, net_params_queue, exp_queue):
             except queue.Full:
                 log.info("Full")
                 continue
+
 
 def build_summaries():
     entropy_weight = tf.Variable(0.)
