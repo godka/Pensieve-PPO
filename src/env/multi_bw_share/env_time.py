@@ -20,8 +20,7 @@ SAT_DIM = A_SAT
 
 
 class ABREnv():
-
-    def __init__(self, random_seed=RANDOM_SEED, num_agents=NUM_AGENTS, reward_func="LIN", train_traces=None):
+    def __init__(self, random_seed=RANDOM_SEED, num_agents=NUM_AGENTS, ho_type=HO_TYPE, reward_func=REWARD_FUNC, train_traces=None):
         self.num_agents = num_agents
         # SAT_DIM = num_agents
         # A_SAT = num_agents

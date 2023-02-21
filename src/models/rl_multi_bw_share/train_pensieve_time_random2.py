@@ -277,11 +277,16 @@ def agent(agent_id, net_params_queue, exp_queue):
                 r_batch += batch_user
             """
             tmp_i = random.randint(0, tmp_users - 1)
+            tmp_j = (tmp_i + 1) % tmp_users
             # if agent_id == 0:
             #     print(len(s_batch), len(a_batch), len(r_batch))
             v_batch = actor.compute_v(s_batch_user[tmp_i][1:], a_batch_user[tmp_i][1:], r_batch_user[tmp_i][1:], env.check_end())
+            v_batch_j = actor.compute_v(s_batch_user[tmp_j][1:], a_batch_user[tmp_j][1:], r_batch_user[tmp_j][1:], env.check_end())
+
             try:
-                exp_queue.put([s_batch_user[tmp_i][1:], a_batch_user[tmp_i][1:], p_batch_user[tmp_i][1:], v_batch], )
+                exp_queue.put([s_batch_user[tmp_i][1:]+s_batch_user[tmp_j][1:],
+                               a_batch_user[tmp_i][1:]+a_batch_user[tmp_j][1:],
+                               p_batch_user[tmp_i][1:]+p_batch_user[tmp_j][1:], v_batch+v_batch_j])
 
                 actor_net_params = net_params_queue.get()
                 actor.set_network_params(actor_net_params)
@@ -293,6 +298,8 @@ def agent(agent_id, net_params_queue, exp_queue):
                 del a_batch[:]
                 del p_batch[:]
                 del v_batch[:]
+                del v_batch_j[:]
+
             except queue.Empty:
                 log.info("Empty")
                 continue
