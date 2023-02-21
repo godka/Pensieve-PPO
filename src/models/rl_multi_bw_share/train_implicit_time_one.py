@@ -201,7 +201,6 @@ def agent(agent_id, net_params_queue, exp_queue):
         # initial synchronization of the network parameters from the coordinator
         actor_net_params = net_params_queue.get()
         actor.set_network_params(actor_net_params)
-
         time_stamp = 0
 
         for epoch in range(TRAIN_EPOCH):
@@ -225,7 +224,6 @@ def agent(agent_id, net_params_queue, exp_queue):
 
                 env.set_sat(user_id, sat[user_id])
 
-            s_batch, a_batch, p_batch, r_batch, v_batch = [], [], [], [], []
             s_batch_user, a_batch_user, p_batch_user, r_batch_user = \
                 [[] for _ in range(USERS)], [[] for _ in range(USERS)], \
                 [[] for _ in range(USERS)], [[] for _ in range(USERS)]
@@ -281,7 +279,7 @@ def agent(agent_id, net_params_queue, exp_queue):
             #     print(len(s_batch), len(a_batch), len(r_batch))
             v_batch = actor.compute_v(s_batch_user[tmp_i][1:], a_batch_user[tmp_i][1:], r_batch_user[tmp_i][1:], env.check_end())
             try:
-                exp_queue.put([s_batch_user[tmp_i][1:], a_batch_user[tmp_i][1:], p_batch_user[tmp_i][1:], v_batch], )
+                exp_queue.put([s_batch_user[tmp_i][1:], a_batch_user[tmp_i][1:], p_batch_user[tmp_i][1:], v_batch])
 
                 actor_net_params = net_params_queue.get()
                 actor.set_network_params(actor_net_params)
@@ -289,6 +287,12 @@ def agent(agent_id, net_params_queue, exp_queue):
                 del a_batch_user[:]
                 del r_batch_user[:]
                 del p_batch_user[:]
+                del v_batch[:]
+                del actor_net_params[:]
+
+                del bit_rate[:]
+                del sat[:]
+                del action_prob[:]
             except queue.Empty:
                 log.info("Empty")
                 continue
