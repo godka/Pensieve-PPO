@@ -137,7 +137,6 @@ def central_agent(net_params_queues, exp_queues):
                 actor_net_params = actor.get_network_params()
                 for i in range(NUM_AGENTS):
                     net_params_queues[i].put(actor_net_params)
-                del actor_net_params[:]
                 s, a, p, g = [], [], [], []
                 for i in range(NUM_AGENTS):
                     s_, a_, p_, g_ = exp_queues[i].get()
