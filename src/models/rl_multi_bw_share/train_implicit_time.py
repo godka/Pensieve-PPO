@@ -135,7 +135,6 @@ def central_agent(net_params_queues, exp_queues):
             print("Model restored.")
 
         for epoch in range(TRAIN_EPOCH):
-            start_time = time.time()
             # synchronize the network parameters of work agent
             try:
                 actor_net_params = actor.get_network_params()
@@ -162,14 +161,9 @@ def central_agent(net_params_queues, exp_queues):
                 del g[:]
             except queue.Empty:
                 log.info("Queue Empty?")
-                print(time.time() - start_time)
                 continue
             except queue.Full:
                 log.info("Queue Full?")
-
-                for i in range(NUM_AGENTS):
-                    net_params_queues[i].get()
-                print(time.time() - start_time)
                 continue
 
             if epoch % MODEL_SAVE_INTERVAL == 0:
