@@ -23,7 +23,7 @@ TRAIN_SEQ_LEN = 300  # take as a train batch
 TRAIN_EPOCH = 20000000
 MODEL_SAVE_INTERVAL = 3000
 RANDOM_SEED = 42
-SUMMARY_DIR = './pensieve_one'
+SUMMARY_DIR = './ppo_imp_one'
 MODEL_DIR = '..'
 
 TEST_LOG_FOLDER = './test_results_imp'
@@ -129,6 +129,7 @@ def central_agent(net_params_queues, exp_queues):
         # restore neural net parameters
         nn_model = NN_MODEL
         if nn_model is not None:  # nn_model is the path to file
+            saver = tf.train.import_meta_graph(nn_model + '.meta')
             saver.restore(sess, nn_model)
             print("Model restored.")
 

@@ -298,10 +298,10 @@ def agent(agent_id, net_params_queue, exp_queue):
         del a_batch_user[:]
         del r_batch_user[:]
         del p_batch_user[:]
-        del s_batch[:]
-        del a_batch[:]
-        del p_batch[:]
-        del v_batch[:]
+        # del s_batch[:]
+        # del a_batch[:]
+        # del p_batch[:]
+        # del v_batch[:]
         del actor_net_params[:]
 
         del bit_rate[:]
@@ -347,8 +347,11 @@ def main():
                                            net_params_queues[i],
                                            exp_queues[i])))
         for i in range(NUM_AGENTS):
+            print(i)
             agents[i].start()
+
         for i in range(NUM_AGENTS):
+            print(i)
             agents[i].join()
 
     # wait unit training is done
