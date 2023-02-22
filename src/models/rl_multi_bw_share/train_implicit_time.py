@@ -339,14 +339,13 @@ def main():
                              args=(net_params_queues, exp_queues))
     coordinator.start()
 
-    agents = []
     for i in range(NUM_AGENTS):
-        agents.append(mp.Process(target=agent,
-                                 args=(i,
-                                       net_params_queues[i],
-                                       exp_queues[i])))
-    for i in range(TRAIN_EPOCH):
+        agents = []
         for i in range(NUM_AGENTS):
+            agents.append(mp.Process(target=agent,
+                                     args=(i,
+                                           net_params_queues[i],
+                                           exp_queues[i])))
             agents[i].start()
         for i in range(NUM_AGENTS):
             agents[i].join()
