@@ -338,11 +338,11 @@ def main():
                              args=(net_params_queues, exp_queues))
     coordinator.start()
 
-    for _ in range(TRAIN_EPOCH):
+    for train_epoch in range(TRAIN_EPOCH):
         agents = []
         for i in range(NUM_AGENTS):
             agents.append(mp.Process(target=agent,
-                                     args=(i,
+                                     args=(train_epoch*NUM_AGENTS + i,
                                            net_params_queues[i],
                                            exp_queues[i])))
         for i in range(NUM_AGENTS):
