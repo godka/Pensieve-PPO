@@ -292,8 +292,8 @@ def agent(agent_id, net_params_queue, exp_queue):
 
         exp_queue.put([s_batch, a_batch, p_batch, v_batch])
 
-        actor_net_params = net_params_queue.get()
-        actor.set_network_params(actor_net_params)
+        # actor_net_params = net_params_queue.get()
+        # actor.set_network_params(actor_net_params)
         del s_batch_user[:]
         del a_batch_user[:]
         del r_batch_user[:]
@@ -346,6 +346,7 @@ def main():
                                      args=(i,
                                            net_params_queues[i],
                                            exp_queues[i])))
+        for i in range(NUM_AGENTS):
             agents[i].start()
         for i in range(NUM_AGENTS):
             agents[i].join()
