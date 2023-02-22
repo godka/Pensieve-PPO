@@ -129,6 +129,7 @@ def central_agent(net_params_queues, exp_queues):
         # restore neural net parameters
         nn_model = NN_MODEL
         if nn_model is not None:  # nn_model is the path to file
+            saver = tf.train.import_meta_graph(nn_model + '.meta')
             saver.restore(sess, nn_model)
             print("Model restored.")
 

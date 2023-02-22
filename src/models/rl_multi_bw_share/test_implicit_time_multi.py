@@ -116,7 +116,7 @@ def main():
                 state = [[np.zeros((S_INFO, S_LEN))] for _ in range(USERS)]
 
                 print("network count", video_count)
-                print(sum(tmp_results) / len(tmp_results))
+                print(sum(tmp_results[1:]) / len(tmp_results[1:]))
                 summary_file = open(SUMMARY_PATH, 'a')
                 summary_file.write('\n')
                 summary_file.write('\n')
