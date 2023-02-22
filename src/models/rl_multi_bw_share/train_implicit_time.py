@@ -212,7 +212,7 @@ def agent(agent_id, net_params_queue, exp_queue):
         actor.set_network_params(actor_net_params)
         time_stamp = 0
 
-        for epoch in range(30):
+        for epoch in range(TRAIN_SEQ_LEN):
             bit_rate = [0 for _ in range(USERS)]
             sat = [0 for _ in range(USERS)]
             action_prob = [[] for _ in range(USERS)]
@@ -297,8 +297,9 @@ def agent(agent_id, net_params_queue, exp_queue):
 
             exp_queue.put([s_batch, a_batch, p_batch, v_batch])
 
-            actor_net_params = net_params_queue.get()
-            actor.set_network_params(actor_net_params)
+            if epoch != TRAIN_SEQ_LEN-1:
+                actor_net_params = net_params_queue.get()
+                actor.set_network_params(actor_net_params)
             del s_batch_user[:]
             del a_batch_user[:]
             del r_batch_user[:]
@@ -312,8 +313,6 @@ def agent(agent_id, net_params_queue, exp_queue):
             del bit_rate[:]
             del sat[:]
             del action_prob[:]
-
-        print("finished")
 
 
 def build_summaries():
