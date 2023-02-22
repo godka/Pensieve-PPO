@@ -205,7 +205,6 @@ def agent(agent_id, net_params_queue, exp_queue):
         # initial synchronization of the network parameters from the coordinator
         actor_net_params = net_params_queue.get()
         actor.set_network_params(actor_net_params)
-
         time_stamp = 0
         tmp_users = random.randint(1, USERS)
         env = ABREnv(agent_id, num_agents=tmp_users, reward_func=REWARD_FUNC, train_traces=TRAIN_TRACES)

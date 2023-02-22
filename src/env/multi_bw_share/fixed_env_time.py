@@ -3141,7 +3141,7 @@ class Environment:
         cur_download_bw, runner_up_sat_id = None, None
         if method == "harmonic-mean":
             # cur_download_bw = self.predict_download_bw(agent, True)
-            cur_download_bw = self.predict_bw_num(self.cur_sat_id[agent], agent, True, past_len=PAST_LEN)
+            cur_download_bw = self.predict_bw_num(self.cur_sat_id[agent], agent, robustness, past_len=PAST_LEN)
             runner_up_sat_id, _ = self.get_runner_up_sat_id(
                 agent, method="harmonic-mean", cur_sat_id=self.cur_sat_id[agent])
         elif method == "holt-winter":
@@ -3172,8 +3172,8 @@ class Environment:
             else:
                 next_download_bw = None
                 if method == "harmonic-mean":
-                    next_user_num = self.get_num_of_user_sat(self.mahimahi_ptr[agent], next_sat_id)
-                    tmp_next_bw = self.predict_bw_num(next_sat_id, agent, robustness, past_len=PAST_LEN)
+                    # next_user_num = self.get_num_of_user_sat(self.mahimahi_ptr[agent], next_sat_id)
+                    tmp_next_bw = self.predict_bw_num(next_sat_id, agent, robustness)
 
                     # next_download_bw = cur_download_bw * tmp_next_bw / tmp_cur_bw
                     next_download_bw = tmp_next_bw
@@ -3184,7 +3184,6 @@ class Environment:
                     next_download_bw = cur_download_bw * self.cooked_bw[next_sat_id][self.mahimahi_ptr[agent] - 1] / \
                                        (self.cooked_bw[self.cur_sat_id[agent]][
                                             self.mahimahi_ptr[agent] - 1] / cur_user_num)
-
                 else:
                     print("Cannot happen")
                     exit(1)
@@ -3774,7 +3773,7 @@ class Environment:
 
         return pred_bw
 
-    def get_runner_up_sat_id(self, agent, method="holt-winter", mahimahi_ptr=None, cur_sat_id=None, plus=False):
+    def get_runner_up_sat_id(self, agent, method="holt-winter", mahimahi_ptr=None, cur_sat_id=None, past_len=None):
         best_sat_id = None
         best_sat_bw = 0
         if mahimahi_ptr is None:
@@ -3791,7 +3790,7 @@ class Environment:
                 continue
 
             if method == "harmonic-mean":
-                target_sat_bw = self.predict_bw_num(sat_id, agent, mahimahi_ptr=mahimahi_ptr, past_len=PAST_LEN)
+                target_sat_bw = self.predict_bw_num(sat_id, agent, mahimahi_ptr=mahimahi_ptr, past_len=past_len)
                 real_sat_bw = target_sat_bw  # / (self.get_num_of_user_sat(sat_id) + 1)
             elif method == "holt-winter":
                 target_sat_bw = self.predict_bw_holt_winter(sat_id, agent, num=1)

@@ -35,7 +35,7 @@ import argparse
 
 parser = argparse.ArgumentParser(description='PyTorch Synthetic Benchmark',
                                  formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-parser.add_argument('--user', type=int, default=1)
+parser.add_argument('--user', type=int, default=3)
 args = parser.parse_args()
 
 USERS = args.user
@@ -43,7 +43,7 @@ MPC_TYPE = "DualMPC"
 # MPC_TYPE = "DualMPC-Centralization-Exhaustive"
 # MPC_TYPE = "DualMPC-Centralization-Reduced"
 # MPC_TYPE = "Oracle"
-MPC_TYPE = "MRSS"
+MPC_TYPE = "MRSS-Smart"
 # DualMPC-Centralization
 
 structlog.configure(
