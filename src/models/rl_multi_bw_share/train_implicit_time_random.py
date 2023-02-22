@@ -206,10 +206,11 @@ def agent(agent_id, net_params_queue, exp_queue):
         actor_net_params = net_params_queue.get()
         actor.set_network_params(actor_net_params)
         time_stamp = 0
-        tmp_users = random.randint(1, USERS)
-        env = ABREnv(agent_id, num_agents=tmp_users, reward_func=REWARD_FUNC, train_traces=TRAIN_TRACES)
 
         for epoch in range(TRAIN_EPOCH):
+            tmp_users = random.randint(1, USERS)
+            env = ABREnv(agent_id, num_agents=tmp_users, reward_func=REWARD_FUNC, train_traces=TRAIN_TRACES)
+
             bit_rate = [0 for _ in range(tmp_users)]
             sat = [0 for _ in range(tmp_users)]
             action_prob = [[] for _ in range(tmp_users)]

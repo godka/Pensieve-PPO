@@ -32,12 +32,12 @@ import argparse
 
 parser = argparse.ArgumentParser(description='PyTorch Synthetic Benchmark',
                                  formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-parser.add_argument('--user', type=int, default=5)
+parser.add_argument('--user', type=int, default=1)
 args = parser.parse_args()
 USERS = args.user
 # A_SAT = USERS + 1
 
-HO_TYPE = "MRSS-Smart"
+HO_TYPE = "MVT"
 REWARD_FUNC = "LIN"
 
 TEST_LOG_FOLDER += str(USERS) + '/'
@@ -204,19 +204,19 @@ def agent(agent_id, net_params_queue, exp_queue):
         # initial synchronization of the network parameters from the coordinator
         actor_net_params = net_params_queue.get()
         actor.set_network_params(actor_net_params)
-
         time_stamp = 0
-        tmp_users = random.randint(1, USERS)
-        env = ABREnv(agent_id, num_agents=tmp_users, ho_type=HO_TYPE, reward_func=REWARD_FUNC, train_traces=TRAIN_TRACES)
-
         for epoch in range(TRAIN_EPOCH):
-            bit_rate = [0 for _ in range(USERS)]
-            sat = [0 for _ in range(USERS)]
-            action_prob = [[] for _ in range(USERS)]
+            tmp_users = random.randint(1, USERS)
+            env = ABREnv(agent_id, num_agents=tmp_users, ho_type=HO_TYPE, reward_func=REWARD_FUNC,
+                         train_traces=TRAIN_TRACES)
+
+            bit_rate = [0 for _ in range(tmp_users)]
+            sat = [0 for _ in range(tmp_users)]
+            action_prob = [[] for _ in range(tmp_users)]
 
             obs = env.reset()
 
-            for user_id in range(USERS):
+            for user_id in range(tmp_users):
                 obs[user_id] = env.reset_agent(user_id)
 
                 action_prob[user_id] = actor.predict(
@@ -232,8 +232,8 @@ def agent(agent_id, net_params_queue, exp_queue):
 
             s_batch, a_batch, p_batch, r_batch, v_batch = [], [], [], [], []
             s_batch_user, a_batch_user, p_batch_user, r_batch_user = \
-                [[] for _ in range(USERS)], [[] for _ in range(USERS)], \
-                [[] for _ in range(USERS)], [[] for _ in range(USERS)]
+                [[] for _ in range(tmp_users)], [[] for _ in range(tmp_users)], \
+                [[] for _ in range(tmp_users)], [[] for _ in range(tmp_users)]
 
             for step in range(TRAIN_SEQ_LEN):
                 agent = env.get_first_agent()

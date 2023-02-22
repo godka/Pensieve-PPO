@@ -32,12 +32,12 @@ import argparse
 
 parser = argparse.ArgumentParser(description='PyTorch Synthetic Benchmark',
                                  formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-parser.add_argument('--user', type=int, default=3)
+parser.add_argument('--user', type=int, default=1)
 args = parser.parse_args()
 USERS = args.user
 # A_SAT = USERS + 1
 
-HO_TYPE = "MRSS-Smart"
+HO_TYPE = "MVT"
 REWARD_FUNC = "LIN"
 
 TEST_LOG_FOLDER += str(USERS) + '/'
@@ -111,7 +111,9 @@ def testing(epoch, nn_model, log_file):
 def central_agent(net_params_queues, exp_queues):
     assert len(net_params_queues) == NUM_AGENTS
     assert len(exp_queues) == NUM_AGENTS
-    with tf.Session() as sess, open(LOG_FILE + '_test.txt', 'w') as test_log_file:
+    tf_config = tf.ConfigProto(intra_op_parallelism_threads=1,
+                               inter_op_parallelism_threads=1)
+    with tf.Session(config=tf_config) as sess, open(LOG_FILE + '_test.txt', 'w') as test_log_file:
         summary_ops, summary_vars = build_summaries()
         best_rewards = -1000
         actor = network.Network(sess,
@@ -135,6 +137,7 @@ def central_agent(net_params_queues, exp_queues):
                 actor_net_params = actor.get_network_params()
                 for i in range(NUM_AGENTS):
                     net_params_queues[i].put(actor_net_params)
+                del actor_net_params[:]
                 s, a, p, g = [], [], [], []
                 for i in range(NUM_AGENTS):
                     s_, a_, p_, g_ = exp_queues[i].get()
@@ -150,6 +153,10 @@ def central_agent(net_params_queues, exp_queues):
                 # print(s_batch[0], a_batch[0], p_batch[0], v_batch[0], epoch)
                 for _ in range(PPO_TRAINING_EPO):
                     actor.train(s_batch, a_batch, p_batch, v_batch, None)
+                del s[:]
+                del a[:]
+                del p[:]
+                del g[:]
             except queue.Empty:
                 log.info("Queue Empty?")
                 continue
