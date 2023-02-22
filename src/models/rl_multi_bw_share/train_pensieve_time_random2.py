@@ -137,6 +137,7 @@ def central_agent(net_params_queues, exp_queues):
                 actor_net_params = actor.get_network_params()
                 for i in range(NUM_AGENTS):
                     net_params_queues[i].put(actor_net_params)
+                del actor_net_params[:]
                 s, a, p, g = [], [], [], []
                 for i in range(NUM_AGENTS):
                     s_, a_, p_, g_ = exp_queues[i].get()
@@ -152,6 +153,10 @@ def central_agent(net_params_queues, exp_queues):
                 # print(s_batch[0], a_batch[0], p_batch[0], v_batch[0], epoch)
                 for _ in range(PPO_TRAINING_EPO):
                     actor.train(s_batch, a_batch, p_batch, v_batch, None)
+                del s[:]
+                del a[:]
+                del p[:]
+                del g[:]
             except queue.Empty:
                 log.info("Queue Empty?")
                 continue
