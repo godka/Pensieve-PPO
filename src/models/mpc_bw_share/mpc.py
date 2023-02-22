@@ -43,7 +43,7 @@ MPC_TYPE = "DualMPC"
 # MPC_TYPE = "DualMPC-Centralization-Exhaustive"
 # MPC_TYPE = "DualMPC-Centralization-Reduced"
 # MPC_TYPE = "Oracle"
-MPC_TYPE = "MRSS-Smart"
+# MPC_TYPE = "MRSS-Smart"
 # DualMPC-Centralization
 
 structlog.configure(

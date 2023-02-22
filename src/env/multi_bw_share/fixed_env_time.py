@@ -944,7 +944,7 @@ class Environment:
                     if len(self.cur_satellite[runner_up_sat_id].get_ue_list(mahimahi_ptr)) == 0:
                         bw_list.append(sat_bw[mahimahi_ptr - i])
                     else:
-                        bw_list.append(sat_bw[mahimahi_ptr - i] / (len(self.cur_satellite[runner_up_sat_id].get_ue_list(mahimahi_ptr)) + 1))
+                        bw_list.append(sat_bw[mahimahi_ptr - i] / (len(self.cur_satellite[runner_up_sat_id].get_ue_list(mahimahi_ptr))))
             next_sat_bws = bw_list
             up_time = 0
             tmp_index = mahimahi_ptr - 1

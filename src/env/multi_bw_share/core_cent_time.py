@@ -425,7 +425,7 @@ class Environment:
                         bw_list.append(sat_bw[mahimahi_ptr - i])
                     else:
                         bw_list.append(
-                            sat_bw[mahimahi_ptr - i] / (self.get_num_of_user_sat(self.mahimahi_ptr[agent], sat_id) + 1))
+                            sat_bw[mahimahi_ptr - i] / (self.get_num_of_user_sat(self.mahimahi_ptr[agent], sat_id)))
             if len(bw_list) == 0:
                 continue
             bw = sum(bw_list) / len(bw_list)
