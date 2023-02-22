@@ -137,6 +137,7 @@ def central_agent(net_params_queues, exp_queues):
             print("Model restored.")
 
         for epoch in range(TRAIN_EPOCH):
+            print("epoch: ", epoch)
             # synchronize the network parameters of work agent
             try:
                 actor_net_params = actor.get_network_params()
