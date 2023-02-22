@@ -297,18 +297,20 @@ def agent(agent_id, net_params_queue, exp_queue):
 
                 actor_net_params = net_params_queue.get()
                 actor.set_network_params(actor_net_params)
-                del s_batch[:]
-                del a_batch[:]
-                del p_batch[:]
-                del v_batch[:]
-                del s_batch_user[:]
-                del a_batch_user[:]
-                del p_batch_user[:]
-                del actor_net_params[:]
-
-                del bit_rate[:]
-                del sat[:]
-                del action_prob[:]
+                s_batch, a_batch, p_batch, v_batch, s_batch_user, a_batch_user, p_batch_user = None, None, None, None, None, None, None
+                del s_batch
+                del a_batch
+                del p_batch
+                del v_batch
+                del s_batch_user
+                del a_batch_user
+                del p_batch_user
+                actor_net_params = None
+                del actor_net_params
+                bit_rate, sat, action_prob = None, None, None
+                del bit_rate
+                del sat
+                del action_prob
             except queue.Empty:
                 log.info("Empty")
                 continue
