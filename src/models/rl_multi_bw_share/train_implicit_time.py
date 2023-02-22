@@ -348,9 +348,11 @@ def main():
     for i in range(TRAIN_EPOCH):
         for i in range(NUM_AGENTS):
             agents[i].start()
+        for i in range(NUM_AGENTS):
+            agents[i].join()
 
-        # wait unit training is done
-        coordinator.join()
+    # wait unit training is done
+    coordinator.join()
 
 
 if __name__ == '__main__':
