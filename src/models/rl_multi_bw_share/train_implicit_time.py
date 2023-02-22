@@ -212,7 +212,7 @@ def agent(agent_id, net_params_queue, exp_queue):
         actor.set_network_params(actor_net_params)
         time_stamp = 0
 
-        for epoch in range(MODEL_SAVE_INTERVAL):
+        for epoch in range(TRAIN_SEQ_LEN):
             bit_rate = [0 for _ in range(USERS)]
             sat = [0 for _ in range(USERS)]
             action_prob = [[] for _ in range(USERS)]
@@ -313,6 +313,8 @@ def agent(agent_id, net_params_queue, exp_queue):
             del sat[:]
             del action_prob[:]
 
+        print("finished")
+
 
 def build_summaries():
     entropy_weight = tf.Variable(0.)
@@ -351,9 +353,11 @@ def main():
                                      args=(i,
                                            net_params_queues[i],
                                            exp_queues[i])))
+        print("start")
         for i in range(NUM_AGENTS):
             agents[i].start()
 
+        print("join")
         for i in range(NUM_AGENTS):
             agents[i].join()
 
