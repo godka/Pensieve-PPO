@@ -300,6 +300,9 @@ def agent(agent_id, net_params_queue, exp_queue):
                 del a_batch[:]
                 del p_batch[:]
                 del v_batch[:]
+                del s_batch_user[:]
+                del a_batch_user[:]
+                del p_batch_user[:]
                 del actor_net_params[:]
 
                 del bit_rate[:]
@@ -310,7 +313,6 @@ def agent(agent_id, net_params_queue, exp_queue):
                 continue
             except queue.Full:
                 log.info("Full")
-                exp_queue.get()
                 continue
 
 
