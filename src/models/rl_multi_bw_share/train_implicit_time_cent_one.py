@@ -6,27 +6,26 @@ import os
 import sys
 root_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, root_dir + '/../')
-from env.multi_bw_share.env_time import ABREnv
-from models.rl_multi_bw_share.ppo_spec import ppo_implicit as network
+from env.multi_bw_share.env_cent_time import ABREnv
+from models.rl_multi_bw_share.ppo_spec import ppo_cent_his3 as network
 import tensorflow.compat.v1 as tf
 import structlog
 import logging
-from util.constants import A_DIM, NUM_AGENTS, TRAIN_TRACES
+
+from util.constants import A_DIM, NUM_AGENTS, MAX_SAT, PAST_SAT_LOG_LEN, TRAIN_TRACES
 
 os.environ['CUDA_VISIBLE_DEVICES'] = '-1'
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 
-S_DIM = [6 + 3, 8]
 A_SAT = 2
 ACTOR_LR_RATE = 1e-4
 TRAIN_SEQ_LEN = 300  # take as a train batch
 TRAIN_EPOCH = 20000000
 MODEL_SAVE_INTERVAL = 3000
 RANDOM_SEED = 42
-SUMMARY_DIR = './ppo_imp'
+SUMMARY_DIR = './ppo_imp_cent'
 MODEL_DIR = '..'
-
-TEST_LOG_FOLDER = './test_results_imp'
+TEST_LOG_FOLDER = './test_results_imp_cent'
 PPO_TRAINING_EPO = 5
 
 import argparse
@@ -36,11 +35,11 @@ parser = argparse.ArgumentParser(description='PyTorch Synthetic Benchmark',
 parser.add_argument('--user', type=int, default=3)
 args = parser.parse_args()
 USERS = args.user
-# A_SAT = USERS + 1
-
+# A_SAT = USERS + 1\
 TEST_LOG_FOLDER += str(USERS) + '/'
 SUMMARY_DIR += str(USERS)
 LOG_FILE = SUMMARY_DIR + '/log'
+S_DIM = [9 + USERS-1 + (USERS-1) * PAST_SAT_LOG_LEN + (USERS-1), 8]
 
 # NN_MODEL = SUMMARY_DIR + '/best_model.ckpt'
 NN_MODEL = None
@@ -66,8 +65,8 @@ def testing(epoch, nn_model, log_file):
     if not os.path.exists(TEST_LOG_FOLDER):
         os.makedirs(TEST_LOG_FOLDER)
     # run test script
-    log.info('python test_implicit_time.py ', nn_model=nn_model + ' ' + str(USERS))
-    os.system('python test_implicit_time.py ' + nn_model + ' ' + str(USERS))
+    log.info('python test_implicit_time_cent.py ', nn_model=nn_model + ' ' + str(USERS))
+    os.system('python test_implicit_time_cent.py ' + nn_model + ' ' + str(USERS))
     log.info('End testing')
 
     # append test performance to the log
@@ -118,12 +117,11 @@ def central_agent(net_params_queues, exp_queues):
         summary_ops, summary_vars = build_summaries()
         best_rewards = -1000
         actor = network.Network(sess,
-                                state_dim=S_DIM, action_dim=A_DIM * A_SAT,
-                                learning_rate=ACTOR_LR_RATE)
+                state_dim=S_DIM, action_dim=A_DIM * A_SAT,
+                learning_rate=ACTOR_LR_RATE, num_of_users=USERS)
 
         sess.run(tf.global_variables_initializer())
         writer = tf.summary.FileWriter(SUMMARY_DIR, sess.graph)  # training monitor
-        # saver = tf.train.Saver()  # save neural net parameters
         saver = tf.train.Saver()  # save neural net parameters
 
         # restore neural net parameters
@@ -169,16 +167,19 @@ def central_agent(net_params_queues, exp_queues):
                 save_path = saver.save(sess, SUMMARY_DIR + "/nn_model_ep_" +
                                        str(epoch) + ".ckpt")
                 avg_reward, avg_entropy = testing(epoch,
-                                                  SUMMARY_DIR + "/nn_model_ep_" + str(epoch) + ".ckpt",
-                                                  test_log_file)
+                    SUMMARY_DIR + "/nn_model_ep_" + str(epoch) + ".ckpt", 
+                    test_log_file)
 
                 if best_rewards < avg_reward:
                     os.system('cp ' + TEST_LOG_FOLDER + '/summary_reward_parts ' + SUMMARY_DIR)
                     os.system('cp ' + TEST_LOG_FOLDER + '/summary ' + SUMMARY_DIR)
-                    os.system('cp ' + SUMMARY_DIR + "/nn_model_ep_" + str(epoch) + ".ckpt.index " + SUMMARY_DIR + "/best_model.ckpt.index")
-                    os.system('cp ' + SUMMARY_DIR + "/nn_model_ep_" + str(epoch) + ".ckpt.meta " + SUMMARY_DIR + "/best_model.ckpt.meta")
+                    os.system('cp ' + SUMMARY_DIR + "/nn_model_ep_" +
+                                       str(epoch) + ".ckpt.index " + SUMMARY_DIR + "/best_model.ckpt.index")
+                    os.system('cp ' + SUMMARY_DIR + "/nn_model_ep_" +
+                                       str(epoch) + ".ckpt.meta " + SUMMARY_DIR + "/best_model.ckpt.meta")
 
-                    os.system('cp ' + SUMMARY_DIR + "/nn_model_ep_" + str(epoch) + ".ckpt.data-00000-of-00001 " + SUMMARY_DIR + "/best_model.ckpt.data-00000-of-00001")
+                    os.system('cp ' + SUMMARY_DIR + "/nn_model_ep_" +
+                                       str(epoch) + ".ckpt.data-00000-of-00001 " + SUMMARY_DIR + "/best_model.ckpt.data-00000-of-00001")
                     best_rewards = avg_reward
 
                 summary_str = sess.run(summary_ops, feed_dict={
@@ -200,18 +201,19 @@ def agent(agent_id, net_params_queue, exp_queue):
     with tf.Session() as sess:
         actor = network.Network(sess,
                                 state_dim=S_DIM, action_dim=A_DIM * A_SAT,
-                                learning_rate=ACTOR_LR_RATE)
+                                learning_rate=ACTOR_LR_RATE, num_of_users=USERS)
 
         # initial synchronization of the network parameters from the coordinator
         actor_net_params = net_params_queue.get()
         actor.set_network_params(actor_net_params)
+
         time_stamp = 0
 
         for epoch in range(TRAIN_EPOCH):
             bit_rate = [0 for _ in range(USERS)]
             sat = [0 for _ in range(USERS)]
             action_prob = [[] for _ in range(USERS)]
-
+            
             obs = env.reset()
 
             for user_id in range(USERS):
@@ -228,7 +230,6 @@ def agent(agent_id, net_params_queue, exp_queue):
 
                 env.set_sat(user_id, sat[user_id])
 
-            s_batch, a_batch, p_batch, r_batch, v_batch = [], [], [], [], []
             s_batch_user, a_batch_user, p_batch_user, r_batch_user = \
                 [[] for _ in range(USERS)], [[] for _ in range(USERS)], \
                 [[] for _ in range(USERS)], [[] for _ in range(USERS)]
@@ -279,19 +280,12 @@ def agent(agent_id, net_params_queue, exp_queue):
             for batch_user in r_batch_user:
                 r_batch += batch_user
             """
+            tmp_i = random.randint(0, USERS - 1)
             # if agent_id == 0:
             #     print(len(s_batch), len(a_batch), len(r_batch))
-            # tmp_i = random.randint(0, USERS - 1)
-            for user_id in range(USERS):
-                tmp_v_batch = actor.compute_v(s_batch_user[user_id][1:], a_batch_user[user_id][1:], r_batch_user[user_id][1:], env.check_end())
-                v_batch += tmp_v_batch
-
-                s_batch += s_batch_user[user_id][1:]
-                a_batch += a_batch_user[user_id][1:]
-                p_batch += p_batch_user[user_id][1:]
-
+            v_batch = actor.compute_v(s_batch_user[tmp_i][1:], a_batch_user[tmp_i][1:], r_batch_user[tmp_i][1:], env.check_end())
             try:
-                exp_queue.put([s_batch, a_batch, p_batch, v_batch])
+                exp_queue.put([s_batch_user[tmp_i][1:], a_batch_user[tmp_i][1:], p_batch_user[tmp_i][1:], v_batch])
 
                 actor_net_params = net_params_queue.get()
                 actor.set_network_params(actor_net_params)
@@ -299,9 +293,6 @@ def agent(agent_id, net_params_queue, exp_queue):
                 del a_batch_user[:]
                 del r_batch_user[:]
                 del p_batch_user[:]
-                del s_batch[:]
-                del a_batch[:]
-                del p_batch[:]
                 del v_batch[:]
                 del actor_net_params[:]
 

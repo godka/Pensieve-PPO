@@ -140,7 +140,7 @@ class Network():
         self.acts = tf.placeholder(tf.float32, [None, self.a_dim])
         self.entropy_weight = tf.placeholder(tf.float32)
         self.pi, self.val = self.CreateNetwork(inputs=self.inputs)
-        self.real_out = tf.clip_by_value(self.pi, ACTION_EPS, 1. - ACTION_EPS)
+        self.real_out = tf.clip_by_value(self.pi, self.lr_rate, 1. - self.lr_rate)
 
         self.entropy = -tf.reduce_sum(tf.multiply(self.real_out, tf.log(self.real_out)), reduction_indices=1,
                                       keepdims=True)
@@ -188,7 +188,7 @@ class Network():
         })
         # adaptive entropy weight
         # https://arxiv.org/abs/2003.13590
-        p_batch = np.clip(p_batch, ACTION_EPS, 1. - ACTION_EPS)
+        p_batch = np.clip(p_batch, self.lr_rate, 1. - self.lr_rate)
         _H = np.mean(np.sum(-np.log(p_batch) * p_batch, axis=1))
         _g = _H - self.H_target
         self._entropy_weight -= self.lr_rate * _g * ENTROPY_WEIGHT

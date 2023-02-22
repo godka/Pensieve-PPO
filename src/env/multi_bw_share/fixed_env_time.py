@@ -38,7 +38,7 @@ SAT_STRATEGY = "resource-fair"
 
 class Environment:
     def __init__(self, all_cooked_time, all_cooked_bw, all_cooked_name=None, random_seed=RANDOM_SEED,
-                 num_agents=NUM_AGENTS, reward_func="LIN"):
+                 num_agents=NUM_AGENTS, reward_func="LIN", ho_type=None):
         assert len(all_cooked_time) == len(all_cooked_bw)
         self.log = structlog.get_logger()
 
