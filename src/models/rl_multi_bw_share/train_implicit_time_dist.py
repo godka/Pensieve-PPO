@@ -127,6 +127,7 @@ def central_agent(net_params_queues, exp_queues):
         # restore neural net parameters
         nn_model = NN_MODEL
         if nn_model is not None:  # nn_model is the path to file
+            saver = tf.train.import_meta_graph(nn_model + '.meta')
             saver.restore(sess, nn_model)
             print("Model restored.")
 
@@ -136,8 +137,6 @@ def central_agent(net_params_queues, exp_queues):
                 actor_net_params = actor.get_network_params()
                 for i in range(NUM_AGENTS):
                     net_params_queues[i].put(actor_net_params)
-                actor_net_params = None
-                del actor_net_params
                 s, a, p, g = [], [], [], []
                 for i in range(NUM_AGENTS):
                     s_, a_, p_, g_ = exp_queues[i].get()
@@ -295,8 +294,9 @@ def agent(agent_id, net_params_queue, exp_queue):
 
             exp_queue.put([s_batch, a_batch, p_batch, v_batch])
 
-            actor_net_params = net_params_queue.get()
-            actor.set_network_params(actor_net_params)
+            if epoch != TRAIN_SEQ_LEN-1:
+                actor_net_params = net_params_queue.get()
+                actor.set_network_params(actor_net_params)
             del s_batch_user[:]
             del a_batch_user[:]
             del r_batch_user[:]
@@ -354,6 +354,7 @@ def main():
 
         for i in range(NUM_AGENTS):
             agents[i].join()
+        agents = None
 
     # wait unit training is done
     coordinator.join()
