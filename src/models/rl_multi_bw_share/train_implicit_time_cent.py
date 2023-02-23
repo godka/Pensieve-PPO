@@ -208,40 +208,41 @@ def agent(agent_id, net_params_queue, exp_queue):
 
         time_stamp = 0
 
-        for epoch in range(TRAIN_EPOCH):
+        for epoch in range(MODEL_SAVE_INTERVAL):
             bit_rate = [0 for _ in range(USERS)]
             sat = [0 for _ in range(USERS)]
             action_prob = [[] for _ in range(USERS)]
-            
+
             obs = env.reset()
-            
-            for agent in range(USERS):
-                obs[agent] = env.reset_agent(agent)
 
-                action_prob[agent] = actor.predict(
-                    np.reshape(obs[agent], (1, S_DIM[0], S_DIM[1])))
-            
+            for user_id in range(USERS):
+                obs[user_id] = env.reset_agent(user_id)
+
+                action_prob[user_id] = actor.predict(
+                    np.reshape(obs[user_id], (1, S_DIM[0], S_DIM[1])))
+
                 # gumbel noise
-                noise = np.random.gumbel(size=len(action_prob[agent]))
-                bit_rate[agent] = np.argmax(np.log(action_prob[agent]) + noise)
+                noise = np.random.gumbel(size=len(action_prob[user_id]))
+                bit_rate[user_id] = np.argmax(np.log(action_prob[user_id]) + noise)
 
-                sat[agent] = bit_rate[agent] // A_DIM
-                env.set_sat(agent, sat[agent])
-    
+                sat[user_id] = bit_rate[user_id] // A_DIM
+
+                env.set_sat(user_id, sat[user_id])
+
             s_batch, a_batch, p_batch, r_batch, v_batch = [], [], [], [], []
             s_batch_user, a_batch_user, p_batch_user, r_batch_user = \
-                [[]for _ in range(USERS)], [[]for _ in range(USERS)], \
-                [[]for _ in range(USERS)], [[]for _ in range(USERS)]
-            
+                [[] for _ in range(USERS)], [[] for _ in range(USERS)], \
+                [[] for _ in range(USERS)], [[] for _ in range(USERS)]
+
             for step in range(TRAIN_SEQ_LEN):
                 agent = env.get_first_agent()
                 log.debug("agent", agent=agent)
-                
+
                 if agent == -1:
                     break
 
                 s_batch_user[agent].append(obs[agent])
-                    
+
                 obs[agent], rew, done, info = env.step(bit_rate[agent], agent)
 
                 action_vec = np.zeros(A_DIM * A_SAT)
@@ -254,18 +255,18 @@ def agent(agent_id, net_params_queue, exp_queue):
                     
                     action_prob[agent] = actor.predict(
                         np.reshape(obs[agent], (1, S_DIM[0], S_DIM[1])))
-                
+
                     # gumbel noise
                     noise = np.random.gumbel(size=len(action_prob[agent]))
                     bit_rate[agent] = np.argmax(np.log(action_prob[agent]) + noise)
 
                     sat[agent] = bit_rate[agent] // A_DIM
-                    
+
                     env.set_sat(agent, sat[agent])
-                    
+
                 if env.check_end():
                     break
-                
+
                 # if agent_id == 0:
                 #     print(ppo_spec.net_env.video_chunk_counter)
                 #     print([len(batch_user) for batch_user in s_batch_user])
@@ -291,31 +292,24 @@ def agent(agent_id, net_params_queue, exp_queue):
                 a_batch += a_batch_user[user_id][1:]
                 p_batch += p_batch_user[user_id][1:]
 
-            try:
-                exp_queue.put([s_batch, a_batch, p_batch, v_batch])
+            exp_queue.put([s_batch, a_batch, p_batch, v_batch])
 
+            if epoch != TRAIN_SEQ_LEN-1:
                 actor_net_params = net_params_queue.get()
                 actor.set_network_params(actor_net_params)
-                s_batch, a_batch, p_batch, v_batch, s_batch_user, a_batch_user, p_batch_user = None, None, None, None, None, None, None
-                del s_batch
-                del a_batch
-                del p_batch
-                del v_batch
-                del s_batch_user
-                del a_batch_user
-                del p_batch_user
-                actor_net_params = None
-                del actor_net_params
-                bit_rate, sat, action_prob = None, None, None
-                del bit_rate
-                del sat
-                del action_prob
-            except queue.Empty:
-                log.info("Empty")
-                continue
-            except queue.Full:
-                log.info("Full")
-                continue
+            del s_batch_user[:]
+            del a_batch_user[:]
+            del r_batch_user[:]
+            del p_batch_user[:]
+            # del s_batch[:]
+            # del a_batch[:]
+            # del p_batch[:]
+            # del v_batch[:]
+            del actor_net_params[:]
+
+            del bit_rate[:]
+            del sat[:]
+            del action_prob[:]
 
 
 def build_summaries():
@@ -348,14 +342,19 @@ def main():
                              args=(net_params_queues, exp_queues))
     coordinator.start()
 
-    agents = []
-    for i in range(NUM_AGENTS):
-        agents.append(mp.Process(target=agent,
-                                 args=(i,
-                                       net_params_queues[i],
-                                       exp_queues[i])))
-    for i in range(NUM_AGENTS):
-        agents[i].start()
+    for _ in range(TRAIN_EPOCH):
+        agents = []
+        for i in range(NUM_AGENTS):
+            agents.append(mp.Process(target=agent,
+                                     args=(i,
+                                           net_params_queues[i],
+                                           exp_queues[i])))
+        for i in range(NUM_AGENTS):
+            agents[i].start()
+
+        for i in range(NUM_AGENTS):
+            agents[i].join()
+        agents = None
 
     # wait unit training is done
     coordinator.join()
