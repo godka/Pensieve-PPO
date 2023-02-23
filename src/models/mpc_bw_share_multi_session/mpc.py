@@ -109,15 +109,15 @@ def main():
             net_env.reset()
 
             print("network count", video_count)
-            print(sum(tmp_results) / len(tmp_results))
+            print(sum(tmp_results[1:]) / len(tmp_results[1:]))
             summary_file = open(SUMMARY_PATH, 'a')
             summary_file.write('\n')
             summary_file.write(str(best_user_infos))
             summary_file.write('\n')
-            summary_file.write(str(sum(tmp_results) / len(tmp_results)))
+            summary_file.write(str(sum(tmp_results[1:]) / len(tmp_results[1:])))
             summary_file.close()
 
-            results += tmp_results
+            results += tmp_results[1:]
             tmp_results = []
             best_user_infos = []
             video_count += 1

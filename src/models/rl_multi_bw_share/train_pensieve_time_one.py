@@ -204,10 +204,9 @@ def agent(agent_id, net_params_queue, exp_queue):
         # initial synchronization of the network parameters from the coordinator
         actor_net_params = net_params_queue.get()
         actor.set_network_params(actor_net_params)
-
         time_stamp = 0
 
-        for epoch in range(TRAIN_EPOCH):
+        for epoch in range(MODEL_SAVE_INTERVAL):
             bit_rate = [0 for _ in range(USERS)]
             sat = [0 for _ in range(USERS)]
             action_prob = [[] for _ in range(USERS)]
@@ -288,14 +287,16 @@ def agent(agent_id, net_params_queue, exp_queue):
 
                 actor_net_params = net_params_queue.get()
                 actor.set_network_params(actor_net_params)
-                del s_batch[:]
-                del a_batch[:]
-                del p_batch[:]
-                del v_batch[:]
                 del s_batch_user[:]
                 del a_batch_user[:]
+                del r_batch_user[:]
                 del p_batch_user[:]
+                del v_batch[:]
                 del actor_net_params[:]
+
+                del bit_rate[:]
+                del sat[:]
+                del action_prob[:]
             except queue.Empty:
                 log.info("Empty")
                 continue
@@ -334,14 +335,18 @@ def main():
                              args=(net_params_queues, exp_queues))
     coordinator.start()
 
-    agents = []
-    for i in range(NUM_AGENTS):
-        agents.append(mp.Process(target=agent,
-                                 args=(i,
-                                       net_params_queues[i],
-                                       exp_queues[i])))
-    for i in range(NUM_AGENTS):
-        agents[i].start()
+    for _ in range(TRAIN_EPOCH):
+        agents = []
+        for i in range(NUM_AGENTS):
+            agents.append(mp.Process(target=agent,
+                                     args=(i,
+                                           net_params_queues[i],
+                                           exp_queues[i])))
+        for i in range(NUM_AGENTS):
+            agents[i].start()
+
+        for i in range(NUM_AGENTS):
+            agents[i].join()
 
     # wait unit training is done
     coordinator.join()
