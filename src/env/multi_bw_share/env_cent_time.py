@@ -1,5 +1,6 @@
 # add queuing delay into halo
 import numpy as np
+
 from util.constants import DEFAULT_QUALITY, REBUF_PENALTY, SMOOTH_PENALTY, VIDEO_BIT_RATE, BUFFER_NORM_FACTOR, \
     BITRATE_WEIGHT, CHUNK_TIL_VIDEO_END_CAP, M_IN_K, S_LEN, A_DIM, PAST_LEN, BITRATE_REWARD, PAST_SAT_LOG_LEN
 
@@ -18,11 +19,11 @@ EPS = 1e-6
 
 NUM_AGENTS = None
 SAT_DIM = A_SAT
+REWARD_FUNC = None
 
 
 class ABREnv():
-
-    def __init__(self, random_seed=RANDOM_SEED, num_agents=NUM_AGENTS, reward_func="LIN", train_traces=None):
+    def __init__(self, random_seed=RANDOM_SEED, num_agents=NUM_AGENTS, reward_func=REWARD_FUNC, train_traces=None):
         self.num_agents = num_agents
         global S_INFO
         S_INFO = 9 + self.num_agents - 1 + (self.num_agents - 1) * PAST_SAT_LOG_LEN + (self.num_agents - 1)
