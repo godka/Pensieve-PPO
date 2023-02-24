@@ -285,8 +285,9 @@ def agent(agent_id, net_params_queue, exp_queue):
             try:
                 exp_queue.put([s_batch_user[tmp_i][1:], a_batch_user[tmp_i][1:], p_batch_user[tmp_i][1:], v_batch])
 
-                actor_net_params = net_params_queue.get()
-                actor.set_network_params(actor_net_params)
+                if epoch != TRAIN_SEQ_LEN - 1:
+                    actor_net_params = net_params_queue.get()
+                    actor.set_network_params(actor_net_params)
                 del s_batch_user[:]
                 del a_batch_user[:]
                 del r_batch_user[:]
@@ -347,6 +348,7 @@ def main():
 
         for i in range(NUM_AGENTS):
             agents[i].join()
+        agents = None
 
     # wait unit training is done
     coordinator.join()
