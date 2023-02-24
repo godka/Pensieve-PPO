@@ -168,19 +168,16 @@ def central_agent(net_params_queues, exp_queues):
                 save_path = saver.save(sess, SUMMARY_DIR + "/nn_model_ep_" +
                                        str(epoch) + ".ckpt")
                 avg_reward, avg_entropy = testing(epoch,
-                    SUMMARY_DIR + "/nn_model_ep_" + str(epoch) + ".ckpt", 
-                    test_log_file)
+                                                  SUMMARY_DIR + "/nn_model_ep_" + str(epoch) + ".ckpt",
+                                                  test_log_file)
 
                 if best_rewards < avg_reward:
                     os.system('cp ' + TEST_LOG_FOLDER + '/summary_reward_parts ' + SUMMARY_DIR)
                     os.system('cp ' + TEST_LOG_FOLDER + '/summary ' + SUMMARY_DIR)
-                    os.system('cp ' + SUMMARY_DIR + "/nn_model_ep_" +
-                                       str(epoch) + ".ckpt.index " + SUMMARY_DIR + "/best_model.ckpt.index")
-                    os.system('cp ' + SUMMARY_DIR + "/nn_model_ep_" +
-                                       str(epoch) + ".ckpt.meta " + SUMMARY_DIR + "/best_model.ckpt.meta")
+                    os.system('cp ' + SUMMARY_DIR + "/nn_model_ep_" + str(epoch) + ".ckpt.index " + SUMMARY_DIR + "/best_model.ckpt.index")
+                    os.system('cp ' + SUMMARY_DIR + "/nn_model_ep_" + str(epoch) + ".ckpt.meta " + SUMMARY_DIR + "/best_model.ckpt.meta")
 
-                    os.system('cp ' + SUMMARY_DIR + "/nn_model_ep_" +
-                                       str(epoch) + ".ckpt.data-00000-of-00001 " + SUMMARY_DIR + "/best_model.ckpt.data-00000-of-00001")
+                    os.system('cp ' + SUMMARY_DIR + "/nn_model_ep_" + str(epoch) + ".ckpt.data-00000-of-00001 " + SUMMARY_DIR + "/best_model.ckpt.data-00000-of-00001")
                     best_rewards = avg_reward
 
                 summary_str = sess.run(summary_ops, feed_dict={
@@ -294,7 +291,6 @@ def agent(agent_id, net_params_queue, exp_queue):
                 del a_batch_user[:]
                 del r_batch_user[:]
                 del p_batch_user[:]
-                del v_batch[:]
                 del actor_net_params[:]
 
                 del bit_rate[:]

@@ -1876,6 +1876,7 @@ class Environment:
         # return runner_up_sat_ids[agent], ho_stamps[agent], best_combos[agent], max_rewards[agent]
         # print(best_combos, max_rewards, ho_stamps)
         return cur_sat_ids, runner_up_sat_ids, ho_stamps, best_combos, max_rewards
+
     def calculate_mpc_with_handover_exhaustive_reduced(self, agent):
         # future chunks length (try 4 if that many remaining)
         video_chunk_remain = [self.video_chunk_remain[i] for i in range(self.num_agents)]
