@@ -287,9 +287,9 @@ def agent(agent_id, net_params_queue, exp_queue):
             v_batch = actor.compute_v(s_batch_user[tmp_i][1:], a_batch_user[tmp_i][1:], r_batch_user[tmp_i][1:], env.check_end())
             try:
                 exp_queue.put([s_batch_user[tmp_i][1:], a_batch_user[tmp_i][1:], p_batch_user[tmp_i][1:], v_batch])
-
-                actor_net_params = net_params_queue.get()
-                actor.set_network_params(actor_net_params)
+                if epoch != TRAIN_SEQ_LEN - 1:
+                    actor_net_params = net_params_queue.get()
+                    actor.set_network_params(actor_net_params)
                 del s_batch_user[:]
                 del a_batch_user[:]
                 del r_batch_user[:]
