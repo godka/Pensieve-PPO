@@ -792,11 +792,11 @@ class Environment:
             return 0
 
         if cur_sat_id == prev_sat_id:
-            reward1 = self.calculate_reward(agent, cur_sat_id, video_chunk_size, last_mahimahi_time, mahimahi_ptr, delay, buffer_size, self.get_num_of_user_sat(cur_sat_id)+1)
+            reward1 = self.calculate_reward(agent, cur_sat_id, video_chunk_size, last_mahimahi_time, mahimahi_ptr, delay, buffer_size, self.get_num_of_user_sat(mahimahi_ptr, cur_sat_id)+1)
             reward2 = self.calculate_reward(agent, cur_sat_id, video_chunk_size, last_mahimahi_time, mahimahi_ptr,
                                             delay, buffer_size, self.get_num_of_user_sat(mahimahi_ptr, cur_sat_id))
         elif cur_sat_id == next_sat_id:
-            reward1 = self.calculate_reward(agent, cur_sat_id, video_chunk_size, last_mahimahi_time, mahimahi_ptr, delay, buffer_size, self.get_num_of_user_sat(cur_sat_id)-1)
+            reward1 = self.calculate_reward(agent, cur_sat_id, video_chunk_size, last_mahimahi_time, mahimahi_ptr, delay, buffer_size, self.get_num_of_user_sat(mahimahi_ptr, cur_sat_id)-1)
             reward2 = self.calculate_reward(agent, cur_sat_id, video_chunk_size, last_mahimahi_time, mahimahi_ptr,
                                             delay, buffer_size, self.get_num_of_user_sat(mahimahi_ptr, cur_sat_id))
         else:
@@ -847,6 +847,7 @@ class Environment:
                 mahimahi_ptr = 1
                 last_mahimahi_time = 0
                 end_of_video = True
+                break
 
         delay *= MILLISECONDS_IN_SECOND
         delay += LINK_RTT

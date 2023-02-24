@@ -23,7 +23,7 @@ ACTOR_LR_RATE = 1e-4
 RANDOM_SEED = 42
 NN_MODEL = sys.argv[1]
 USERS = int(sys.argv[2])
-SUMMARY_DIR = './test_results_imp_cent' + str(USERS)
+SUMMARY_DIR = './test_results_imp_cent_one_reward' + str(USERS)
 
 LOG_FILE = SUMMARY_DIR + '/log_sim_ppo'
 SUMMARY_PATH = SUMMARY_DIR + '/summary'
@@ -168,9 +168,6 @@ def main():
             time_stamp[agent] += delay  # in ms
             time_stamp[agent] += sleep_time  # in ms
 
-            next_sat_id = None
-            if next_sat_ids is not None:
-                next_sat_id = next_sat_ids[agent]
             # reward is video quality - rebuffer penalty
             if REWARD_FUNC == "LIN":
                 reward = VIDEO_BIT_RATE[bit_rate[agent]] / M_IN_K \
@@ -182,7 +179,7 @@ def main():
                 tmp_reward_3.append(- SMOOTH_PENALTY * np.abs(VIDEO_BIT_RATE[bit_rate[agent]] -
                                                               VIDEO_BIT_RATE[last_bit_rate[agent]]) / M_IN_K)
 
-                train_reward = reward + net_env.get_others_reward(agent, last_bit_rate, cur_sat_id)
+                # reward += self.net_env.get_others_reward(agent, self.last_bit_rate, self.prev_sat_id, self.cur_sat_id)
             elif REWARD_FUNC == "HD":
                 reward = BITRATE_REWARD[bit_rate[agent]] \
                          - 8 * rebuf - np.abs(BITRATE_REWARD[bit_rate[agent]] - BITRATE_REWARD[last_bit_rate[agent]])
@@ -193,7 +190,7 @@ def main():
             else:
                 raise Exception
 
-            r_batch[agent].append(train_reward)
+            r_batch[agent].append(reward)
             tmp_results.append(reward)
 
             last_bit_rate[agent] = bit_rate[agent]
@@ -250,7 +247,9 @@ def main():
             # state[agent][9:10, -1] = np.array(next_sat_user_num) / 10
             state[agent][8, :2] = [float(connected_time[0]) / BUFFER_NORM_FACTOR / 10,
                                     float(connected_time[1]) / BUFFER_NORM_FACTOR / 10]
-
+            next_sat_id = None
+            if next_sat_ids is not None:
+                next_sat_id = next_sat_ids[agent]
             other_user_sat_decisions, other_sat_num_users, other_sat_bws, cur_user_sat_decisions \
                 = encode_other_sat_info(net_env.sat_decision_log, USERS, cur_sat_id, next_sat_id, agent,
                                         other_sat_users, other_sat_bw_logs, PAST_SAT_LOG_LEN)

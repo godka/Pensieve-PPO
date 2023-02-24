@@ -3480,7 +3480,7 @@ class Environment:
 
         if len(cur_sat_past_list) <= 1:
             # Just past bw
-            return self.cooked_bw[sat_id][self.mahimahi_ptr[agent] - 1] / self.get_num_of_user_sat(self.mahimahi_ptr[agent], sat_id))
+            return self.cooked_bw[sat_id][self.mahimahi_ptr[agent] - 1] / self.get_num_of_user_sat(self.mahimahi_ptr[agent], sat_id)
         cur_sat_past_bws = pd.Series(cur_sat_past_list)
         cur_sat_past_bws.index.freq = 's'
 
@@ -3926,11 +3926,12 @@ class Environment:
         self.cur_satellite = copy.deepcopy(self.stored_cur_satellite)
         self.cur_user = copy.deepcopy(self.stored_cur_user)
 
-    def get_others_reward(self, agent, last_bit_rate, prev_sat_id, cur_sat_id):
+    def get_others_reward(self, agent, last_bit_rate, cur_sat_id):
         reward = 0
         for i in range(self.num_agents):
             if i == agent:
                 continue
+            prev_sat_id = self.prev_sat_id[agent]
             if prev_sat_id != cur_sat_id:
                 reward += self.get_simulated_penalty(i, last_bit_rate[i], prev_sat_id,
                                                      cur_sat_id) / self.num_agents / 10
@@ -3952,14 +3953,14 @@ class Environment:
 
         if cur_sat_id == prev_sat_id:
             reward1 = self.calculate_reward(agent, cur_sat_id, video_chunk_size, last_mahimahi_time, mahimahi_ptr,
-                                            delay, buffer_size, self.get_num_of_user_sat(cur_sat_id) + 1)
+                                            delay, buffer_size, self.get_num_of_user_sat(mahimahi_ptr, cur_sat_id) + 1)
             reward2 = self.calculate_reward(agent, cur_sat_id, video_chunk_size, last_mahimahi_time, mahimahi_ptr,
-                                            delay, buffer_size, self.get_num_of_user_sat(cur_sat_id))
+                                            delay, buffer_size, self.get_num_of_user_sat(mahimahi_ptr, cur_sat_id))
         elif cur_sat_id == next_sat_id:
             reward1 = self.calculate_reward(agent, cur_sat_id, video_chunk_size, last_mahimahi_time, mahimahi_ptr,
-                                            delay, buffer_size, self.get_num_of_user_sat(cur_sat_id) - 1)
+                                            delay, buffer_size, self.get_num_of_user_sat(mahimahi_ptr, cur_sat_id) - 1)
             reward2 = self.calculate_reward(agent, cur_sat_id, video_chunk_size, last_mahimahi_time, mahimahi_ptr,
-                                            delay, buffer_size, self.get_num_of_user_sat(cur_sat_id))
+                                            delay, buffer_size, self.get_num_of_user_sat(mahimahi_ptr, cur_sat_id))
         else:
             print("Cannot Happen")
         return reward1 - reward2
@@ -3967,13 +3968,10 @@ class Environment:
     def calculate_reward(self, agent, cur_sat_id, video_chunk_size, last_mahimahi_time, mahimahi_ptr, delay,
                          buffer_size, num_of_user):
         video_chunk_counter_sent = 0  # in bytes
+
         while True:  # download video chunk over mahimahi
-            if num_of_user == 0:
-                throughput = self.cooked_bw[cur_sat_id][mahimahi_ptr] \
-                             * B_IN_MB / BITS_IN_BYTE
-            else:
-                throughput = self.cooked_bw[cur_sat_id][mahimahi_ptr] \
-                             * B_IN_MB / BITS_IN_BYTE / num_of_user
+            throughput = self.cur_satellite[self.cur_sat_id[agent]].data_rate(self.cur_user[agent],
+                                                                              mahimahi_ptr) * B_IN_MB / BITS_IN_BYTE
 
             if throughput == 0.0:
                 # Do the forced handover
@@ -4009,6 +4007,7 @@ class Environment:
                 mahimahi_ptr = 1
                 last_mahimahi_time = 0
                 end_of_video = True
+                break
 
         delay *= MILLISECONDS_IN_SECOND
         delay += LINK_RTT
@@ -4016,10 +4015,7 @@ class Environment:
         # rebuffer time
         rebuf = np.maximum(delay - buffer_size, 0.0)
 
-        M_IN_K = 1000.0
         REBUF_PENALTY = 4.3  # 1 sec rebuffering -> 3 Mbps
-        SMOOTH_PENALTY = 1
-        DEFAULT_QUALITY = 1  # default video quality without agent
 
         reward = REBUF_PENALTY * rebuf / MILLISECONDS_IN_SECOND
 
