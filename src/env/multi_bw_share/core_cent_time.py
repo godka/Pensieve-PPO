@@ -806,12 +806,8 @@ class Environment:
     def calculate_reward(self, agent, cur_sat_id, video_chunk_size, last_mahimahi_time, mahimahi_ptr, delay, buffer_size, num_of_user):
         video_chunk_counter_sent = 0  # in bytes
         while True:  # download video chunk over mahimahi
-            if num_of_user == 0:
-                throughput = self.cooked_bw[cur_sat_id][mahimahi_ptr] \
-                             * B_IN_MB / BITS_IN_BYTE
-            else:
-                throughput = self.cooked_bw[cur_sat_id][mahimahi_ptr] \
-                             * B_IN_MB / BITS_IN_BYTE / num_of_user
+            throughput = self.cur_satellite[self.cur_sat_id[agent]].data_rate(self.cur_user[agent],
+                                                                              mahimahi_ptr) * B_IN_MB / BITS_IN_BYTE
 
             if throughput == 0.0:
                 # Do the forced handover
