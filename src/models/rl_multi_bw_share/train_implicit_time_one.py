@@ -292,7 +292,6 @@ def agent(agent_id, net_params_queue, exp_queue):
                 del a_batch_user[:]
                 del r_batch_user[:]
                 del p_batch_user[:]
-                del v_batch[:]
                 del actor_net_params[:]
 
                 del bit_rate[:]

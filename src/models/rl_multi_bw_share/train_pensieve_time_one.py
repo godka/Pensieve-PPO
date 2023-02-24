@@ -32,7 +32,7 @@ import argparse
 
 parser = argparse.ArgumentParser(description='PyTorch Synthetic Benchmark',
                                  formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-parser.add_argument('--user', type=int, default=1)
+parser.add_argument('--user', type=int, default=2)
 args = parser.parse_args()
 USERS = args.user
 # A_SAT = USERS + 1
@@ -128,6 +128,7 @@ def central_agent(net_params_queues, exp_queues):
         # restore neural net parameters
         nn_model = NN_MODEL
         if nn_model is not None:  # nn_model is the path to file
+            saver = tf.train.import_meta_graph(nn_model + '.meta')
             saver.restore(sess, nn_model)
             print("Model restored.")
 
@@ -284,16 +285,11 @@ def agent(agent_id, net_params_queue, exp_queue):
             v_batch = actor.compute_v(s_batch_user[tmp_i][1:], a_batch_user[tmp_i][1:], r_batch_user[tmp_i][1:], env.check_end())
             try:
                 exp_queue.put([s_batch_user[tmp_i][1:], a_batch_user[tmp_i][1:], p_batch_user[tmp_i][1:], v_batch])
-
                 if epoch != TRAIN_SEQ_LEN - 1:
                     actor_net_params = net_params_queue.get()
                     actor.set_network_params(actor_net_params)
-                del s_batch_user[:]
-                del a_batch_user[:]
-                del r_batch_user[:]
-                del p_batch_user[:]
-                del v_batch[:]
-                del actor_net_params[:]
+
+
 
                 del bit_rate[:]
                 del sat[:]
