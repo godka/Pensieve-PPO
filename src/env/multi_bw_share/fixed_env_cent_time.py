@@ -3469,18 +3469,18 @@ class Environment:
         if start_index < 0:
             for i in range(0, start_index + MPC_PAST_CHUNK_COUNT):
                 cur_sat_past_list.append(
-                    self.cooked_bw[sat_id][0:start_index + MPC_PAST_CHUNK_COUNT] / self.get_num_of_user_sat(sat_id))
+                    self.cooked_bw[sat_id][0:start_index + MPC_PAST_CHUNK_COUNT] / self.get_num_of_user_sat(self.mahimahi_ptr[agent], sat_id))
         else:
             for i in range(start_index, start_index + MPC_PAST_CHUNK_COUNT):
                 cur_sat_past_list.append(
-                    self.cooked_bw[sat_id][0:start_index + MPC_PAST_CHUNK_COUNT] / self.get_num_of_user_sat(sat_id))
+                    self.cooked_bw[sat_id][0:start_index + MPC_PAST_CHUNK_COUNT] / self.get_num_of_user_sat(self.mahimahi_ptr[agent], sat_id))
 
         while len(cur_sat_past_list) != 0 and cur_sat_past_list[0] == 0.0:
             cur_sat_past_list = cur_sat_past_list[1:]
 
         if len(cur_sat_past_list) <= 1:
             # Just past bw
-            return self.cooked_bw[sat_id][self.mahimahi_ptr[agent] - 1] / self.get_num_of_user_sat(sat_id)
+            return self.cooked_bw[sat_id][self.mahimahi_ptr[agent] - 1] / self.get_num_of_user_sat(self.mahimahi_ptr[agent], sat_id))
         cur_sat_past_bws = pd.Series(cur_sat_past_list)
         cur_sat_past_bws.index.freq = 's'
 

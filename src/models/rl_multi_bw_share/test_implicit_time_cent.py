@@ -179,7 +179,7 @@ def main():
                 tmp_reward_3.append(- SMOOTH_PENALTY * np.abs(VIDEO_BIT_RATE[bit_rate[agent]] -
                                                               VIDEO_BIT_RATE[last_bit_rate[agent]]) / M_IN_K)
 
-                # reward += self.net_env.get_others_reward(agent, self.last_bit_rate, self.prev_sat_id, self.cur_sat_id)
+                reward += self.net_env.get_others_reward(agent, self.last_bit_rate, self.prev_sat_id, self.cur_sat_id)
             elif REWARD_FUNC == "HD":
                 reward = BITRATE_REWARD[bit_rate[agent]] \
                          - 8 * rebuf - np.abs(BITRATE_REWARD[bit_rate[agent]] - BITRATE_REWARD[last_bit_rate[agent]])
