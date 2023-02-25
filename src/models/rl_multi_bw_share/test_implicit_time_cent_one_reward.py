@@ -2,7 +2,6 @@ import os
 import sys
 root_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, root_dir + '/../')
-
 from util.constants import CHUNK_TIL_VIDEO_END_CAP, BUFFER_NORM_FACTOR, VIDEO_BIT_RATE, REBUF_PENALTY, SMOOTH_PENALTY, \
     DEFAULT_QUALITY, BITRATE_WEIGHT, M_IN_K, A_DIM, S_LEN, PAST_LEN, BITRATE_REWARD, MAX_SAT, PAST_SAT_LOG_LEN, \
     TEST_TRACES
@@ -13,7 +12,7 @@ import numpy as np
 import tensorflow.compat.v1 as tf
 from env.multi_bw_share import fixed_env_cent_time as env
 from env.multi_bw_share import load_trace as load_trace
-from models.rl_multi_bw_share.ppo_spec import ppo_cent_his3 as network
+from models.rl_multi_bw_share.ppo_spec import ppo_cent_his as network
 import structlog
 import logging
 
@@ -138,7 +137,6 @@ def main():
                 results += tmp_results[1:]
                 tmp_results = []
                 time_stamp = [0 for _ in range(USERS)]
-
                 reward_1.append(np.mean(tmp_reward_1[1:]))
                 reward_2.append(np.mean(tmp_reward_2[1:]))
                 reward_3.append(np.mean(tmp_reward_3[1:]))

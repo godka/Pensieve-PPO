@@ -288,11 +288,8 @@ def agent(agent_id, net_params_queue, exp_queue):
                 if epoch != TRAIN_SEQ_LEN - 1:
                     actor_net_params = net_params_queue.get()
                     actor.set_network_params(actor_net_params)
-                del s_batch_user[:]
-                del a_batch_user[:]
-                del r_batch_user[:]
-                del p_batch_user[:]
-                del actor_net_params[:]
+
+
 
                 del bit_rate[:]
                 del sat[:]

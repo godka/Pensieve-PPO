@@ -15,7 +15,7 @@ from util.constants import EPSILON, MPC_FUTURE_CHUNK_COUNT, QUALITY_FACTOR, REBU
     MPC_PAST_CHUNK_COUNT, HO_NUM, TOTAL_VIDEO_CHUNKS, CHUNK_TIL_VIDEO_END_CAP, DEFAULT_QUALITY, INNER_PROCESS_NUMS, \
     VIDEO_CHUNCK_LEN, BITRATE_WEIGHT, SNR_MIN, BUF_RATIO, NO_EXHAUSTIVE, ADAPTIVE_BUF, VIDEO_BIT_RATE, BITRATE_LEVELS, \
     MILLISECONDS_IN_SECOND, B_IN_MB, M_IN_K, BITS_IN_BYTE, PAST_LEN, CENT_MPC_MODELS, DIST_MPC_MODELS, SEP_MPC_MODELS, \
-    BITRATE_REWARD
+    BITRATE_REWARD, VIDEO_SIZE_FILE
 
 RANDOM_SEED = 42
 BUFFER_THRESH = 60.0 * MILLISECONDS_IN_SECOND  # millisec, max buffer limit
@@ -23,7 +23,6 @@ DRAIN_BUFFER_SLEEP_TIME = 500.0  # millisec
 PACKET_PAYLOAD_PORTION = 0.95
 LINK_RTT = 80  # millisec
 PACKET_SIZE = 1500  # bytes
-VIDEO_SIZE_FILE = '../../data/video_data/envivio/video_size_'
 
 # LEO SETTINGS
 HANDOVER_DELAY = 0.2  # sec
@@ -410,7 +409,7 @@ class Environment:
                     sat_id = self.get_best_sat_id(agent, self.mahimahi_ptr[agent])
                     assert sat_id != self.cur_sat_id[agent]
                     self.log.debug("Forced Handover2", cur_sat_id=self.cur_sat_id[agent], sat_id=sat_id,
-                                  mahimahi_ptr=self.mahimahi_ptr[agent], agent=agent)
+                                   mahimahi_ptr=self.mahimahi_ptr[agent], agent=agent)
                     assert sat_id != self.cur_sat_id[agent]
                     self.update_sat_info(sat_id, self.last_mahimahi_time[agent], agent, 1)
                     self.update_sat_info(self.cur_sat_id[agent], self.last_mahimahi_time[agent], agent, -1)
@@ -1032,7 +1031,7 @@ class Environment:
         cur_download_bw, runner_up_sat_id = None, None
         # cur_download_bw = self.predict_download_bw(agent, True)
         cur_download_bw = self.predict_bw(self.cur_sat_id[agent], agent, True,
-                        mahimahi_ptr=self.mahimahi_ptr[agent], past_len=self.last_delay[agent])
+                                          mahimahi_ptr=self.mahimahi_ptr[agent], past_len=self.last_delay[agent])
         cur_download_bw /= cur_user_num
         runner_up_sat_id, _ = self.get_runner_up_sat_id(
             agent, method="harmonic-mean", cur_sat_id=self.cur_sat_id[agent])
@@ -1253,7 +1252,7 @@ class Environment:
 
         for ho_positions in ho_combo_option:
             if 1 in ho_positions or [0] * self.num_agents == ho_positions:
-            # if 1 in ho_positions:
+                # if 1 in ho_positions:
                 continue
             tmp_future_sat_user_nums = {}
             tmp_future_sat_user_list = {}
@@ -1581,7 +1580,7 @@ class Environment:
         sat_user_nums = num_of_sats
         for ho_positions in ho_combo_option:
             if 1 in ho_positions or [0] * self.num_agents == ho_positions:
-            # if 1 in ho_positions:
+                # if 1 in ho_positions:
                 continue
             tmp_future_sat_user_nums = {}
             tmp_bws = []
@@ -1795,7 +1794,7 @@ class Environment:
                     impossible_route = True
                     break
             if NO_EXHAUSTIVE and [0] * self.num_agents == ho_positions:
-                 impossible_route = True
+                impossible_route = True
 
             if impossible_route:
                 continue
@@ -1947,7 +1946,7 @@ class Environment:
             for i in range(self.num_agents):
                 if i == agent:
                     continue
-                check_list = list(combo[i*MPC_FUTURE_CHUNK_COUNT:(i+1)*MPC_FUTURE_CHUNK_COUNT])
+                check_list = list(combo[i * MPC_FUTURE_CHUNK_COUNT:(i + 1) * MPC_FUTURE_CHUNK_COUNT])
                 check_list = [BITRATE_WEIGHT * x for x in check_list]
                 if NO_EXHAUSTIVE and check_list != [first_last_quality[i]] * MPC_FUTURE_CHUNK_COUNT:
                     impossible_combo = True
@@ -2035,7 +2034,7 @@ class Environment:
                     impossible_route = True
                     break
             if NO_EXHAUSTIVE and [0] * self.num_agents == ho_positions:
-                 impossible_route = True
+                impossible_route = True
 
             if impossible_route:
                 continue
@@ -2730,7 +2729,7 @@ class Environment:
                     break
 
             if NO_EXHAUSTIVE and [0] * self.num_agents == ho_positions:
-                 impossible_route = True
+                impossible_route = True
 
             if impossible_route:
                 continue
@@ -2916,7 +2915,7 @@ class Environment:
         if method == "harmonic-mean":
             # cur_download_bw = self.predict_download_bw(agent, True)
             cur_download_bw = self.predict_bw(self.cur_sat_id[agent], agent, True,
-                            mahimahi_ptr=self.mahimahi_ptr[agent], past_len=self.last_delay[agent])
+                                              mahimahi_ptr=self.mahimahi_ptr[agent], past_len=self.last_delay[agent])
             cur_download_bw /= cur_user_num
             runner_up_sat_id, _ = self.get_runner_up_sat_id(
                 agent, method="harmonic-mean", cur_sat_id=self.cur_sat_id[agent])
@@ -2966,7 +2965,7 @@ class Environment:
                     print("Cannot happen")
                     exit(1)
 
-                for ho_index in range(MPC_FUTURE_CHUNK_COUNT+1):
+                for ho_index in range(MPC_FUTURE_CHUNK_COUNT + 1):
                     # all possible combinations of 5 chunk bitrates for 6 bitrate options (6^5 options)
                     # iterate over list and for each, compute reward and store max reward combination
                     # ho_index: 0-4 -> Do handover, 5 -> Do not handover
@@ -3788,7 +3787,7 @@ class Environment:
 
     def update_sat_info(self, sat_id, mahimahi_ptr, agent, variation):
         # update sat info
-        self.log.debug("update_sat_info", agent=agent,sat_id=sat_id, mahimahi_ptr=mahimahi_ptr, variation=variation)
+        self.log.debug("update_sat_info", agent=agent, sat_id=sat_id, mahimahi_ptr=mahimahi_ptr, variation=variation)
         if variation == 1:
             self.cur_satellite[sat_id].add_ue(agent, mahimahi_ptr)
             self.cur_user[agent].update_sat_log(sat_id, mahimahi_ptr)
@@ -3827,7 +3826,7 @@ class Environment:
                 # print("Can't do handover. Only one visible satellite")
                 return
             self.log.debug("set_satellite", cur_sat_id=self.cur_sat_id[agent], next_sat_id=sat_id,
-                          mahimahi_ptr=self.mahimahi_ptr[agent], agent=agent)
+                           mahimahi_ptr=self.mahimahi_ptr[agent], agent=agent)
 
             self.update_sat_info(sat_id, self.last_mahimahi_time[agent], agent, 1)
             self.update_sat_info(self.cur_sat_id[agent], self.last_mahimahi_time[agent], agent, -1)

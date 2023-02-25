@@ -13,7 +13,7 @@ import numpy as np
 import tensorflow.compat.v1 as tf
 from env.multi_bw_share import fixed_env_cent_time as env
 from env.multi_bw_share import load_trace as load_trace
-from models.rl_multi_bw_share.ppo_spec import ppo_cent_his3 as network
+from models.rl_multi_bw_share.ppo_spec import ppo_cent_his as network
 import structlog
 import logging
 
