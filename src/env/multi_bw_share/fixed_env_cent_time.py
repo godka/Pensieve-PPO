@@ -3877,13 +3877,15 @@ class Environment:
         self.cur_satellite = copy.deepcopy(self.stored_cur_satellite)
         self.cur_user = copy.deepcopy(self.stored_cur_user)
 
-    def get_others_reward(self, agent, last_bit_rate, cur_sat_id):
+    def get_others_reward(self, agent, last_bit_rate):
         reward = 0
+        prev_sat_id = self.prev_sat_id[agent]
+        cur_sat_id = self.cur_sat_id[agent]
         for i in range(self.num_agents):
             if i == agent:
                 continue
             agent_cur_sat_id = self.cur_sat_id[i]
-            if agent_cur_sat_id != cur_sat_id:
+            if agent_cur_sat_id in [cur_sat_id, prev_sat_id]:
                 reward += self.get_simulated_penalty(i, last_bit_rate[i], prev_sat_id,
                                                      cur_sat_id) / self.num_agents / 10
 
@@ -3899,8 +3901,7 @@ class Environment:
         cur_sat_id = self.cur_sat_id[agent]
         delay = self.delay[agent]
         buffer_size = self.buffer_size[agent]
-        if cur_sat_id not in [prev_sat_id, next_sat_id]:
-            return 0
+        assert cur_sat_id in [prev_sat_id, next_sat_id]
 
         if cur_sat_id == prev_sat_id:
             reward1 = self.calculate_reward(agent, cur_sat_id, video_chunk_size, last_mahimahi_time, mahimahi_ptr,

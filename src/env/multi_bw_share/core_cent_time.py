@@ -770,10 +770,13 @@ class Environment:
 
     def get_others_reward(self, agent, last_bit_rate, prev_sat_id, cur_sat_id):
         reward = 0
+        prev_sat_id = self.prev_sat_id[agent]
+        cur_sat_id = self.cur_sat_id[agent]
         for i in range(self.num_agents):
             if i == agent:
                 continue
-            if prev_sat_id != cur_sat_id:
+            agent_cur_sat_id = self.cur_sat_id[i]
+            if agent_cur_sat_id in [cur_sat_id, prev_sat_id]:
                 reward += self.get_simulated_penalty(i, last_bit_rate[i], prev_sat_id, cur_sat_id) / self.num_agents / 10
 
         return reward
@@ -788,15 +791,16 @@ class Environment:
         cur_sat_id = self.cur_sat_id[agent]
         delay = self.delay[agent]
         buffer_size = self.buffer_size[agent]
-        if cur_sat_id not in [prev_sat_id, next_sat_id]:
-            return 0
+        assert cur_sat_id in [prev_sat_id, next_sat_id]
 
         if cur_sat_id == prev_sat_id:
-            reward1 = self.calculate_reward(agent, cur_sat_id, video_chunk_size, last_mahimahi_time, mahimahi_ptr, delay, buffer_size, self.get_num_of_user_sat(mahimahi_ptr, cur_sat_id)+1)
+            reward1 = self.calculate_reward(agent, cur_sat_id, video_chunk_size, last_mahimahi_time, mahimahi_ptr,
+                                            delay, buffer_size, self.get_num_of_user_sat(mahimahi_ptr, cur_sat_id) + 1)
             reward2 = self.calculate_reward(agent, cur_sat_id, video_chunk_size, last_mahimahi_time, mahimahi_ptr,
                                             delay, buffer_size, self.get_num_of_user_sat(mahimahi_ptr, cur_sat_id))
         elif cur_sat_id == next_sat_id:
-            reward1 = self.calculate_reward(agent, cur_sat_id, video_chunk_size, last_mahimahi_time, mahimahi_ptr, delay, buffer_size, self.get_num_of_user_sat(mahimahi_ptr, cur_sat_id)-1)
+            reward1 = self.calculate_reward(agent, cur_sat_id, video_chunk_size, last_mahimahi_time, mahimahi_ptr,
+                                            delay, buffer_size, self.get_num_of_user_sat(mahimahi_ptr, cur_sat_id) - 1)
             reward2 = self.calculate_reward(agent, cur_sat_id, video_chunk_size, last_mahimahi_time, mahimahi_ptr,
                                             delay, buffer_size, self.get_num_of_user_sat(mahimahi_ptr, cur_sat_id))
         else:
