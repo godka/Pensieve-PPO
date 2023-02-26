@@ -3922,7 +3922,7 @@ class Environment:
         video_chunk_counter_sent = 0  # in bytes
 
         while True:  # download video chunk over mahimahi
-            throughput = self.cur_satellite[self.cur_sat_id[agent]].data_rate(self.cur_user[agent],
+            throughput = self.cur_satellite[self.cur_sat_id].data_rate(self.cur_user[agent],
                                                                               mahimahi_ptr) * B_IN_MB / BITS_IN_BYTE
 
             if throughput == 0.0:
