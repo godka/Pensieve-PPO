@@ -3919,6 +3919,8 @@ class Environment:
 
     def calculate_reward(self, agent, cur_sat_id, video_chunk_size, last_mahimahi_time, mahimahi_ptr, delay,
                          buffer_size, num_of_user):
+        if len(self.cooked_time) <= mahimahi_ptr:
+            return 0
         video_chunk_counter_sent = 0  # in bytes
 
         while True:  # download video chunk over mahimahi

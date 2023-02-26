@@ -61,6 +61,8 @@ class ABREnv():
             cur_sat_user_num, next_sat_user_nums, cur_sat_bw_logs, connected_time, cur_sat_id, next_sat_ids, _, _, _, _, \
         other_sat_users, other_sat_bw_logs, other_buffer_sizes = \
             self.net_env.get_video_chunk(bit_rate, agent, None)
+        self.sat_decision_log[agent].append(cur_sat_id)
+
         state = np.roll(self.state[agent], -1, axis=1)
 
         # this should be S_INFO number of terms
@@ -118,6 +120,7 @@ class ABREnv():
 
         self.last_penalty = [0 for _ in range(self.num_agents)]
         self.state = [np.zeros((S_INFO, S_LEN)) for _ in range(self.num_agents)]
+        self.sat_decision_log = [[-1, -1, -1, -1, -1] for _ in range(self.num_agents)]
 
         # for agent in range(self.num_agents):
         #     delay, sleep_time, self.buffer_size[agent], rebuf, \
@@ -161,7 +164,6 @@ class ABREnv():
         else:
             print("Never!")
         self.net_env.set_satellite(agent, sat)
-        self.sat_decision_log[agent].append(sat)
 
     def step(self, action, agent):
         bit_rate = int(action) % A_DIM

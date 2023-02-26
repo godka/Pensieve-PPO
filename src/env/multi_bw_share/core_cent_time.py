@@ -64,6 +64,7 @@ class Environment:
         self.num_of_user_sat = {}
         self.num_sat_info = {}
         self.cur_satellite = {}
+        self.sat_decision_log = [[-1, -1, -1, -1, -1] for _ in range(self.num_agents)]
 
         for sat_id, sat_bw in self.cooked_bw.items():
             self.num_sat_info[sat_id] = [0 for _ in range(len(sat_bw))]
@@ -324,6 +325,8 @@ class Environment:
         else:
             next_sat_user_num = 0
 
+        self.sat_decision_log[agent].append(self.cur_sat_id[agent])
+
         return delay, \
                sleep_time, \
                return_buffer_size / MILLISECONDS_IN_SECOND, \
@@ -351,6 +354,7 @@ class Environment:
         self.num_of_user_sat = {}
         self.download_bw = [[] for _ in range(self.num_agents)]
         self.cur_satellite = {}
+        self.sat_decision_log = [[-1, -1, -1, -1, -1] for _ in range(self.num_agents)]
 
         self.trace_idx = np.random.randint(len(self.all_cooked_time))
         self.cooked_time = self.all_cooked_time[self.trace_idx]

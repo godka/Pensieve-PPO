@@ -63,6 +63,7 @@ class ABREnv():
             self.net_env.get_video_chunk(bit_rate, agent, None)
         state = np.roll(self.state[agent], -1, axis=1)
 
+        self.sat_decision_log[agent].append(cur_sat_id)
         # this should be S_INFO number of terms
         state[0, -1] = VIDEO_BIT_RATE[bit_rate] / \
             float(np.max(VIDEO_BIT_RATE))  # last quality
@@ -115,6 +116,7 @@ class ABREnv():
         self.time_stamp = 0
         self.last_bit_rate = [DEFAULT_QUALITY for _ in range(self.num_agents)]
         self.last_sat_id = [-1 for _ in range(self.num_agents)]
+        self.sat_decision_log = [[-1, -1, -1, -1, -1] for _ in range(self.num_agents)]
 
         self.last_penalty = [0 for _ in range(self.num_agents)]
         self.state = [np.zeros((S_INFO, S_LEN)) for _ in range(self.num_agents)]
