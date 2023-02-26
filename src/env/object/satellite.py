@@ -233,7 +233,9 @@ class Satellite:
         # snr = self.snr(distance)
         # dr_ue_unshared = self.bw * np.log2(1 + snr)
         # For test
-
+        if mahimahi_ptr >= len(self.sat_bw):
+            self.log.info('Error', mahimahi_ptr=mahimahi_ptr, sat_bw=len(self.sat_bw))
+            exit(1)
         dr_ue_unshared = self.sat_bw[mahimahi_ptr]
         dr_ue_unshared *= user.get_snr_noise()
         # dr_ue_unshared *= np.random.uniform(SNR_NOISE_LOW, SNR_NOISE_HIGH)
