@@ -31,7 +31,7 @@ class ABREnv():
                                           all_cooked_bw=all_cooked_bw,
                                           random_seed=random_seed)
 
-        self.last_bit_rate = DEFAULT_QUALITY
+        self.last_bit_rate = [DEFAULT_QUALITY for _ in range(self.num_agents)]
         self.buffer_size = 0.
         self.state = np.zeros((S_INFO, S_LEN))
         
@@ -41,7 +41,7 @@ class ABREnv():
     def reset(self):
         # self.net_env.reset_ptr()
         self.time_stamp = 0
-        self.last_bit_rate = DEFAULT_QUALITY
+        self.last_bit_rate = [DEFAULT_QUALITY for _ in range(self.num_agents)]
         self.state = np.zeros((S_INFO, S_LEN))
         self.buffer_size = 0.
         bit_rate = self.last_bit_rate
@@ -84,9 +84,9 @@ class ABREnv():
         reward = VIDEO_BIT_RATE[bit_rate] / M_IN_K \
             - REBUF_PENALTY * rebuf \
             - SMOOTH_PENALTY * np.abs(VIDEO_BIT_RATE[bit_rate] -
-                                      VIDEO_BIT_RATE[self.last_bit_rate]) / M_IN_K
+                                      VIDEO_BIT_RATE[self.last_bit_rate[agent]]) / M_IN_K
 
-        self.last_bit_rate = bit_rate
+        self.last_bit_rate[agent] = bit_rate
         state = np.roll(self.state, -1, axis=1)
 
         # this should be S_INFO number of terms

@@ -117,8 +117,8 @@ def central_agent(net_params_queues, exp_queues):
         summary_ops, summary_vars = build_summaries()
         best_rewards = -1000
         actor = network.Network(sess,
-                state_dim=S_DIM, action_dim=A_DIM * A_SAT,
-                learning_rate=ACTOR_LR_RATE, num_of_users=USERS)
+                                state_dim=S_DIM, action_dim=A_DIM * A_SAT,
+                                learning_rate=ACTOR_LR_RATE, num_of_users=USERS)
 
         sess.run(tf.global_variables_initializer())
         writer = tf.summary.FileWriter(SUMMARY_DIR, sess.graph)  # training monitor
@@ -151,14 +151,15 @@ def central_agent(net_params_queues, exp_queues):
                 # print(s_batch[0], a_batch[0], p_batch[0], v_batch[0], epoch)
                 for _ in range(PPO_TRAINING_EPO):
                     actor.train(s_batch, a_batch, p_batch, v_batch, None)
+                del s[:]
+                del a[:]
+                del p[:]
+                del g[:]
             except queue.Empty:
                 log.info("Queue Empty?")
                 continue
             except queue.Full:
                 log.info("Queue Full?")
-
-                for i in range(NUM_AGENTS):
-                    net_params_queues[i].get()
                 continue
 
             if epoch % MODEL_SAVE_INTERVAL == 0:
@@ -166,19 +167,16 @@ def central_agent(net_params_queues, exp_queues):
                 save_path = saver.save(sess, SUMMARY_DIR + "/nn_model_ep_" +
                                        str(epoch) + ".ckpt")
                 avg_reward, avg_entropy = testing(epoch,
-                    SUMMARY_DIR + "/nn_model_ep_" + str(epoch) + ".ckpt", 
-                    test_log_file)
+                                                  SUMMARY_DIR + "/nn_model_ep_" + str(epoch) + ".ckpt",
+                                                  test_log_file)
 
                 if best_rewards < avg_reward:
                     os.system('cp ' + TEST_LOG_FOLDER + '/summary_reward_parts ' + SUMMARY_DIR)
                     os.system('cp ' + TEST_LOG_FOLDER + '/summary ' + SUMMARY_DIR)
-                    os.system('cp ' + SUMMARY_DIR + "/nn_model_ep_" +
-                                       str(epoch) + ".ckpt.index " + SUMMARY_DIR + "/best_model.ckpt.index")
-                    os.system('cp ' + SUMMARY_DIR + "/nn_model_ep_" +
-                                       str(epoch) + ".ckpt.meta " + SUMMARY_DIR + "/best_model.ckpt.meta")
+                    os.system('cp ' + SUMMARY_DIR + "/nn_model_ep_" + str(epoch) + ".ckpt.index " + SUMMARY_DIR + "/best_model.ckpt.index")
+                    os.system('cp ' + SUMMARY_DIR + "/nn_model_ep_" + str(epoch) + ".ckpt.meta " + SUMMARY_DIR + "/best_model.ckpt.meta")
 
-                    os.system('cp ' + SUMMARY_DIR + "/nn_model_ep_" +
-                                       str(epoch) + ".ckpt.data-00000-of-00001 " + SUMMARY_DIR + "/best_model.ckpt.data-00000-of-00001")
+                    os.system('cp ' + SUMMARY_DIR + "/nn_model_ep_" + str(epoch) + ".ckpt.data-00000-of-00001 " + SUMMARY_DIR + "/best_model.ckpt.data-00000-of-00001")
                     best_rewards = avg_reward
 
                 summary_str = sess.run(summary_ops, feed_dict={
@@ -252,7 +250,6 @@ def agent(agent_id, net_params_queue, exp_queue):
                 p_batch_user[agent].append(action_prob[agent])
 
                 if not done:
-                    
                     action_prob[agent] = actor.predict(
                         np.reshape(obs[agent], (1, S_DIM[0], S_DIM[1])))
 
