@@ -37,12 +37,12 @@ class Network():
             split_list = []
             for i in range(self.num_agents - 1 + (self.num_agents - 1) * PAST_SAT_LOG_LEN + self.num_agents - 1):
                 if i < self.num_agents - 1:
-                    split_tmp = tflearn.fully_connected(inputs[:, 9 + i:10 + i, :], FEATURE_NUM, DIM_SIZE, activation='relu')
+                    split_tmp = tflearn.fully_connected(inputs[:, 9 + i:10 + i, :], FEATURE_NUM, activation='relu')
 
                 elif i < (self.num_agents - 1) * PAST_SAT_LOG_LEN:
-                    split_tmp = tflearn.fully_connected(inputs[:, 9 + i:10 + i, :3], FEATURE_NUM, DIM_SIZE, activation='relu')
+                    split_tmp = tflearn.fully_connected(inputs[:, 9 + i:10 + i, :3], FEATURE_NUM, activation='relu')
                 else:
-                    split_tmp = tflearn.fully_connected(inputs[:, 9 + i:10 + i, :6], FEATURE_NUM, DIM_SIZE, activation='relu')
+                    split_tmp = tflearn.fully_connected(inputs[:, 9 + i:10 + i, :6], FEATURE_NUM, activation='relu')
 
                 # split_tmp_flat = tflearn.flatten(split_tmp)
                 split_list.append(split_tmp_flat)
@@ -82,14 +82,14 @@ class Network():
             split_list = []
             for i in range(self.num_agents - 1 + (self.num_agents - 1) * PAST_SAT_LOG_LEN + self.num_agents - 1):
                 if i < self.num_agents - 1:
-                    split_tmp = tflearn.fully_connected(inputs[:, 9 + i:10 + i, :], FEATURE_NUM, DIM_SIZE, activation='relu')
+                    split_tmp = tflearn.fully_connected(inputs[:, 9 + i:10 + i, :], FEATURE_NUM, activation='relu')
 
                 elif i < (self.num_agents - 1) * PAST_SAT_LOG_LEN:
-                    split_tmp = tflearn.fully_connected(inputs[:, 9 + i:10 + i, :3], FEATURE_NUM, DIM_SIZE, activation='relu')
+                    split_tmp = tflearn.fully_connected(inputs[:, 9 + i:10 + i, :3], FEATURE_NUM, activation='relu')
                 else:
-                    split_tmp = tflearn.fully_connected(inputs[:, 9 + i:10 + i, :6], FEATURE_NUM, DIM_SIZE, activation='relu')
+                    split_tmp = tflearn.fully_connected(inputs[:, 9 + i:10 + i, :6], FEATURE_NUM, activation='relu')
 
-                split_tmp_flat = tflearn.flatten(split_tmp)
+                # split_tmp_flat = tflearn.flatten(split_tmp)
                 split_list.append(split_tmp_flat)
 
             split_2_flat = tflearn.flatten(split_2)
