@@ -52,16 +52,12 @@ class Network():
                 split_list.append(split_7_flat)
                 split_list.append(split_9_flat)
             for i in range((self.num_agents - 1) * PAST_SAT_LOG_LEN):
-                if i < self.num_agents - 1:
-                    split_tmp = tflearn.conv_1d(inputs[:, 8+9*(self.num_agents-1)+1+i:8+9*(self.num_agents-1)+1+i+1, :], FEATURE_NUM, DIM_SIZE, activation='relu')
+                split_tmp = tflearn.fully_connected(
+                    inputs[:, 8 + 9 * (self.num_agents - 1) + 1 + i:8 + 9 * (self.num_agents - 1) + 1 + i + 1, :2],
+                    FEATURE_NUM, activation='relu')
 
-                elif i < (self.num_agents - 1) * PAST_SAT_LOG_LEN:
-                    split_tmp = tflearn.conv_1d(inputs[:, 8+9*(self.num_agents-1)+1+i:8+9*(self.num_agents-1)+1+i+1, :3], FEATURE_NUM, DIM_SIZE, activation='relu')
-                else:
-                    split_tmp = tflearn.conv_1d(inputs[:, 8+9*(self.num_agents-1)+1+i:8+9*(self.num_agents-1)+1+i+1, :6], FEATURE_NUM, DIM_SIZE, activation='relu')
-
-                split_tmp_flat = tflearn.flatten(split_tmp)
-                split_list.append(split_tmp_flat)
+                # split_tmp_flat = tflearn.flatten(split_tmp)
+                split_list.append(split_tmp)
 
             merge_net = tflearn.merge(split_list, 'concat')
 
@@ -101,16 +97,10 @@ class Network():
                 split_list.append(split_7_flat)
                 split_list.append(split_9_flat)
             for i in range((self.num_agents - 1) * PAST_SAT_LOG_LEN):
-                if i < self.num_agents - 1:
-                    split_tmp = tflearn.conv_1d(inputs[:, 8+9*(self.num_agents-1)+1+i:8+9*(self.num_agents-1)+1+i+1, :], FEATURE_NUM, DIM_SIZE, activation='relu')
+                split_tmp = tflearn.fully_connected(inputs[:, 8+9*(self.num_agents-1)+1+i:8+9*(self.num_agents-1)+1+i+1, :2], FEATURE_NUM, activation='relu')
 
-                elif i < (self.num_agents - 1) * PAST_SAT_LOG_LEN:
-                    split_tmp = tflearn.conv_1d(inputs[:, 8+9*(self.num_agents-1)+1+i:8+9*(self.num_agents-1)+1+i+1, :3], FEATURE_NUM, DIM_SIZE, activation='relu')
-                else:
-                    split_tmp = tflearn.conv_1d(inputs[:, 8+9*(self.num_agents-1)+1+i:8+9*(self.num_agents-1)+1+i+1, :6], FEATURE_NUM, DIM_SIZE, activation='relu')
-
-                split_tmp_flat = tflearn.flatten(split_tmp)
-                split_list.append(split_tmp_flat)
+                # split_tmp_flat = tflearn.flatten(split_tmp)
+                split_list.append(split_tmp)
 
             merge_net = tflearn.merge(split_list, 'concat')
 
