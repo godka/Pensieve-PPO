@@ -255,7 +255,7 @@ def main():
                                         other_sat_users, other_sat_bw_logs, PAST_SAT_LOG_LEN)
 
             # state[agent][11:11+MAX_SAT - A_SAT, -1] = np.reshape(np.array(other_sat_num_users), (MAX_SAT - A_SAT, 1)) / 10
-            state[agent][9:(9 + USERS-1), -1:] = np.reshape(np.array(other_buffer_sizes) / BUFFER_NORM_FACTOR, (-1, 1))
+            state[agent][9:(9 + USERS-1), -1] = np.reshape(np.array(other_buffer_sizes) / BUFFER_NORM_FACTOR, (-1, 1))
             state[agent][(9 + USERS-1):(9 + USERS-1 + (USERS-1) * PAST_SAT_LOG_LEN),
             0:2] = np.reshape(other_user_sat_decisions, (-1, 2))
 
