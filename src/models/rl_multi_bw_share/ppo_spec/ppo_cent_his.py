@@ -45,7 +45,7 @@ class Network():
                     split_tmp = tflearn.fully_connected(inputs[:, 9 + i:10 + i, :6], FEATURE_NUM, activation='relu')
 
                 # split_tmp_flat = tflearn.flatten(split_tmp)
-                split_list.append(split_tmp_flat)
+                split_list.append(split_tmp)
 
             split_2_flat = tflearn.flatten(split_2)
             split_3_flat = tflearn.flatten(split_3)
@@ -90,7 +90,7 @@ class Network():
                     split_tmp = tflearn.fully_connected(inputs[:, 9 + i:10 + i, :6], FEATURE_NUM, activation='relu')
 
                 # split_tmp_flat = tflearn.flatten(split_tmp)
-                split_list.append(split_tmp_flat)
+                split_list.append(split_tmp)
 
             split_2_flat = tflearn.flatten(split_2)
             split_3_flat = tflearn.flatten(split_3)
