@@ -39,7 +39,7 @@ USERS = args.user
 TEST_LOG_FOLDER += str(USERS) + '/'
 SUMMARY_DIR += str(USERS)
 LOG_FILE = SUMMARY_DIR + '/log'
-S_DIM = [9 + USERS-1 + (USERS-1) * PAST_SAT_LOG_LEN + (USERS-1), 8]
+S_DIM = [11 + USERS-1 + (USERS-1) * PAST_SAT_LOG_LEN + (USERS-1), 8]
 
 # NN_MODEL = SUMMARY_DIR + '/best_model.ckpt'
 NN_MODEL = None

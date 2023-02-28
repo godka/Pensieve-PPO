@@ -36,7 +36,7 @@ log = structlog.get_logger()
 log.debug('Test init')
 
 REWARD_FUNC = "LIN"
-S_INFO = 9 + USERS-1 + (USERS-1) * PAST_SAT_LOG_LEN + (USERS-1)
+S_INFO = 11 + USERS-1 + (USERS-1) * PAST_SAT_LOG_LEN + (USERS-1)
 
 
 def main():
@@ -238,12 +238,12 @@ def main():
 
             state[agent][7, :PAST_LEN] = np.array(cur_sat_bw_logs[:PAST_LEN]) / 10
 
-            # if is_handover:
-            #     state[agent][8:9, 0:S_LEN] = np.zeros((1, S_LEN))
-            #     state[agent][9:10, 0:S_LEN] = np.zeros((1, S_LEN))
-            # state[agent][8:9, -1] = np.array(cur_sat_user_num) / 10
-            # state[agent][9:10, -1] = np.array(next_sat_user_num) / 10
-            state[agent][8, :2] = [float(connected_time[0]) / BUFFER_NORM_FACTOR / 10,
+            if is_handover:
+                state[agent][8:9, 0:S_LEN] = np.zeros((1, S_LEN))
+                state[agent][9:10, 0:S_LEN] = np.zeros((1, S_LEN))
+            state[agent][8:9, -1] = np.array(cur_sat_user_num) / 10
+            state[agent][9:10, -1] = np.array(next_sat_user_num) / 10
+            state[agent][10, :2] = [float(connected_time[0]) / BUFFER_NORM_FACTOR / 10,
                                     float(connected_time[1]) / BUFFER_NORM_FACTOR / 10]
             next_sat_id = None
             if next_sat_ids is not None:
@@ -253,13 +253,13 @@ def main():
                                         other_sat_users, other_sat_bw_logs, PAST_SAT_LOG_LEN)
 
             # state[agent][11:11+MAX_SAT - A_SAT, -1] = np.reshape(np.array(other_sat_num_users), (MAX_SAT - A_SAT, 1)) / 10
-            state[agent][9:(9 + USERS-1), -1:] = np.reshape(np.array(other_buffer_sizes) / BUFFER_NORM_FACTOR, (-1, 1))
-            state[agent][(9 + USERS-1):(9 + USERS-1 + (USERS-1) * PAST_SAT_LOG_LEN),
+            state[agent][11:(11 + USERS-1), -1:] = np.reshape(np.array(other_buffer_sizes) / BUFFER_NORM_FACTOR, (-1, 1))
+            state[agent][(11 + USERS-1):(11 + USERS-1 + (USERS-1) * PAST_SAT_LOG_LEN),
             0:2] = np.reshape(other_user_sat_decisions, (-1, 2))
 
             others_last_bit_rate = np.delete(np.array(last_bit_rate), agent)
-            state[agent][(9 + USERS-1 + (USERS-1) * PAST_SAT_LOG_LEN):
-                         (9 + USERS-1 + (USERS-1) * PAST_SAT_LOG_LEN + (USERS-1)),
+            state[agent][(11 + USERS-1 + (USERS-1) * PAST_SAT_LOG_LEN):
+                         (11 + USERS-1 + (USERS-1) * PAST_SAT_LOG_LEN + (USERS-1)),
             0:len(VIDEO_BIT_RATE)] = np.reshape(one_hot_encode(others_last_bit_rate, len(VIDEO_BIT_RATE)), (-1, len(VIDEO_BIT_RATE)))
             # if len(next_sat_user_num) < PAST_LEN:
             #     next_sat_user_num = [0] * (PAST_LEN - len(next_sat_user_num)) + next_sat_user_num

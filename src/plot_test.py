@@ -6,8 +6,10 @@ from itertools import compress
 
 LOG_PATH = '../data/test_results_pensieve1/log_sim_pensieve_rss_Chicago_2022-9-21-10-00-00'
 SAT_PATH = 'data/sat_data/test/rss_Chicago_2022-9-21-10-00-00.csv'
-LOG_PATH = '../data/test_results_imp1/log_sim_ppo_rss_Chicago_2022-9-21-10-00-00'
-LOG_PATH = '../data/mpc_dist1/log_sim_cent_rss_Chicago_2022-9-21-10-00-00'
+LOG_PATH = '../data/test_results_imp5/log_sim_ppo_rss_Chicago_2022-9-21-10-00-00'
+
+LOG_PATH = '../data/test_results_pensieve5/log_sim_pensieve_rss_Chicago_2022-9-21-10-00-00'
+# LOG_PATH = '../data/MPC_dist5/log_sim_cent_rss_Chicago_2022-9-21-10-00-00'
 
 # LOG_PATH = 'results/log_sim_mpc_truth_naive_london'
 # PLOT_SAMPLES = 300
@@ -37,6 +39,7 @@ actual_bw = []
 with open(LOG_PATH, 'r') as f:
     time_stamp = []
     is_handover = []
+    agent_id = []
     avg_download = []
     pred_download = []
     bit_sel = []
@@ -50,9 +53,9 @@ with open(LOG_PATH, 'r') as f:
     first_line = True
     for line in f:
         parse = line.split()
-        if parse:
+        if parse and float(parse[1]) == 4:
             time_stamp.append(float(parse[0]))
-            # avg_download.append(float(parse[3]))
+            agent_id.append(float(parse[1]))
             # pred_download.append(float(parse[4]))
             bit_sel.append(float(parse[2]))
             buf_size.append(float(parse[3]))
@@ -77,7 +80,7 @@ bw_handover = list(compress(avg_download, is_handover))
 axs[0, 0].plot(time_handover, bw_handover, 'r*', markersize=10, label="HO point")
 if pred_download:
     axs[0, 0].plot(time_stamp, pred_download, 'g--', markersize=1, label="pred. bw", alpha=0.5)
-axs[0, 0].set_ylim([0.2, 0.6])
+axs[0, 0].set_ylim([0.0, 0.6])
 axs[0, 0].set_title("Download Time")
 
 # axs[1, 0].plot(time_stamp, avg_throughput, linestyle="-", marker="o", markersize=1)
@@ -90,7 +93,7 @@ axs[1, 0].set_title("Bitrate Selection (MB)")
 
 axs[0, 1].plot(time_stamp, buf_size, linestyle="-", marker="o", markersize=1)
 axs[0, 1].set_title("buf_size (sec)")
-axs[0, 1].set_ylim([0, 25])
+axs[0, 1].set_ylim([0, 40])
 
 axs[1, 1].plot(time_stamp, rebuf_time, linestyle="-", marker="o", markersize=1)
 axs[1, 1].set_title("rebuf_time (sec)")
@@ -110,7 +113,7 @@ axs[0, 2].plot(time_stamp, actual_bw, linestyle="--", marker="o", markersize=1)
 # axs[0, 2].plot(time_stamp, satellite_bw[24][:len(time_stamp)], linestyle="-", marker="o", markersize=1)
 
 axs[0, 2].set_title("Sat bw")
-axs[0, 2].set_ylim([2.0, 5.0])
+axs[0, 2].set_ylim([0.0, 5.0])
 
 legend = axs[0, 0].legend(loc='lower right', fontsize='x-small')
 

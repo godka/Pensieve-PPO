@@ -1,8 +1,10 @@
 import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
+# rss_Chicago_2022-9-21-10-00-00
 
-LOG_PATH = '../data/test_results_imp1/log_sim_ppo_rss_Chicago_2022-9-21-15-00-00'
+# LOG_PATH = '../data/test_results_pensieve5/log_sim_pensieve_rss_Chicago_2022-9-21-10-00-00'
+LOG_PATH = '../data/MPC_dist5/log_sim_cent_rss_Chicago_2022-9-21-10-00-00'
 PLOT_SAMPLES = 300
 
 
