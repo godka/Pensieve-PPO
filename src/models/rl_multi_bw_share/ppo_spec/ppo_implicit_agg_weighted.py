@@ -88,6 +88,7 @@ class Network():
                 tmp_net.append(split_6)
                 tmp_net.append(split_7)
 
+                tmp_net = tflearn.merge(tmp_net, 'concat')
                 user_list = tflearn.fully_connected(tmp_net, int(FEATURE_NUM / 2), activation='relu')
 
                 split_list.append(user_list)
@@ -178,6 +179,7 @@ class Network():
                 tmp_net.append(split_6)
                 tmp_net.append(split_7)
 
+                tmp_net = tflearn.merge(tmp_net, 'concat')
                 user_list = tflearn.fully_connected(tmp_net, int(FEATURE_NUM / 2), activation='relu')
 
                 split_list.append(user_list)
