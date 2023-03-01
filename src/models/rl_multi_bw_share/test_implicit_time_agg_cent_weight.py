@@ -95,7 +95,7 @@ def main():
 
         action_vec = [np.zeros(A_DIM * A_SAT) for _ in range(USERS)]
         for i in range(USERS):
-            action_vec[u_id][bit_rate] = 1
+            action_vec[i][bit_rate] = 1
 
         s_batch = [[np.zeros((S_INFO, S_LEN))] for _ in range(USERS)]
         a_batch = [[action_vec] for _ in range(USERS)]
