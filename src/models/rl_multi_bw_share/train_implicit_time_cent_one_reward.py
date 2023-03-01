@@ -32,14 +32,14 @@ import argparse
 
 parser = argparse.ArgumentParser(description='PyTorch Synthetic Benchmark',
                                  formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-parser.add_argument('--user', type=int, default=3)
+parser.add_argument('--user', type=int, default=2)
 args = parser.parse_args()
 USERS = args.user
 # A_SAT = USERS + 1\
 TEST_LOG_FOLDER += str(USERS) + '/'
 SUMMARY_DIR += str(USERS)
 LOG_FILE = SUMMARY_DIR + '/log'
-S_DIM = [11 + USERS-1 + (USERS-1) * PAST_SAT_LOG_LEN + (USERS-1), 8]
+S_DIM = [11 + USERS-1 + (USERS-1) * PAST_SAT_LOG_LEN + (USERS-1)*2, 8]
 
 # NN_MODEL = SUMMARY_DIR + '/best_model.ckpt'
 NN_MODEL = None

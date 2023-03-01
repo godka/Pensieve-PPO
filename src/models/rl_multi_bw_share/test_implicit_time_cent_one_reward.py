@@ -36,7 +36,7 @@ log = structlog.get_logger()
 log.debug('Test init')
 
 REWARD_FUNC = "LIN"
-S_INFO = 11 + USERS-1 + (USERS-1) * PAST_SAT_LOG_LEN + (USERS-1)
+S_INFO = 11 + USERS-1 + (USERS-1) * PAST_SAT_LOG_LEN + (USERS-1)*2
 
 
 def main():
@@ -288,8 +288,7 @@ def main():
                 if len(prev_cur_sat_bw_logs[u_id]) < PAST_LEN:
                     prev_cur_sat_bw_logs[u_id] = [0] * (PAST_LEN - len(prev_cur_sat_bw_logs[u_id])) + \
                                                   prev_cur_sat_bw_logs[u_id]
-
-                state[u_id][(11 + USERS-1 + (USERS-1) * PAST_SAT_LOG_LEN + (USERS-1))+i, :PAST_LEN] = np.array(prev_cur_sat_bw_logs[u_id][:PAST_LEN])
+                state[agent][(11 + USERS-1 + (USERS-1) * PAST_SAT_LOG_LEN + (USERS-1))+i, :PAST_LEN] = np.array(prev_cur_sat_bw_logs[u_id][:PAST_LEN])
 
                 i += 1
             # if len(next_sat_user_num) < PAST_LEN:

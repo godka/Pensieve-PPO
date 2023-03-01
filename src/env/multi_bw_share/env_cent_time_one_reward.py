@@ -26,7 +26,7 @@ class ABREnv():
     def __init__(self, random_seed=RANDOM_SEED, num_agents=NUM_AGENTS, reward_func=REWARD_FUNC, train_traces=None):
         self.num_agents = num_agents
         global S_INFO
-        S_INFO = 11 + self.num_agents - 1 + (self.num_agents - 1) * PAST_SAT_LOG_LEN + (self.num_agents - 1)
+        S_INFO = 11 + self.num_agents - 1 + (self.num_agents - 1) * PAST_SAT_LOG_LEN + (self.num_agents - 1)*2
         # SAT_DIM = num_agents
         # A_SAT = num_agents
         # SAT_DIM = num_agents + 1
@@ -43,6 +43,14 @@ class ABREnv():
 
         self.last_bit_rate = [DEFAULT_QUALITY for _ in range(self.num_agents)]
         self.buffer_size = [0 for _ in range(self.num_agents)]
+        self.rebuf = [0 for _ in range(self.num_agents)]
+        self.video_chunk_size = [0 for _ in range(self.num_agents)]
+        self.delay = [0 for _ in range(self.num_agents)]
+        self.next_video_chunk_sizes = [[] for _ in range(self.num_agents)]
+        self.video_chunk_remain = [0 for _ in range(self.num_agents)]
+        self.next_sat_bw_logs = [[] for _ in range(self.num_agents)]
+        self.cur_sat_bw_logs = [[] for _ in range(self.num_agents)]
+        self.connected_time = [[] for _ in range(self.num_agents)]
 
         self.last_sat_id = [-1 for _ in range(self.num_agents)]
         self.last_penalty = [0 for _ in range(self.num_agents)]
@@ -63,7 +71,13 @@ class ABREnv():
             self.net_env.get_video_chunk(bit_rate, agent, None)
         state = np.roll(self.state[agent], -1, axis=1)
 
-        self.sat_decision_log[agent].append(cur_sat_id)
+        self.video_chunk_size[agent] = video_chunk_size
+        self.delay[agent] = delay
+        self.next_video_chunk_sizes[agent] = next_video_chunk_sizes
+        self.video_chunk_remain[agent] = video_chunk_remain
+        self.next_sat_bw_logs[agent] = next_sat_bw_logs
+        self.cur_sat_bw_logs[agent] = cur_sat_bw_logs
+        self.connected_time[agent] = connected_time
         # this should be S_INFO number of terms
         state[0, -1] = VIDEO_BIT_RATE[bit_rate] / \
             float(np.max(VIDEO_BIT_RATE))  # last quality
@@ -114,10 +128,10 @@ class ABREnv():
         for u_id in range(self.num_agents):
             if u_id == agent:
                 continue
-            if len(prev_cur_sat_bw_logs[agent]) < PAST_LEN:
-                prev_cur_sat_bw_logs[agent] = [0] * (PAST_LEN - len(prev_cur_sat_bw_logs[agent])) + prev_cur_sat_bw_logs[agent]
+            if len(self.cur_sat_bw_logs[u_id]) < PAST_LEN:
+                self.cur_sat_bw_logs[u_id] = [0] * (PAST_LEN - len(self.cur_sat_bw_logs[u_id])) + self.cur_sat_bw_logs[u_id]
 
-            state[agent][7, :PAST_LEN] = np.array(prev_cur_sat_bw_logs[agent][:PAST_LEN])
+            state[(11 + self.num_agents - 1 + (self.num_agents - 1) * PAST_SAT_LOG_LEN + (self.num_agents - 1))+i, :PAST_LEN] = np.array(self.cur_sat_bw_logs[u_id][:PAST_LEN])
 
             i += 1
         self.state[agent] = state
@@ -212,6 +226,13 @@ class ABREnv():
         self.last_bit_rate[agent] = bit_rate
         state = np.roll(self.state[agent], -1, axis=1)
 
+        self.video_chunk_size[agent] = video_chunk_size
+        self.delay[agent] = delay
+        self.next_video_chunk_sizes[agent] = next_video_chunk_sizes
+        self.video_chunk_remain[agent] = video_chunk_remain
+        self.next_sat_bw_logs[agent] = next_sat_bw_logs
+        self.cur_sat_bw_logs[agent] = cur_sat_bw_logs
+        self.connected_time[agent] = connected_time
         # this should be S_INFO number of terms
         state[0, -1] = VIDEO_BIT_RATE[bit_rate] / \
             float(np.max(VIDEO_BIT_RATE))  # last quality
