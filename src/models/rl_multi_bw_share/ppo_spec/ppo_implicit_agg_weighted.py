@@ -26,21 +26,31 @@ class Network():
             split_list = []
             for i in range(self.num_agents):
                 tmp_net = []
-                split_0 = tflearn.fully_connected(inputs[:, 0+9*i:1+9*i, -1], FEATURE_NUM, activation='relu')
-                split_1 = tflearn.fully_connected(inputs[:, 1+9*i:2+9*i, -1], FEATURE_NUM, activation='relu')
-                split_2 = tflearn.conv_1d(inputs[:, 2+9*i:3+9*i, :], FEATURE_NUM, DIM_SIZE, activation='relu')
-                split_3 = tflearn.conv_1d(inputs[:, 3+9*i:4+9*i, :], FEATURE_NUM, DIM_SIZE, activation='relu')
-                split_4 = tflearn.conv_1d(inputs[:, 4+9*i:5+9*i, :self.a_dim], FEATURE_NUM, DIM_SIZE, activation='relu')
-                split_5 = tflearn.fully_connected(inputs[:, 5+9*i:6+9*i, -1], FEATURE_NUM, activation='relu')
-                split_6 = tflearn.conv_1d(inputs[:, 6+9*i:7+9*i, :PAST_LEN], FEATURE_NUM, DIM_SIZE, activation='relu')
-                split_7 = tflearn.conv_1d(inputs[:, 7+9*i:8+9*i, :PAST_LEN], FEATURE_NUM, DIM_SIZE, activation='relu')
-                split_9 = tflearn.conv_1d(inputs[:, 8+9*i:9+9*i, :A_SAT], FEATURE_NUM, DIM_SIZE, activation='relu')
+                split_0 = tflearn.fully_connected(inputs[:, 0 + 9 * i:1 + 9 * i, -1], FEATURE_NUM, activation='relu')
+                split_1 = tflearn.fully_connected(inputs[:, 1 + 9 * i:2 + 9 * i, -1], FEATURE_NUM, activation='relu')
+                split_2 = tflearn.conv_1d(inputs[:, 2 + 9 * i:3 + 9 * i, :], FEATURE_NUM, DIM_SIZE, activation='relu')
+                split_3 = tflearn.conv_1d(inputs[:, 3 + 9 * i:4 + 9 * i, :], FEATURE_NUM, DIM_SIZE, activation='relu')
+                split_4 = tflearn.conv_1d(inputs[:, 4 + 9 * i:5 + 9 * i, :self.a_dim], FEATURE_NUM, DIM_SIZE,
+                                          activation='relu')
+                split_5 = tflearn.fully_connected(inputs[:, 5 + 9 * i:6 + 9 * i, -1], FEATURE_NUM, activation='relu')
+                split_6 = tflearn.conv_1d(inputs[:, 6 + 9 * i:7 + 9 * i, :PAST_LEN], FEATURE_NUM, DIM_SIZE,
+                                          activation='relu')
+                split_7 = tflearn.conv_1d(inputs[:, 7 + 9 * i:8 + 9 * i, :PAST_LEN], FEATURE_NUM, DIM_SIZE,
+                                          activation='relu')
+                split_8 = tflearn.conv_1d(inputs[:, 8 + 9 * i:9 + 9 * i, :], FEATURE_NUM, DIM_SIZE,
+                                          activation='relu')
+                split_8_1 = tflearn.conv_1d(inputs[:, 9 + 9 * i:10 + 9 * i, :], FEATURE_NUM, DIM_SIZE,
+                                          activation='relu')
+                split_9 = tflearn.conv_1d(inputs[:, 10 + 9 * i:11 + 9 * i, :A_SAT], FEATURE_NUM, DIM_SIZE,
+                                          activation='relu')
 
                 split_2_flat = tflearn.flatten(split_2)
                 split_3_flat = tflearn.flatten(split_3)
                 split_4_flat = tflearn.flatten(split_4)
                 split_6_flat = tflearn.flatten(split_6)
                 split_7_flat = tflearn.flatten(split_7)
+                split_8_flat = tflearn.flatten(split_8)
+                split_8_1_flat = tflearn.flatten(split_8_1)
                 split_9_flat = tflearn.flatten(split_9)
 
                 tmp_net.append(split_0)
@@ -51,33 +61,35 @@ class Network():
                 tmp_net.append(split_5)
                 tmp_net.append(split_6_flat)
                 tmp_net.append(split_7_flat)
+                tmp_net.append(split_8_flat)
+                tmp_net.append(split_8_1_flat)
                 tmp_net.append(split_9_flat)
 
                 tmp_net = tflearn.merge(tmp_net, 'concat')
                 if i == 0:
                     user_list = tflearn.fully_connected(tmp_net, FEATURE_NUM, activation='relu')
                 else:
-                    user_list = tflearn.fully_connected(tmp_net, int(FEATURE_NUM / 2 / 2), activation='relu')
+                    user_list = tflearn.fully_connected(tmp_net, int(FEATURE_NUM / 2), activation='relu')
 
                 split_list.append(user_list)
             tmp_net = []
             for i in range((self.num_agents - 1) * PAST_SAT_LOG_LEN):
-                split_tmp = tflearn.fully_connected(inputs[:, 8+9*(self.num_agents-1)+1+i:8+9*(self.num_agents-1)+1+i+1, :2], FEATURE_NUM, activation='relu')
+                split_tmp = tflearn.conv_1d(
+                    inputs[:, 10 + 9 * (self.num_agents - 1) + 1 + i:10 + 9 * (self.num_agents - 1) + 1 + i + 1, :2],
+                    FEATURE_NUM, DIM_SIZE, activation='relu')
 
                 # split_tmp_flat = tflearn.flatten(split_tmp)
                 tmp_net.append(split_tmp)
             tmp_net = tflearn.merge(tmp_net, 'concat')
-            decision_list = tflearn.fully_connected(tmp_net, int(FEATURE_NUM / 2 / 2), activation='relu')
+            decision_list = tflearn.fully_connected(tmp_net, int(FEATURE_NUM), activation='relu')
 
             split_list.append(decision_list)
             merge_net = tflearn.merge(split_list, 'concat')
 
-            pi_net = merge_net
-            # pi_net = tflearn.fully_connected(merge_net, FEATURE_NUM, activation='relu')
-            pi_net2 = tflearn.fully_connected(pi_net, int(FEATURE_NUM/2), activation='relu')
-            pi_net3 = tflearn.fully_connected(pi_net2, int(FEATURE_NUM/4), activation='relu')
-
-            pi = tflearn.fully_connected(pi_net3, self.a_dim, activation='softmax')
+            value_net = tflearn.fully_connected(merge_net, FEATURE_NUM, activation='relu')
+            pi_net2 = tflearn.fully_connected(value_net, int(FEATURE_NUM/2), activation='relu')
+            # value_net3 = tflearn.fully_connected(value_net2, int(FEATURE_NUM/4), activation='relu')
+            pi = tflearn.fully_connected(pi_net2, self.a_dim, activation='softmax')
 
         with tf.variable_scope('critic'):
             split_list = []
@@ -94,7 +106,11 @@ class Network():
                                           activation='relu')
                 split_7 = tflearn.conv_1d(inputs[:, 7 + 9 * i:8 + 9 * i, :PAST_LEN], FEATURE_NUM, DIM_SIZE,
                                           activation='relu')
-                split_9 = tflearn.conv_1d(inputs[:, 8 + 9 * i:9 + 9 * i, :A_SAT], FEATURE_NUM, DIM_SIZE,
+                split_8 = tflearn.conv_1d(inputs[:, 8 + 9 * i:9 + 9 * i, :], FEATURE_NUM, DIM_SIZE,
+                                          activation='relu')
+                split_8_1 = tflearn.conv_1d(inputs[:, 9 + 9 * i:10 + 9 * i, :], FEATURE_NUM, DIM_SIZE,
+                                          activation='relu')
+                split_9 = tflearn.conv_1d(inputs[:, 10 + 9 * i:11 + 9 * i, :A_SAT], FEATURE_NUM, DIM_SIZE,
                                           activation='relu')
 
                 split_2_flat = tflearn.flatten(split_2)
@@ -102,6 +118,8 @@ class Network():
                 split_4_flat = tflearn.flatten(split_4)
                 split_6_flat = tflearn.flatten(split_6)
                 split_7_flat = tflearn.flatten(split_7)
+                split_8_flat = tflearn.flatten(split_8)
+                split_8_1_flat = tflearn.flatten(split_8_1)
                 split_9_flat = tflearn.flatten(split_9)
 
                 tmp_net.append(split_0)
@@ -112,34 +130,36 @@ class Network():
                 tmp_net.append(split_5)
                 tmp_net.append(split_6_flat)
                 tmp_net.append(split_7_flat)
+                tmp_net.append(split_8_flat)
+                tmp_net.append(split_8_1_flat)
                 tmp_net.append(split_9_flat)
 
                 tmp_net = tflearn.merge(tmp_net, 'concat')
                 if i == 0:
                     user_list = tflearn.fully_connected(tmp_net, FEATURE_NUM, activation='relu')
                 else:
-                    user_list = tflearn.fully_connected(tmp_net, int(FEATURE_NUM / 2 / 2), activation='relu')
+                    user_list = tflearn.fully_connected(tmp_net, int(FEATURE_NUM / 2), activation='relu')
 
                 split_list.append(user_list)
             tmp_net = []
             for i in range((self.num_agents - 1) * PAST_SAT_LOG_LEN):
-                split_tmp = tflearn.fully_connected(
-                    inputs[:, 8 + 9 * (self.num_agents - 1) + 1 + i:8 + 9 * (self.num_agents - 1) + 1 + i + 1, :2],
-                    FEATURE_NUM, activation='relu')
+                split_tmp = tflearn.conv_1d(
+                    inputs[:, 10 + 9 * (self.num_agents - 1) + 1 + i:10 + 9 * (self.num_agents - 1) + 1 + i + 1, :2],
+                    FEATURE_NUM, DIM_SIZE, activation='relu')
 
                 # split_tmp_flat = tflearn.flatten(split_tmp)
                 tmp_net.append(split_tmp)
             tmp_net = tflearn.merge(tmp_net, 'concat')
-            decision_list = tflearn.fully_connected(tmp_net, int(FEATURE_NUM / 2 / 2), activation='relu')
+            decision_list = tflearn.fully_connected(tmp_net, int(FEATURE_NUM), activation='relu')
 
             split_list.append(decision_list)
             merge_net = tflearn.merge(split_list, 'concat')
 
             value_net = tflearn.fully_connected(merge_net, FEATURE_NUM, activation='relu')
             value_net2 = tflearn.fully_connected(value_net, int(FEATURE_NUM/2), activation='relu')
-            value_net3 = tflearn.fully_connected(value_net2, int(FEATURE_NUM/4), activation='relu')
+            # value_net3 = tflearn.fully_connected(value_net2, int(FEATURE_NUM/4), activation='relu')
 
-            value = tflearn.fully_connected(value_net3, 1, activation='linear')
+            value = tflearn.fully_connected(value_net2, 1, activation='linear')
             return pi, value
 
     def get_network_params(self):

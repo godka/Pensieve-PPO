@@ -24,7 +24,7 @@ class ABREnv():
     def __init__(self, random_seed=RANDOM_SEED, num_agents=NUM_AGENTS, reward_func=REWARD_FUNC, train_traces=None):
         self.num_users = num_agents
         global S_INFO
-        S_INFO = 8 + 9 * (self.num_users - 1) + 1 + (self.num_users - 1) * PAST_SAT_LOG_LEN
+        S_INFO = 10 + 9 * (self.num_users - 1) + 1 + (self.num_users - 1) * PAST_SAT_LOG_LEN
         # SAT_DIM = num_agents
         # A_SAT = num_agents
         # SAT_DIM = num_agents + 1
@@ -103,16 +103,16 @@ class ABREnv():
                 self.cur_sat_bw_logs[i] = [0] * (PAST_LEN - len(self.cur_sat_bw_logs[i])) + self.cur_sat_bw_logs[i]
 
             state[7 + 9*i, :PAST_LEN] = np.array(self.cur_sat_bw_logs[i][:PAST_LEN])
-            # if self.is_handover:
-            #     state[8:9, 0:S_LEN] = np.zeros((1, S_LEN))
-            #     state[9:10, 0:S_LEN] = np.zeros((1, S_LEN))
+            if self.is_handover:
+                state[8 + 9*i, 0:S_LEN] = np.zeros((1, S_LEN))
+                state[9 + 9*i, 0:S_LEN] = np.zeros((1, S_LEN))
 
-            # state[8:9, -1] = np.array(cur_sat_user_num) / 10
-            # state[9:10, -1] = np.array(next_sat_user_nums) / 10
+            state[8 + 9*i, -1] = np.array(cur_sat_user_num) / 10
+            state[9 + 9*i, -1] = np.array(next_sat_user_nums) / 10
             if self.connected_time[i]:
-                state[8 + 9*i, :2] = [float(self.connected_time[i][0]) / BUFFER_NORM_FACTOR / 10, float(self.connected_time[i][1]) / BUFFER_NORM_FACTOR / 10]
+                state[10 + 9*i, :2] = [float(self.connected_time[i][0]) / BUFFER_NORM_FACTOR / 10, float(self.connected_time[i][1]) / BUFFER_NORM_FACTOR / 10]
             else:
-                state[8 + 9 * i, :2] = [0, 0]
+                state[10 + 9 * i, :2] = [0, 0]
         next_sat_id = None
         if next_sat_ids is not None:
             next_sat_id = next_sat_ids[agent]
@@ -120,7 +120,7 @@ class ABREnv():
             = encode_other_sat_info(self.net_env.sat_decision_log, self.num_users, cur_sat_id, next_sat_id,
                                     agent, other_sat_users, other_sat_bw_logs, PAST_SAT_LOG_LEN)
 
-        state[8 + 9 * (self.num_users - 1) + 1:(8 + 9 * (self.num_users - 1) + 1 + (self.num_users - 1) * PAST_SAT_LOG_LEN),
+        state[10 + 9 * (self.num_users - 1) + 1:(10 + 9 * (self.num_users - 1) + 1 + (self.num_users - 1) * PAST_SAT_LOG_LEN),
         0:2] = np.reshape(other_user_sat_decisions, (-1, 2))
 
         # if len(next_sat_user_nums) < PAST_LEN:
@@ -182,7 +182,7 @@ class ABREnv():
         # this is to make the framework similar to the real
         delay, sleep_time, self.buffer_size[agent], rebuf, video_chunk_size, next_video_chunk_sizes, \
         end_of_video, video_chunk_remain, is_handover, num_of_user_sat, next_sat_bandwidth, next_sat_bw_logs, \
-        cur_sat_user_num, next_sat_user_nums, cur_sat_bw_logs, connected_time, cur_sat_id, next_sat_ids, _, _, _, _, \
+        cur_sat_user_num, next_sat_user_num, cur_sat_bw_logs, connected_time, cur_sat_id, next_sat_ids, _, _, _, _, \
         other_sat_users, other_sat_bw_logs, other_buffer_sizes = \
             self.net_env.get_video_chunk(bit_rate, agent, None)
         self.time_stamp += delay  # in ms
@@ -238,17 +238,17 @@ class ABREnv():
                 self.cur_sat_bw_logs[i] = [0] * (PAST_LEN - len(self.cur_sat_bw_logs[i])) + self.cur_sat_bw_logs[i]
 
             state[7 + 9 * i, :PAST_LEN] = np.array(self.cur_sat_bw_logs[i][:PAST_LEN])
-            # if self.is_handover:
-            #     state[8:9, 0:S_LEN] = np.zeros((1, S_LEN))
-            #     state[9:10, 0:S_LEN] = np.zeros((1, S_LEN))
+            if self.is_handover:
+                state[8 + 9 * i, 0:S_LEN] = np.zeros((1, S_LEN))
+                state[9 + 9 * i, 0:S_LEN] = np.zeros((1, S_LEN))
 
-            # state[8:9, -1] = np.array(cur_sat_user_num) / 10
-            # state[9:10, -1] = np.array(next_sat_user_nums) / 10
+            state[8 + 9 * i, -1] = np.array(cur_sat_user_num) / 10
+            state[9 + 9 * i, -1] = np.array(next_sat_user_num) / 10
             if self.connected_time[i]:
-                state[8 + 9 * i, :2] = [float(self.connected_time[i][0]) / BUFFER_NORM_FACTOR / 10,
+                state[10 + 9 * i, :2] = [float(self.connected_time[i][0]) / BUFFER_NORM_FACTOR / 10,
                                         float(self.connected_time[i][1]) / BUFFER_NORM_FACTOR / 10]
             else:
-                state[8 + 9 * i, :2] = [0, 0]
+                state[10 + 9 * i, :2] = [0, 0]
         next_sat_id = None
         if next_sat_ids is not None:
             next_sat_id = next_sat_ids[agent]
@@ -256,8 +256,8 @@ class ABREnv():
             = encode_other_sat_info(self.net_env.sat_decision_log, self.num_users, cur_sat_id, next_sat_id,
                                     agent, other_sat_users, other_sat_bw_logs, PAST_SAT_LOG_LEN)
 
-        state[8 + 9 * (self.num_users - 1) + 1:(
-                8 + 9 * (self.num_users - 1) + 1 + (self.num_users - 1) * PAST_SAT_LOG_LEN),
+        state[10 + 9 * (self.num_users - 1) + 1:(
+                10 + 9 * (self.num_users - 1) + 1 + (self.num_users - 1) * PAST_SAT_LOG_LEN),
         0:2] = np.reshape(other_user_sat_decisions, (-1, 2))
 
         # if len(next_sat_user_nums) < PAST_LEN:

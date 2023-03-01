@@ -22,7 +22,7 @@ RANDOM_SEED = 42
 NN_MODEL = sys.argv[1]
 USERS = int(sys.argv[2])
 SUMMARY_DIR = './test_results_imp_agg_weight' + str(USERS)
-S_INFO = 8 + 9 * (USERS - 1) + 1 + (USERS - 1) * PAST_SAT_LOG_LEN
+S_INFO = 10 + 9 * (USERS - 1) + 1 + (USERS - 1) * PAST_SAT_LOG_LEN
 
 LOG_FILE = SUMMARY_DIR + '/log_sim_ppo'
 SUMMARY_PATH = SUMMARY_DIR + '/summary'
@@ -264,17 +264,17 @@ def main():
                     prev_cur_sat_bw_logs[i] = [0] * (PAST_LEN - len(prev_cur_sat_bw_logs[i])) + prev_cur_sat_bw_logs[i]
 
                 state[agent][7 + 9 * i, :PAST_LEN] = np.array(prev_cur_sat_bw_logs[i][:PAST_LEN])
-                # if is_handover:
-                #     state[8:9, 0:S_LEN] = np.zeros((1, S_LEN))
-                #     state[9:10, 0:S_LEN] = np.zeros((1, S_LEN))
+                if is_handover:
+                    state[8 + 9 * i, 0:S_LEN] = np.zeros((1, S_LEN))
+                    state[9 + 9 * i, 0:S_LEN] = np.zeros((1, S_LEN))
 
-                # state[8:9, -1] = np.array(cur_sat_user_num) / 10
-                # state[9:10, -1] = np.array(next_sat_user_nums) / 10
+                state[8 + 9 * i, -1] = np.array(cur_sat_user_num) / 10
+                state[9 + 9 * i, -1] = np.array(next_sat_user_num) / 10
                 if prev_connected_time[i]:
-                    state[agent][8 + 9 * i, :2] = [float(prev_connected_time[i][0]) / BUFFER_NORM_FACTOR / 10,
+                    state[agent][10 + 9 * i, :2] = [float(prev_connected_time[i][0]) / BUFFER_NORM_FACTOR / 10,
                                             float(prev_connected_time[i][1]) / BUFFER_NORM_FACTOR / 10]
                 else:
-                    state[agent][8 + 9 * i, :2] = [0, 0]
+                    state[agent][10 + 9 * i, :2] = [0, 0]
             next_sat_id = None
             if next_sat_ids is not None:
                 next_sat_id = next_sat_ids[agent]
@@ -282,8 +282,8 @@ def main():
                 = encode_other_sat_info(net_env.sat_decision_log, USERS, cur_sat_id, next_sat_id,
                                         agent, other_sat_users, other_sat_bw_logs, PAST_SAT_LOG_LEN)
 
-            state[agent][8 + 9 * (USERS - 1) + 1:(
-                        8 + 9 * (USERS - 1) + 1 + (USERS - 1) * PAST_SAT_LOG_LEN),
+            state[agent][10 + 9 * (USERS - 1) + 1:(
+                        10 + 9 * (USERS - 1) + 1 + (USERS - 1) * PAST_SAT_LOG_LEN),
             0:2] = np.reshape(other_user_sat_decisions, (-1, 2))
 
             # if len(next_sat_user_num) < PAST_LEN:
