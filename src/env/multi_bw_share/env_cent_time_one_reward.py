@@ -110,7 +110,16 @@ class ABREnv():
                      (11 + self.num_agents - 1 + (self.num_agents - 1) * PAST_SAT_LOG_LEN + (self.num_agents - 1)),
         0:len(VIDEO_BIT_RATE)] = np.reshape(one_hot_encode(others_last_bit_rate, len(VIDEO_BIT_RATE)),
                                             (-1, len(VIDEO_BIT_RATE)))
+        i = 0
+        for u_id in range(self.num_agents):
+            if u_id == agent:
+                continue
+            if len(prev_cur_sat_bw_logs[agent]) < PAST_LEN:
+                prev_cur_sat_bw_logs[agent] = [0] * (PAST_LEN - len(prev_cur_sat_bw_logs[agent])) + prev_cur_sat_bw_logs[agent]
 
+            state[agent][7, :PAST_LEN] = np.array(prev_cur_sat_bw_logs[agent][:PAST_LEN])
+
+            i += 1
         self.state[agent] = state
         
         return self.state[agent]

@@ -64,6 +64,15 @@ def main():
     reward_1 = []
     reward_2 = []
     reward_3 = []
+    prev_buffer_size = [0 for _ in range(USERS)]
+    prev_rebuf = [0 for _ in range(USERS)]
+    prev_video_chunk_size = [0 for _ in range(USERS)]
+    prev_delay = [0 for _ in range(USERS)]
+    prev_next_video_chunk_sizes = [[] for _ in range(USERS)]
+    prev_video_chunk_remain = [0 for _ in range(USERS)]
+    prev_next_sat_bw_logs = [[] for _ in range(USERS)]
+    prev_cur_sat_bw_logs = [[] for _ in range(USERS)]
+    prev_connected_time = [[] for _ in range(USERS)]
 
     with tf.Session() as sess:
 
@@ -166,6 +175,16 @@ def main():
             time_stamp[agent] += delay  # in ms
             time_stamp[agent] += sleep_time  # in ms
 
+            prev_buffer_size[agent] = buffer_size
+            prev_rebuf[agent] = rebuf
+            prev_video_chunk_size[agent] = video_chunk_size
+            prev_delay[agent] = delay
+            prev_next_video_chunk_sizes[agent] = next_video_chunk_sizes
+            prev_video_chunk_remain[agent] = video_chunk_remain
+            prev_next_sat_bw_logs[agent] = next_sat_bw_logs
+            prev_cur_sat_bw_logs[agent] = cur_sat_bw_logs
+            prev_connected_time[agent] = connected_time
+
             # reward is video quality - rebuffer penalty
             if REWARD_FUNC == "LIN":
                 reward = VIDEO_BIT_RATE[bit_rate[agent]] / M_IN_K \
@@ -261,6 +280,18 @@ def main():
             state[agent][(11 + USERS-1 + (USERS-1) * PAST_SAT_LOG_LEN):
                          (11 + USERS-1 + (USERS-1) * PAST_SAT_LOG_LEN + (USERS-1)),
             0:len(VIDEO_BIT_RATE)] = np.reshape(one_hot_encode(others_last_bit_rate, len(VIDEO_BIT_RATE)), (-1, len(VIDEO_BIT_RATE)))
+
+            i = 0
+            for u_id in range(USERS):
+                if u_id == agent:
+                    continue
+                if len(prev_cur_sat_bw_logs[u_id]) < PAST_LEN:
+                    prev_cur_sat_bw_logs[u_id] = [0] * (PAST_LEN - len(prev_cur_sat_bw_logs[u_id])) + \
+                                                  prev_cur_sat_bw_logs[u_id]
+
+                state[u_id][(11 + USERS-1 + (USERS-1) * PAST_SAT_LOG_LEN + (USERS-1))+i, :PAST_LEN] = np.array(prev_cur_sat_bw_logs[u_id][:PAST_LEN])
+
+                i += 1
             # if len(next_sat_user_num) < PAST_LEN:
             #     next_sat_user_num = [0] * (PAST_LEN - len(next_sat_user_num)) + next_sat_user_num
 

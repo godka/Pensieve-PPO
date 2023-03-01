@@ -95,7 +95,7 @@ def main():
 
         action_vec = [np.zeros(A_DIM * A_SAT) for _ in range(USERS)]
         for i in range(USERS):
-            action_vec[i][bit_rate] = 1
+            action_vec[u_id][bit_rate] = 1
 
         s_batch = [[np.zeros((S_INFO, S_LEN))] for _ in range(USERS)]
         a_batch = [[action_vec] for _ in range(USERS)]
@@ -125,7 +125,7 @@ def main():
 
                 action_vec = [np.zeros(A_DIM) for _ in range(USERS)]
                 for i in range(USERS):
-                    action_vec[i][bit_rate[agent]] = 1
+                    action_vec[u_id][bit_rate[agent]] = 1
 
                 s_batch = [[np.zeros((S_INFO, S_LEN))] for _ in range(USERS)]
                 a_batch = [[action_vec] for _ in range(USERS)]
@@ -279,27 +279,27 @@ def main():
             for u_id in range(0, USERS):
                 if u_id == agent:
                     continue
-                state[agent][11 + 8 * i, -1] = VIDEO_BIT_RATE[last_bit_rate[i]] / float(np.max(VIDEO_BIT_RATE))  # last quality
-                state[agent][12 + 8 * i, -1] = prev_buffer_size[i] / BUFFER_NORM_FACTOR  # 10 sec
-                if prev_delay[i] != 0:
-                    state[agent][13 + 8 * i, -1] = float(prev_video_chunk_size[i]) / \
-                                           float(prev_delay[i]) / M_IN_K  # kilo byte / ms
+                state[agent][11 + 8 * i, -1] = VIDEO_BIT_RATE[last_bit_rate[u_id]] / float(np.max(VIDEO_BIT_RATE))  # last quality
+                state[agent][12 + 8 * i, -1] = prev_buffer_size[u_id] / BUFFER_NORM_FACTOR  # 10 sec
+                if prev_delay[u_id] != 0:
+                    state[agent][13 + 8 * i, -1] = float(prev_video_chunk_size[u_id]) / \
+                                           float(prev_delay[u_id]) / M_IN_K  # kilo byte / ms
                 else:
                     state[agent][13 + 8 * i, -1] = 0
-                state[agent][14 + 8 * i, -1] = float(prev_delay[i]) / M_IN_K / BUFFER_NORM_FACTOR  # 10 sec
+                state[agent][14 + 8 * i, -1] = float(prev_delay[u_id]) / M_IN_K / BUFFER_NORM_FACTOR  # 10 sec
                 # state[4, :A_DIM] = np.array(next_video_chunk_sizes) / M_IN_K / M_IN_K  # mega byte
-                state[agent][15 + 8 * i, -1] = np.minimum(prev_video_chunk_remain[i],
+                state[agent][15 + 8 * i, -1] = np.minimum(prev_video_chunk_remain[u_id],
                                                   CHUNK_TIL_VIDEO_END_CAP) / float(CHUNK_TIL_VIDEO_END_CAP)
-                if len(prev_next_sat_bw_logs[i]) < PAST_LEN:
-                    prev_next_sat_bw_logs[i] = [0] * (PAST_LEN - len(prev_next_sat_bw_logs[i])) + prev_next_sat_bw_logs[
+                if len(prev_next_sat_bw_logs[u_id]) < PAST_LEN:
+                    prev_next_sat_bw_logs[u_id] = [0] * (PAST_LEN - len(prev_next_sat_bw_logs[u_id])) + prev_next_sat_bw_logs[
                         i]
 
-                state[agent][16 + 8 * i, :PAST_LEN] = np.array(prev_next_sat_bw_logs[i][:PAST_LEN])
+                state[agent][16 + 8 * i, :PAST_LEN] = np.array(prev_next_sat_bw_logs[u_id][:PAST_LEN])
 
-                if len(prev_cur_sat_bw_logs[i]) < PAST_LEN:
-                    prev_cur_sat_bw_logs[i] = [0] * (PAST_LEN - len(prev_cur_sat_bw_logs[i])) + prev_cur_sat_bw_logs[i]
+                if len(prev_cur_sat_bw_logs[u_id]) < PAST_LEN:
+                    prev_cur_sat_bw_logs[u_id] = [0] * (PAST_LEN - len(prev_cur_sat_bw_logs[u_id])) + prev_cur_sat_bw_logs[u_id]
 
-                state[agent][17 + 8 * i, :PAST_LEN] = np.array(prev_cur_sat_bw_logs[i][:PAST_LEN])
+                state[agent][17 + 8 * i, :PAST_LEN] = np.array(prev_cur_sat_bw_logs[u_id][:PAST_LEN])
                 state[agent][18 + 8 * i, -1] = np.array(cur_sat_user_num) / 10
                 i += 1
             next_sat_id = None

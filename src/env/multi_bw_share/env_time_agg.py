@@ -119,27 +119,27 @@ class ABREnv():
         for u_id in range(self.num_users-1):
             if u_id == agent:
                 continue
-            state[11 + 8*i, -1] = VIDEO_BIT_RATE[self.last_bit_rate[i]] / \
+            state[11 + 8*i, -1] = VIDEO_BIT_RATE[self.last_bit_rate[u_id]] / \
                 float(np.max(VIDEO_BIT_RATE))  # last quality
-            state[12 + 8*i, -1] = self.buffer_size[i] / BUFFER_NORM_FACTOR  # 10 sec
-            if self.delay[i] != 0:
-                state[13 + 8*i, -1] = float(self.video_chunk_size[i]) / \
-                    float(self.delay[i]) / M_IN_K  # kilo byte / ms
+            state[12 + 8*i, -1] = self.buffer_size[u_id] / BUFFER_NORM_FACTOR  # 10 sec
+            if self.delay[u_id] != 0:
+                state[13 + 8*i, -1] = float(self.video_chunk_size[u_id]) / \
+                    float(self.delay[u_id]) / M_IN_K  # kilo byte / ms
             else:
                 state[13 + 8*i, -1] = 0
-            state[14 + 8*i, -1] = float(self.delay[i]) / M_IN_K / BUFFER_NORM_FACTOR  # 10 sec
+            state[14 + 8*i, -1] = float(self.delay[u_id]) / M_IN_K / BUFFER_NORM_FACTOR  # 10 sec
             # state[4, :A_DIM] = np.array(next_video_chunk_sizes) / M_IN_K / M_IN_K  # mega byte
-            state[15 + 8*i, -1] = np.minimum(self.video_chunk_remain[i],
+            state[15 + 8*i, -1] = np.minimum(self.video_chunk_remain[u_id],
                                     CHUNK_TIL_VIDEO_END_CAP) / float(CHUNK_TIL_VIDEO_END_CAP)
-            if len(self.next_sat_bw_logs[i]) < PAST_LEN:
-                self.next_sat_bw_logs[i] = [0] * (PAST_LEN - len(self.next_sat_bw_logs[i])) + self.next_sat_bw_logs[i]
+            if len(self.next_sat_bw_logs[u_id]) < PAST_LEN:
+                self.next_sat_bw_logs[u_id] = [0] * (PAST_LEN - len(self.next_sat_bw_logs[u_id])) + self.next_sat_bw_logs[u_id]
 
-            state[16 + 8*i, :PAST_LEN] = np.array(self.next_sat_bw_logs[i][:PAST_LEN])
+            state[16 + 8*i, :PAST_LEN] = np.array(self.next_sat_bw_logs[u_id][:PAST_LEN])
 
-            if len(self.cur_sat_bw_logs[i]) < PAST_LEN:
-                self.cur_sat_bw_logs[i] = [0] * (PAST_LEN - len(self.cur_sat_bw_logs[i])) + self.cur_sat_bw_logs[i]
+            if len(self.cur_sat_bw_logs[u_id]) < PAST_LEN:
+                self.cur_sat_bw_logs[u_id] = [0] * (PAST_LEN - len(self.cur_sat_bw_logs[u_id])) + self.cur_sat_bw_logs[u_id]
 
-            state[17 + 8*i, :PAST_LEN] = np.array(self.cur_sat_bw_logs[i][:PAST_LEN])
+            state[17 + 8*i, :PAST_LEN] = np.array(self.cur_sat_bw_logs[u_id][:PAST_LEN])
             state[18 + 8*i, -1] = np.array(cur_sat_user_num) / 10
             i += 1
         next_sat_id = None
@@ -284,27 +284,27 @@ class ABREnv():
         for u_id in range(self.num_users - 1):
             if u_id == agent:
                 continue
-            state[11 + 8 * i, -1] = VIDEO_BIT_RATE[self.last_bit_rate[i]] / \
+            state[11 + 8 * i, -1] = VIDEO_BIT_RATE[self.last_bit_rate[u_id]] / \
                                     float(np.max(VIDEO_BIT_RATE))  # last quality
-            state[12 + 8 * i, -1] = self.buffer_size[i] / BUFFER_NORM_FACTOR  # 10 sec
-            if self.delay[i] != 0:
-                state[13 + 8 * i, -1] = float(self.video_chunk_size[i]) / \
-                                        float(self.delay[i]) / M_IN_K  # kilo byte / ms
+            state[12 + 8 * i, -1] = self.buffer_size[u_id] / BUFFER_NORM_FACTOR  # 10 sec
+            if self.delay[u_id] != 0:
+                state[13 + 8 * i, -1] = float(self.video_chunk_size[u_id]) / \
+                                        float(self.delay[u_id]) / M_IN_K  # kilo byte / ms
             else:
                 state[13 + 8 * i, -1] = 0
-            state[14 + 8 * i, -1] = float(self.delay[i]) / M_IN_K / BUFFER_NORM_FACTOR  # 10 sec
+            state[14 + 8 * i, -1] = float(self.delay[u_id]) / M_IN_K / BUFFER_NORM_FACTOR  # 10 sec
             # state[4, :A_DIM] = np.array(next_video_chunk_sizes) / M_IN_K / M_IN_K  # mega byte
-            state[15 + 8 * i, -1] = np.minimum(self.video_chunk_remain[i],
+            state[15 + 8 * i, -1] = np.minimum(self.video_chunk_remain[u_id],
                                                CHUNK_TIL_VIDEO_END_CAP) / float(CHUNK_TIL_VIDEO_END_CAP)
-            if len(self.next_sat_bw_logs[i]) < PAST_LEN:
-                self.next_sat_bw_logs[i] = [0] * (PAST_LEN - len(self.next_sat_bw_logs[i])) + self.next_sat_bw_logs[i]
+            if len(self.next_sat_bw_logs[u_id]) < PAST_LEN:
+                self.next_sat_bw_logs[u_id] = [0] * (PAST_LEN - len(self.next_sat_bw_logs[u_id])) + self.next_sat_bw_logs[u_id]
 
-            state[16 + 8 * i, :PAST_LEN] = np.array(self.next_sat_bw_logs[i][:PAST_LEN])
+            state[16 + 8 * i, :PAST_LEN] = np.array(self.next_sat_bw_logs[u_id][:PAST_LEN])
 
-            if len(self.cur_sat_bw_logs[i]) < PAST_LEN:
-                self.cur_sat_bw_logs[i] = [0] * (PAST_LEN - len(self.cur_sat_bw_logs[i])) + self.cur_sat_bw_logs[i]
+            if len(self.cur_sat_bw_logs[u_id]) < PAST_LEN:
+                self.cur_sat_bw_logs[u_id] = [0] * (PAST_LEN - len(self.cur_sat_bw_logs[u_id])) + self.cur_sat_bw_logs[u_id]
 
-            state[17 + 8 * i, :PAST_LEN] = np.array(self.cur_sat_bw_logs[i][:PAST_LEN])
+            state[17 + 8 * i, :PAST_LEN] = np.array(self.cur_sat_bw_logs[u_id][:PAST_LEN])
             state[18 + 8 * i, -1] = np.array(cur_sat_user_num) / 10
             i += 1
         next_sat_id = None
