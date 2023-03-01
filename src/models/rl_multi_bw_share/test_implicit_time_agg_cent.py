@@ -269,7 +269,7 @@ def main():
                     state[agent][9 + 9 * i, 0:S_LEN] = np.zeros((1, S_LEN))
 
                 state[agent][8 + 9 * i, -1] = np.array(cur_sat_user_num) / 10
-                state[agent][9 + 9 * i, -1] = np.array(next_sat_user_nums) / 10
+                state[agent][9 + 9 * i, -1] = np.array(next_sat_user_num) / 10
                 if prev_connected_time[i]:
                     state[agent][10 + 9 * i, :2] = [float(prev_connected_time[i][0]) / BUFFER_NORM_FACTOR / 10,
                                             float(prev_connected_time[i][1]) / BUFFER_NORM_FACTOR / 10]
