@@ -67,6 +67,7 @@ class Network():
 
             tmp_net = tflearn.merge(tmp_net, 'concat')
             user_list = tflearn.fully_connected(tmp_net, FEATURE_NUM, activation='relu')
+            split_list.append(user_list)
 
             for i in range(self.num_agents - 1):
                 tmp_net = []
@@ -75,7 +76,7 @@ class Network():
                 split_2 = tflearn.fully_connected(inputs[:, 13 + 8 * i:14 + 8 * i, -1], FEATURE_NUM, activation='relu')
                 split_3 = tflearn.fully_connected(inputs[:, 14 + 8 * i:15 + 8 * i, -1], FEATURE_NUM, activation='relu')
                 split_4 = tflearn.fully_connected(inputs[:, 15 + 8 * i:16 + 8 * i, -1], FEATURE_NUM, activation='relu')
-                split_5 = tflearn.fully_connected(inputs[:, 16 + 8 * i:17 + 8 * i -1], FEATURE_NUM, activation='relu')
+                split_5 = tflearn.fully_connected(inputs[:, 16 + 8 * i:17 + 8 * i, -1], FEATURE_NUM, activation='relu')
                 split_6 = tflearn.fully_connected(inputs[:, 17 + 8 * i:18 + 8 * i, -1], FEATURE_NUM, activation='relu')
                 split_7 = tflearn.fully_connected(inputs[:, 18 + 8 * i:19 + 8 * i, -1], FEATURE_NUM, activation='relu')
 
@@ -107,11 +108,11 @@ class Network():
             merge_net = tflearn.merge(split_list, 'concat')
 
             value_net = tflearn.fully_connected(merge_net, FEATURE_NUM, activation='relu')
-            pi_net2 = tflearn.fully_connected(value_net, int(FEATURE_NUM / 2), activation='relu')
+            # pi_net2 = tflearn.fully_connected(value_net, int(FEATURE_NUM / 2), activation='relu')
             # value_net3 = tflearn.fully_connected(value_net2, int(FEATURE_NUM/4), activation='relu')
 
             # value_net3 = tflearn.fully_connected(value_net2, int(FEATURE_NUM/4), activation='relu')
-            pi = tflearn.fully_connected(pi_net2, self.a_dim, activation='softmax')
+            pi = tflearn.fully_connected(value_net, self.a_dim, activation='softmax')
 
         with tf.variable_scope('critic'):
             split_list = []
@@ -158,15 +159,16 @@ class Network():
 
             tmp_net = tflearn.merge(tmp_net, 'concat')
             user_list = tflearn.fully_connected(tmp_net, FEATURE_NUM, activation='relu')
+            split_list.append(user_list)
 
-            for i in range(self.num_agents-1):
+            for i in range(self.num_agents - 1):
                 tmp_net = []
                 split_0 = tflearn.fully_connected(inputs[:, 11 + 8 * i:12 + 8 * i, -1], FEATURE_NUM, activation='relu')
                 split_1 = tflearn.fully_connected(inputs[:, 12 + 8 * i:13 + 8 * i, -1], FEATURE_NUM, activation='relu')
                 split_2 = tflearn.fully_connected(inputs[:, 13 + 8 * i:14 + 8 * i, -1], FEATURE_NUM, activation='relu')
                 split_3 = tflearn.fully_connected(inputs[:, 14 + 8 * i:15 + 8 * i, -1], FEATURE_NUM, activation='relu')
                 split_4 = tflearn.fully_connected(inputs[:, 15 + 8 * i:16 + 8 * i, -1], FEATURE_NUM, activation='relu')
-                split_5 = tflearn.fully_connected(inputs[:, 16 + 8 * i:17 + 8 * i - 1], FEATURE_NUM, activation='relu')
+                split_5 = tflearn.fully_connected(inputs[:, 16 + 8 * i:17 + 8 * i, -1], FEATURE_NUM, activation='relu')
                 split_6 = tflearn.fully_connected(inputs[:, 17 + 8 * i:18 + 8 * i, -1], FEATURE_NUM, activation='relu')
                 split_7 = tflearn.fully_connected(inputs[:, 18 + 8 * i:19 + 8 * i, -1], FEATURE_NUM, activation='relu')
 
@@ -198,10 +200,10 @@ class Network():
             merge_net = tflearn.merge(split_list, 'concat')
 
             value_net = tflearn.fully_connected(merge_net, FEATURE_NUM, activation='relu')
-            value_net2 = tflearn.fully_connected(value_net, int(FEATURE_NUM/2), activation='relu')
+            # pi_net2 = tflearn.fully_connected(value_net, int(FEATURE_NUM / 2), activation='relu')
             # value_net3 = tflearn.fully_connected(value_net2, int(FEATURE_NUM/4), activation='relu')
 
-            value = tflearn.fully_connected(value_net2, 1, activation='linear')
+            value = tflearn.fully_connected(value_net, 1, activation='linear')
             return pi, value
 
     def get_network_params(self):
