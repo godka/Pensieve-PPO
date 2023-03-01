@@ -9,7 +9,7 @@ from util.constants import DEFAULT_QUALITY, REBUF_PENALTY, SMOOTH_PENALTY, VIDEO
 os.environ['CUDA_VISIBLE_DEVICES'] = '2'
 import tflearn
 
-FEATURE_NUM = 256
+FEATURE_NUM = 128
 ACTION_EPS = 1e-4
 GAMMA = 0.99
 # PPO2

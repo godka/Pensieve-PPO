@@ -169,8 +169,10 @@ class Environment:
                                                                               self.mahimahi_ptr[
                                                                                   agent]) * B_IN_MB / BITS_IN_BYTE
             if throughput == 0.0:
-                # Connect the satellite that has the best serving time
-                sat_id = self.get_best_sat_id(agent, self.mahimahi_ptr[agent])
+                if ho_stamp and ho_stamp == "MVT":
+                    sat_id = self.get_mvt_sat_id(agent, self.mahimahi_ptr[agent])
+                else:
+                    sat_id = self.get_best_sat_id(agent, self.mahimahi_ptr[agent])
                 self.log.debug("Forced Handover1", cur_sat_id=self.cur_sat_id[agent], next_sat_id=sat_id,
                                mahimahi_ptr=self.mahimahi_ptr[agent], agent=agent,
                                cur_bw=self.cooked_bw[self.cur_sat_id[agent]][
@@ -270,7 +272,11 @@ class Environment:
                 if throughput == 0.0:
                     # Do the forced handover
                     # Connect the satellite that has the best serving time
-                    sat_id = self.get_best_sat_id(agent, self.mahimahi_ptr[agent])
+                    if ho_stamp and ho_stamp == "MVT":
+                        sat_id = self.get_mvt_sat_id(agent, self.mahimahi_ptr[agent])
+                    else:
+                        sat_id = self.get_best_sat_id(agent, self.mahimahi_ptr[agent])
+
                     assert sat_id != self.cur_sat_id[agent]
                     self.log.debug("Forced Handover2", cur_sat_id=self.cur_sat_id[agent], sat_id=sat_id,
                                    mahimahi_ptr=self.mahimahi_ptr[agent], agent=agent)
@@ -515,6 +521,28 @@ class Environment:
             if best_sat_bw < real_sat_bw:
                 best_sat_id = sat_id
                 best_sat_bw = real_sat_bw
+
+        return best_sat_id
+
+    def get_mvt_sat_id(self, agent, mahimahi_ptr=None):
+        best_sat_id = None
+        best_sat_time = 0
+
+        if mahimahi_ptr is None:
+            mahimahi_ptr = self.mahimahi_ptr[agent]
+
+        for sat_id, sat_bw in self.cooked_bw.items():
+            tmp_time = 0
+            while True:
+                tmp_mahimahi_ptr = mahimahi_ptr
+                real_sat_bw = self.cur_satellite[sat_id].data_rate_unshared(self.cur_user[agent], tmp_mahimahi_ptr)
+                if real_sat_bw == 0 or tmp_mahimahi_ptr <= 0:
+                    break
+                tmp_mahimahi_ptr -= 1
+                tmp_time += 1
+            if best_sat_time < tmp_time:
+                best_sat_id = sat_id
+                best_sat_time = tmp_time
 
         return best_sat_id
 

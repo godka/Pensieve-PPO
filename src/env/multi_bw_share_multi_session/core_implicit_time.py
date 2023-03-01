@@ -138,8 +138,10 @@ class Environment:
                                                                               self.mahimahi_ptr[
                                                                                   agent]) * B_IN_MB / BITS_IN_BYTE
             if throughput == 0.0:
-                # Connect the satellite that has the best serving time
-                sat_id = self.get_best_sat_id(agent, self.mahimahi_ptr[agent])
+                if ho_stamp and ho_stamp == "MVT":
+                    sat_id = self.get_mvt_sat_id(agent, self.mahimahi_ptr[agent])
+                else:
+                    sat_id = self.get_best_sat_id(agent, self.mahimahi_ptr[agent])
                 self.log.debug("Forced Handover1", cur_sat_id=self.cur_sat_id[0], next_sat_id=sat_id,
                               mahimahi_ptr=self.mahimahi_ptr[agent], agent=agent,
                               cur_bw=self.cooked_bw[self.cur_sat_id[0]][self.mahimahi_ptr[agent]-3:self.mahimahi_ptr[agent]+3],
