@@ -70,14 +70,14 @@ class Network():
 
             for i in range(self.num_agents - 1):
                 tmp_net = []
-                split_0 = tflearn.fully_connected(inputs[:, 11 + 8 * i, -1], FEATURE_NUM, activation='relu')
-                split_1 = tflearn.fully_connected(inputs[:, 12 + 8 * i, -1], FEATURE_NUM, activation='relu')
-                split_2 = tflearn.fully_connected(inputs[:, 13 + 8 * i, -1], FEATURE_NUM, activation='relu')
-                split_3 = tflearn.fully_connected(inputs[:, 14 + 8 * i, -1], FEATURE_NUM, activation='relu')
-                split_4 = tflearn.fully_connected(inputs[:, 15 + 8 * i, -1], FEATURE_NUM, activation='relu')
-                split_5 = tflearn.fully_connected(inputs[:, 16 + 8 * i, -1], FEATURE_NUM, activation='relu')
-                split_6 = tflearn.fully_connected(inputs[:, 17 + 8 * i, -1], FEATURE_NUM, activation='relu')
-                split_7 = tflearn.fully_connected(inputs[:, 18 + 8 * i, -1], FEATURE_NUM, activation='relu')
+                split_0 = tflearn.fully_connected(inputs[:, 11 + 8 * i:12 + 8 * i, -1], FEATURE_NUM, activation='relu')
+                split_1 = tflearn.fully_connected(inputs[:, 12 + 8 * i:13 + 8 * i, -1], FEATURE_NUM, activation='relu')
+                split_2 = tflearn.fully_connected(inputs[:, 13 + 8 * i:14 + 8 * i, -1], FEATURE_NUM, activation='relu')
+                split_3 = tflearn.fully_connected(inputs[:, 14 + 8 * i:15 + 8 * i, -1], FEATURE_NUM, activation='relu')
+                split_4 = tflearn.fully_connected(inputs[:, 15 + 8 * i:16 + 8 * i, -1], FEATURE_NUM, activation='relu')
+                split_5 = tflearn.fully_connected(inputs[:, 16 + 8 * i:17 + 8 * i -1], FEATURE_NUM, activation='relu')
+                split_6 = tflearn.fully_connected(inputs[:, 17 + 8 * i:18 + 8 * i, -1], FEATURE_NUM, activation='relu')
+                split_7 = tflearn.fully_connected(inputs[:, 18 + 8 * i:19 + 8 * i, -1], FEATURE_NUM, activation='relu')
 
                 tmp_net.append(split_0)
                 tmp_net.append(split_1)
@@ -87,7 +87,6 @@ class Network():
                 tmp_net.append(split_5)
                 tmp_net.append(split_6)
                 tmp_net.append(split_7)
-                tmp_net.append(split_8)
 
                 user_list = tflearn.fully_connected(tmp_net, int(FEATURE_NUM / 2), activation='relu')
 
@@ -161,14 +160,14 @@ class Network():
 
             for i in range(self.num_agents-1):
                 tmp_net = []
-                split_0 = tflearn.fully_connected(inputs[:, 11 + 8 * i, -1], FEATURE_NUM, activation='relu')
-                split_1 = tflearn.fully_connected(inputs[:, 12 + 8 * i, -1], FEATURE_NUM, activation='relu')
-                split_2 = tflearn.fully_connected(inputs[:, 13 + 8 * i, -1], FEATURE_NUM, activation='relu')
-                split_3 = tflearn.fully_connected(inputs[:, 14 + 8 * i, -1], FEATURE_NUM, activation='relu')
-                split_4 = tflearn.fully_connected(inputs[:, 15 + 8 * i, -1], FEATURE_NUM, activation='relu')
-                split_5 = tflearn.fully_connected(inputs[:, 16 + 8 * i, -1], FEATURE_NUM, activation='relu')
-                split_6 = tflearn.fully_connected(inputs[:, 17 + 8 * i, -1], FEATURE_NUM, activation='relu')
-                split_7 = tflearn.fully_connected(inputs[:, 18 + 8 * i, -1], FEATURE_NUM, activation='relu')
+                split_0 = tflearn.fully_connected(inputs[:, 11 + 8 * i:12 + 8 * i, -1], FEATURE_NUM, activation='relu')
+                split_1 = tflearn.fully_connected(inputs[:, 12 + 8 * i:13 + 8 * i, -1], FEATURE_NUM, activation='relu')
+                split_2 = tflearn.fully_connected(inputs[:, 13 + 8 * i:14 + 8 * i, -1], FEATURE_NUM, activation='relu')
+                split_3 = tflearn.fully_connected(inputs[:, 14 + 8 * i:15 + 8 * i, -1], FEATURE_NUM, activation='relu')
+                split_4 = tflearn.fully_connected(inputs[:, 15 + 8 * i:16 + 8 * i, -1], FEATURE_NUM, activation='relu')
+                split_5 = tflearn.fully_connected(inputs[:, 16 + 8 * i:17 + 8 * i - 1], FEATURE_NUM, activation='relu')
+                split_6 = tflearn.fully_connected(inputs[:, 17 + 8 * i:18 + 8 * i, -1], FEATURE_NUM, activation='relu')
+                split_7 = tflearn.fully_connected(inputs[:, 18 + 8 * i:19 + 8 * i, -1], FEATURE_NUM, activation='relu')
 
                 tmp_net.append(split_0)
                 tmp_net.append(split_1)
@@ -178,7 +177,6 @@ class Network():
                 tmp_net.append(split_5)
                 tmp_net.append(split_6)
                 tmp_net.append(split_7)
-                tmp_net.append(split_8)
 
                 user_list = tflearn.fully_connected(tmp_net, int(FEATURE_NUM / 2), activation='relu')
 
