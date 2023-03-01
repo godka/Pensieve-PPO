@@ -63,7 +63,7 @@ class ABREnv():
 
         delay, sleep_time, self.buffer_size[agent], rebuf, video_chunk_size, next_video_chunk_sizes, \
             end_of_video, video_chunk_remain, is_handover, num_of_user_sat, next_sat_bandwidth, next_sat_bw_logs, \
-            cur_sat_user_num, next_sat_user_nums, cur_sat_bw_logs, connected_time, cur_sat_id, next_sat_ids, _, _, _, _, \
+            cur_sat_user_num, next_sat_user_num, cur_sat_bw_logs, connected_time, cur_sat_id, next_sat_ids, _, _, _, _, \
         other_sat_users, other_sat_bw_logs, other_buffer_sizes = \
             self.net_env.get_video_chunk(bit_rate[agent], agent, None)
 
@@ -108,7 +108,7 @@ class ABREnv():
             state[9, 0:S_LEN] = np.zeros((1, S_LEN))
 
         state[8, -1] = np.array(cur_sat_user_num) / 10
-        state[9, -1] = np.array(next_sat_user_nums) / 10
+        state[9, -1] = np.array(next_sat_user_num) / 10
         if self.connected_time[agent]:
             state[10, :2] = [float(self.connected_time[agent][0]) / BUFFER_NORM_FACTOR / 10,
                                      float(self.connected_time[agent][1]) / BUFFER_NORM_FACTOR / 10]
@@ -134,7 +134,7 @@ class ABREnv():
             if len(self.next_sat_bw_logs[i]) < PAST_LEN:
                 self.next_sat_bw_logs[i] = [0] * (PAST_LEN - len(self.next_sat_bw_logs[i])) + self.next_sat_bw_logs[i]
 
-            state[16 + 8*i, -1] = np.array(self.next_sat_bw_logs[i][:PAST_LEN])
+            state[16 + 8*i, :PAST_LEN] = np.array(self.next_sat_bw_logs[i][:PAST_LEN])
 
             if len(self.cur_sat_bw_logs[i]) < PAST_LEN:
                 self.cur_sat_bw_logs[i] = [0] * (PAST_LEN - len(self.cur_sat_bw_logs[i])) + self.cur_sat_bw_logs[i]
@@ -273,7 +273,7 @@ class ABREnv():
             state[9, 0:S_LEN] = np.zeros((1, S_LEN))
 
         state[8, -1] = np.array(cur_sat_user_num) / 10
-        state[9, -1] = np.array(next_sat_user_nums) / 10
+        state[9, -1] = np.array(next_sat_user_num) / 10
         if self.connected_time[agent]:
             state[10, :2] = [float(self.connected_time[agent][0]) / BUFFER_NORM_FACTOR / 10,
                              float(self.connected_time[agent][1]) / BUFFER_NORM_FACTOR / 10]
@@ -299,7 +299,7 @@ class ABREnv():
             if len(self.next_sat_bw_logs[i]) < PAST_LEN:
                 self.next_sat_bw_logs[i] = [0] * (PAST_LEN - len(self.next_sat_bw_logs[i])) + self.next_sat_bw_logs[i]
 
-            state[16 + 8 * i, -1] = np.array(self.next_sat_bw_logs[i][:PAST_LEN])
+            state[16 + 8 * i, :PAST_LEN] = np.array(self.next_sat_bw_logs[i][:PAST_LEN])
 
             if len(self.cur_sat_bw_logs[i]) < PAST_LEN:
                 self.cur_sat_bw_logs[i] = [0] * (PAST_LEN - len(self.cur_sat_bw_logs[i])) + self.cur_sat_bw_logs[i]

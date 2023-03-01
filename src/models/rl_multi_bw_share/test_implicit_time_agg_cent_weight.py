@@ -249,10 +249,10 @@ def main():
             # state[4, :A_DIM] = np.array(next_video_chunk_sizes) / M_IN_K / M_IN_K  # mega byte
             if prev_next_video_chunk_sizes[agent]:
                 state[agent][4, :A_DIM] = np.array(
-                    [prev_next_video_chunk_sizes[i][index] for index in [0, 2, 4]]) / M_IN_K / M_IN_K  # mega byte
+                    [prev_next_video_chunk_sizes[agent][index] for index in [0, 2, 4]]) / M_IN_K / M_IN_K  # mega byte
             else:
                 state[agent][4, :A_DIM] = [0, 0, 0]
-            state[agent][5, -1] = np.minimum(prev_video_chunk_remain[i],
+            state[agent][5, -1] = np.minimum(prev_video_chunk_remain[agent],
                                                      CHUNK_TIL_VIDEO_END_CAP) / float(CHUNK_TIL_VIDEO_END_CAP)
             if len(prev_next_sat_bw_logs[agent]) < PAST_LEN:
                 prev_next_sat_bw_logs[agent] = [0] * (PAST_LEN - len(prev_next_sat_bw_logs[agent])) + prev_next_sat_bw_logs[
@@ -294,12 +294,12 @@ def main():
                     prev_next_sat_bw_logs[i] = [0] * (PAST_LEN - len(prev_next_sat_bw_logs[i])) + prev_next_sat_bw_logs[
                         i]
 
-                state[agent][16 + 8 * i, -1] = np.array(prev_next_sat_bw_logs[i][:PAST_LEN])
+                state[agent][16 + 8 * i, :PAST_LEN] = np.array(prev_next_sat_bw_logs[i][:PAST_LEN])
 
                 if len(prev_cur_sat_bw_logs[i]) < PAST_LEN:
                     prev_cur_sat_bw_logs[i] = [0] * (PAST_LEN - len(prev_cur_sat_bw_logs[i])) + prev_cur_sat_bw_logs[i]
 
-                state[agent][17 + 8 * i, -1] = np.array(prev_cur_sat_bw_logs[i][:PAST_LEN])
+                state[agent][17 + 8 * i, :PAST_LEN] = np.array(prev_cur_sat_bw_logs[i][:PAST_LEN])
                 state[agent][18 + 8 * i, -1] = np.array(cur_sat_user_num) / 10
                 i += 1
             next_sat_id = None
