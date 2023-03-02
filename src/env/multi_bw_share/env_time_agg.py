@@ -24,7 +24,7 @@ class ABREnv():
     def __init__(self, random_seed=RANDOM_SEED, num_agents=NUM_AGENTS, reward_func=REWARD_FUNC, train_traces=None):
         self.num_users = num_agents
         global S_INFO
-        S_INFO = 10 + 9 * (self.num_users - 1) + 1 + (self.num_users - 1) * PAST_SAT_LOG_LEN
+        S_INFO = 10 + 8 * (self.num_users - 1) + 1 + (self.num_users - 1) * PAST_SAT_LOG_LEN
         # SAT_DIM = num_agents
         # A_SAT = num_agents
         # SAT_DIM = num_agents + 1
