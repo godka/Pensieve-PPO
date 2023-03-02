@@ -31,11 +31,11 @@ import argparse
 
 parser = argparse.ArgumentParser(description='PyTorch Synthetic Benchmark',
                                  formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-parser.add_argument('--user', type=int, default=2)
+parser.add_argument('--user', type=int, default=5)
 args = parser.parse_args()
 USERS = args.user
 # A_SAT = USERS + 1
-S_DIM = [10 + 9 * (USERS - 1) + 1 + (USERS - 1) * PAST_SAT_LOG_LEN, 8]
+S_DIM = [10 + 8 * (USERS - 1) + 1 + (USERS - 1) * PAST_SAT_LOG_LEN, 8]
 
 
 TEST_LOG_FOLDER += str(USERS) + '/'
