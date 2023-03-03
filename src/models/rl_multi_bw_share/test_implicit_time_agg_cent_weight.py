@@ -300,7 +300,10 @@ def main():
                     prev_cur_sat_bw_logs[u_id] = [0] * (PAST_LEN - len(prev_cur_sat_bw_logs[u_id])) + prev_cur_sat_bw_logs[u_id]
 
                 state[agent][17 + 8 * i, :PAST_LEN] = np.array(prev_cur_sat_bw_logs[u_id][:PAST_LEN])
-                state[agent][18 + 8 * i, -1] = float(prev_connected_time[u_id][0]) / BUFFER_NORM_FACTOR / 10
+                if prev_connected_time[u_id]:
+                    state[agent][18 + 8 * i, -1] = float(prev_connected_time[u_id][0]) / BUFFER_NORM_FACTOR / 10
+                else:
+                    state[agent][18 + 8 * i, -1] = 0
                 i += 1
             next_sat_id = None
             if next_sat_ids is not None:
