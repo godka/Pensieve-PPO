@@ -268,6 +268,5 @@ def main():
     reward_file.write(' '.join(str(elem) for elem in reward_3))
     reward_file.write('\n')
 
-
 if __name__ == '__main__':
     main()

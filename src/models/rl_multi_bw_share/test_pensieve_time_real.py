@@ -1,6 +1,5 @@
 import os
 import sys
-import sys
 root_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, root_dir + '/../')
 
@@ -22,7 +21,6 @@ S_INFO = 6  # bit_rate, buffer_size, next_chunk_size, bandwidth_measurement(thro
 ACTOR_LR_RATE = 1e-4
 # CRITIC_LR_RATE = 0.001
 RANDOM_SEED = 42
-
 NN_MODEL = sys.argv[1]
 USERS = int(sys.argv[2])
 HO_TYPE = str(sys.argv[3])

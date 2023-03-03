@@ -28,7 +28,6 @@ class ABREnv():
         # SAT_DIM = num_agents + 1
 
         self.is_handover = False
-
         np.random.seed(random_seed)
         if train_traces:
             all_cooked_time, all_cooked_bw, _ = load_trace.load_trace(train_traces)

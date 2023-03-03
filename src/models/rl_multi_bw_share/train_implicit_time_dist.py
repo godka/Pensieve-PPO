@@ -117,8 +117,8 @@ def central_agent(net_params_queues, exp_queues):
         summary_ops, summary_vars = build_summaries()
         best_rewards = -1000
         actor = network.Network(sess,
-                state_dim=S_DIM, action_dim=A_DIM * A_SAT,
-                learning_rate=ACTOR_LR_RATE)
+                                state_dim=S_DIM, action_dim=A_DIM * A_SAT,
+                                learning_rate=ACTOR_LR_RATE)
 
         sess.run(tf.global_variables_initializer())
         writer = tf.summary.FileWriter(SUMMARY_DIR, sess.graph)  # training monitor

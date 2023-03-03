@@ -2,8 +2,7 @@
 import numpy as np
 
 from util.constants import DEFAULT_QUALITY, REBUF_PENALTY, SMOOTH_PENALTY, VIDEO_BIT_RATE, BUFFER_NORM_FACTOR, \
-    BITRATE_WEIGHT, CHUNK_TIL_VIDEO_END_CAP, M_IN_K, S_LEN, A_DIM, PAST_LEN, BITRATE_REWARD, TRAIN_TRACES, \
-    TRAIN_REAL_TRACES
+    BITRATE_WEIGHT, CHUNK_TIL_VIDEO_END_CAP, M_IN_K, S_LEN, A_DIM, PAST_LEN, BITRATE_REWARD, TRAIN_TRACES
 from . import core_time as abrenv
 from . import load_trace_real as load_trace
 
@@ -19,7 +18,7 @@ REWARD_FUNC = "LIN"
 
 
 class ABREnv():
-    def __init__(self, random_seed=RANDOM_SEED, num_agents=NUM_AGENTS, ho_type=HO_TYPE, reward_func=REWARD_FUNC):
+    def __init__(self, random_seed=RANDOM_SEED, num_agents=NUM_AGENTS, ho_type=HO_TYPE, reward_func=REWARD_FUNC, train_traces=None):
         self.num_agents = num_agents
         # SAT_DIM = num_agents
         # A_SAT = num_agents
@@ -28,7 +27,10 @@ class ABREnv():
         self.is_handover = False
         self.ho_type = ho_type
         np.random.seed(random_seed)
-        all_cooked_time, all_cooked_bw, _ = load_trace.load_trace(TRAIN_REAL_TRACES)
+        if train_traces:
+            all_cooked_time, all_cooked_bw, _ = load_trace.load_trace(train_traces)
+        else:
+            all_cooked_time, all_cooked_bw, _ = load_trace.load_trace()
         self.net_env = abrenv.Environment(all_cooked_time=all_cooked_time,
                                           all_cooked_bw=all_cooked_bw,
                                           random_seed=random_seed,
@@ -38,7 +40,6 @@ class ABREnv():
         self.buffer_size = [0 for _ in range(self.num_agents)]
         self.state = [np.zeros((S_INFO, S_LEN))for _ in range(self.num_agents)]
         self.sat_decision_log = [[] for _ in range(self.num_agents)]
-
         self.reward_func = reward_func
 
     def seed(self, num):

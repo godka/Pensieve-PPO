@@ -221,8 +221,7 @@ def main():
             # state[agent][4, :A_DIM] = np.array(next_video_chunk_sizes) / M_IN_K / M_IN_K  # mega byte
             state[agent][4, :A_DIM] = np.array(
                 [next_video_chunk_sizes[index] for index in [0, 2, 4]]) / M_IN_K / M_IN_K  # mega byte
-            state[agent][5, -1] = np.minimum(video_chunk_remain, CHUNK_TIL_VIDEO_END_CAP) / float(
-                CHUNK_TIL_VIDEO_END_CAP)
+            state[agent][5, -1] = np.minimum(video_chunk_remain, CHUNK_TIL_VIDEO_END_CAP) / float(CHUNK_TIL_VIDEO_END_CAP)
 
             action_prob = actor.predict(np.reshape(state[agent], (1, S_INFO, S_LEN)))
             noise = np.random.gumbel(size=len(action_prob))

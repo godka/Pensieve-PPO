@@ -22,8 +22,7 @@ REWARD_FUNC = "LIN"
 
 
 class ABREnv():
-
-    def __init__(self, random_seed=RANDOM_SEED, num_agents=NUM_AGENTS, reward_func=REWARD_FUNC):
+    def __init__(self, random_seed=RANDOM_SEED, num_agents=NUM_AGENTS, reward_func=REWARD_FUNC, train_traces=None):
         self.num_agents = num_agents
         # SAT_DIM = num_agents
         # A_SAT = num_agents
@@ -31,8 +30,10 @@ class ABREnv():
 
         self.is_handover = False
         np.random.seed(random_seed)
-        all_cooked_time, all_cooked_bw, _ = load_trace.load_trace()
-
+        if train_traces:
+            all_cooked_time, all_cooked_bw, _ = load_trace.load_trace(train_traces)
+        else:
+            all_cooked_time, all_cooked_bw, _ = load_trace.load_trace()
         self.net_env = abrenv.Environment(all_cooked_time=all_cooked_time,
                                           all_cooked_bw=all_cooked_bw,
                                           random_seed=random_seed,
