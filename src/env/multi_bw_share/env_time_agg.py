@@ -140,7 +140,7 @@ class ABREnv():
                 self.cur_sat_bw_logs[u_id] = [0] * (PAST_LEN - len(self.cur_sat_bw_logs[u_id])) + self.cur_sat_bw_logs[u_id]
 
             state[17 + 8*i, :PAST_LEN] = np.array(self.cur_sat_bw_logs[u_id][:PAST_LEN])
-            state[18 + 8*i, -1] = np.array(cur_sat_user_num) / 10
+            state[18 + 8*i, -1] = float(self.connected_time[u_id][0]) / BUFFER_NORM_FACTOR / 10
             i += 1
         next_sat_id = None
         if next_sat_ids is not None:
@@ -305,7 +305,7 @@ class ABREnv():
                 self.cur_sat_bw_logs[u_id] = [0] * (PAST_LEN - len(self.cur_sat_bw_logs[u_id])) + self.cur_sat_bw_logs[u_id]
 
             state[17 + 8 * i, :PAST_LEN] = np.array(self.cur_sat_bw_logs[u_id][:PAST_LEN])
-            state[18 + 8 * i, -1] = np.array(cur_sat_user_num) / 10
+            state[18 + 8 * i, -1] = float(self.connected_time[u_id][0]) / BUFFER_NORM_FACTOR / 10
             i += 1
         next_sat_id = None
         if next_sat_ids is not None:

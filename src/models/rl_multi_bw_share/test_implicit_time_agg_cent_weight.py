@@ -292,7 +292,7 @@ def main():
                                                   CHUNK_TIL_VIDEO_END_CAP) / float(CHUNK_TIL_VIDEO_END_CAP)
                 if len(prev_next_sat_bw_logs[u_id]) < PAST_LEN:
                     prev_next_sat_bw_logs[u_id] = [0] * (PAST_LEN - len(prev_next_sat_bw_logs[u_id])) + prev_next_sat_bw_logs[
-                        i]
+                        u_id]
 
                 state[agent][16 + 8 * i, :PAST_LEN] = np.array(prev_next_sat_bw_logs[u_id][:PAST_LEN])
 
@@ -300,7 +300,7 @@ def main():
                     prev_cur_sat_bw_logs[u_id] = [0] * (PAST_LEN - len(prev_cur_sat_bw_logs[u_id])) + prev_cur_sat_bw_logs[u_id]
 
                 state[agent][17 + 8 * i, :PAST_LEN] = np.array(prev_cur_sat_bw_logs[u_id][:PAST_LEN])
-                state[agent][18 + 8 * i, -1] = np.array(cur_sat_user_num) / 10
+                state[agent][18 + 8 * i, -1] = float(prev_connected_time[u_id][0]) / BUFFER_NORM_FACTOR / 10
                 i += 1
             next_sat_id = None
             if next_sat_ids is not None:
