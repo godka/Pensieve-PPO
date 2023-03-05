@@ -120,10 +120,10 @@ class ABREnv():
         0:2] = np.reshape(other_user_sat_decisions, (-1, 2))
 
         others_last_bit_rate = np.delete(np.array(self.last_bit_rate), agent)
-        state[(11 + self.num_agents - 1 + (self.num_agents - 1) * PAST_SAT_LOG_LEN):
-                     (11 + self.num_agents - 1 + (self.num_agents - 1) * PAST_SAT_LOG_LEN + (self.num_agents - 1)),
-        0:int(len(VIDEO_BIT_RATE)/2)] = np.reshape(one_hot_encode(others_last_bit_rate, int(len(VIDEO_BIT_RATE)/2)),
-                                            (-1, int(len(VIDEO_BIT_RATE)/2)))
+        for i in others_last_bit_rate:
+            state[agent][(11 + self.num_agents - 1 + (self.num_agents - 1) * PAST_SAT_LOG_LEN) + i:
+                         (11 + self.num_agents - 1 + (self.num_agents - 1) * PAST_SAT_LOG_LEN + (self.num_agents - 1)) + i, -1] \
+                = VIDEO_BIT_RATE[i] / float(np.max(VIDEO_BIT_RATE))
         i = 0
         for u_id in range(self.num_agents):
             if u_id == agent:
@@ -274,10 +274,21 @@ class ABREnv():
         0:2] = np.reshape(other_user_sat_decisions, (-1, 2))
 
         others_last_bit_rate = np.delete(np.array(self.last_bit_rate), agent)
-        state[(11 + self.num_agents - 1 + (self.num_agents - 1) * PAST_SAT_LOG_LEN):
-                     (11 + self.num_agents - 1 + (self.num_agents - 1) * PAST_SAT_LOG_LEN + (self.num_agents - 1)),
-        0:int(len(VIDEO_BIT_RATE)/2)] = np.reshape(one_hot_encode(others_last_bit_rate, int(len(VIDEO_BIT_RATE)/2)),
-                                            (-1, int(len(VIDEO_BIT_RATE)/2)))
+        for i in others_last_bit_rate:
+            state[agent][(11 + self.num_agents - 1 + (self.num_agents - 1) * PAST_SAT_LOG_LEN) + i:
+                         (11 + self.num_agents - 1 + (self.num_agents - 1) * PAST_SAT_LOG_LEN + (self.num_agents - 1)) + i, -1] \
+                = VIDEO_BIT_RATE[i] / float(np.max(VIDEO_BIT_RATE))
+
+        i = 0
+        for u_id in range(self.num_agents):
+            if u_id == agent:
+                continue
+            if len(self.cur_sat_bw_logs[u_id]) < PAST_LEN:
+                self.cur_sat_bw_logs[u_id] = [0] * (PAST_LEN - len(self.cur_sat_bw_logs[u_id])) + self.cur_sat_bw_logs[u_id]
+
+            state[(11 + self.num_agents - 1 + (self.num_agents - 1) * PAST_SAT_LOG_LEN + (self.num_agents - 1))+i, :PAST_LEN] = np.array(self.cur_sat_bw_logs[u_id][:PAST_LEN])
+
+            i += 1
         # if len(next_sat_user_nums) < PAST_LEN:
         #     next_sat_user_nums = [0] * (PAST_LEN - len(next_sat_user_nums)) + next_sat_user_nums
 
