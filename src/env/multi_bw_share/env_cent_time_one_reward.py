@@ -121,7 +121,7 @@ class ABREnv():
 
         others_last_bit_rate = np.delete(np.array(self.last_bit_rate), agent)
         for i in others_last_bit_rate:
-            state[agent][(11 + self.num_agents - 1 + (self.num_agents - 1) * PAST_SAT_LOG_LEN) + i:
+            state[(11 + self.num_agents - 1 + (self.num_agents - 1) * PAST_SAT_LOG_LEN) + i:
                          (11 + self.num_agents - 1 + (self.num_agents - 1) * PAST_SAT_LOG_LEN + (self.num_agents - 1)) + i, -1] \
                 = VIDEO_BIT_RATE[i] / float(np.max(VIDEO_BIT_RATE))
         i = 0
@@ -275,7 +275,7 @@ class ABREnv():
 
         others_last_bit_rate = np.delete(np.array(self.last_bit_rate), agent)
         for i in others_last_bit_rate:
-            state[agent][(11 + self.num_agents - 1 + (self.num_agents - 1) * PAST_SAT_LOG_LEN) + i:
+            state[(11 + self.num_agents - 1 + (self.num_agents - 1) * PAST_SAT_LOG_LEN) + i:
                          (11 + self.num_agents - 1 + (self.num_agents - 1) * PAST_SAT_LOG_LEN + (self.num_agents - 1)) + i, -1] \
                 = VIDEO_BIT_RATE[i] / float(np.max(VIDEO_BIT_RATE))
 
