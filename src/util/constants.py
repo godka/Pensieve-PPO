@@ -10,7 +10,7 @@ TOTAL_VIDEO_CHUNKS = 48
 M_IN_K = 1000.0
 MILLISECONDS_IN_SECOND = 1000.0
 
-NUM_AGENTS = 16
+NUM_AGENTS = 6
 
 QUALITY_FACTOR = 1
 REBUF_PENALTY = 4.3  # 1 sec rebuffering -> 3 Mbps
@@ -53,6 +53,8 @@ TEST_TRACES = '../../data/sat_data/test/'
 TRAIN_TRACES = '../../data/sat_data/train/'
 TEST_REAL_TRACES = '../../data/sat_data/real_test/'
 TRAIN_REAL_TRACES = '../../data/sat_data/real_train/'
+TEST_TIGHT_TRACES = '../../data/sat_data/test_tight/'
+
 
 VIDEO_SIZE_FILE = '../../data/video_data/envivio/video_size_'
 
