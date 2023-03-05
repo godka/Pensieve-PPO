@@ -279,7 +279,7 @@ def main():
             others_last_bit_rate = np.delete(np.array(last_bit_rate), agent)
             state[agent][(11 + USERS-1 + (USERS-1) * PAST_SAT_LOG_LEN):
                          (11 + USERS-1 + (USERS-1) * PAST_SAT_LOG_LEN + (USERS-1)),
-            0:len(VIDEO_BIT_RATE)] = np.reshape(one_hot_encode(others_last_bit_rate, len(VIDEO_BIT_RATE)), (-1, len(VIDEO_BIT_RATE)))
+            0:int(len(VIDEO_BIT_RATE)/2)] = np.reshape(one_hot_encode(others_last_bit_rate, int(len(VIDEO_BIT_RATE)/2)), (-1, int(len(VIDEO_BIT_RATE)/2)))
 
             i = 0
             for u_id in range(USERS):
