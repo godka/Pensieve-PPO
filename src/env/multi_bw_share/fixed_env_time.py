@@ -995,8 +995,8 @@ class Environment:
 
         for sat_id, sat_bw in self.cooked_bw.items():
             tmp_time = 0
+            tmp_mahimahi_ptr = mahimahi_ptr
             while True:
-                tmp_mahimahi_ptr = mahimahi_ptr
                 real_sat_bw = self.cur_satellite[sat_id].data_rate_unshared(self.cur_user[agent], tmp_mahimahi_ptr)
                 if real_sat_bw == 0 or tmp_mahimahi_ptr <= 0:
                     break
