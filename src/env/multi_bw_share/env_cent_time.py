@@ -106,7 +106,7 @@ class ABREnv():
         state[(11 + self.num_agents - 1):(11 + self.num_agents - 1 + (self.num_agents - 1) * PAST_SAT_LOG_LEN),
         0:2] = np.reshape(other_user_sat_decisions, (-1, 2))
 
-        others_last_bit_rate = np.delete(np.array(self.last_bit_rate), agent)
+        others_last_bit_rate = np.delete(np.array(self.last_bit_rate) / 2, agent)
         state[(11 + self.num_agents - 1 + (self.num_agents - 1) * PAST_SAT_LOG_LEN):
                      (11 + self.num_agents - 1 + (self.num_agents - 1) * PAST_SAT_LOG_LEN + (self.num_agents - 1)),
         0:int(len(VIDEO_BIT_RATE)/2)] = np.reshape(one_hot_encode(others_last_bit_rate, int(len(VIDEO_BIT_RATE)/2)),
@@ -242,7 +242,7 @@ class ABREnv():
         state[(11 + self.num_agents - 1):(11 + self.num_agents - 1 + (self.num_agents - 1) * PAST_SAT_LOG_LEN),
         0:2] = np.reshape(other_user_sat_decisions, (-1, 2))
 
-        others_last_bit_rate = np.delete(np.array(self.last_bit_rate), agent)
+        others_last_bit_rate = np.delete(np.array(self.last_bit_rate) / 2, agent)
         state[(11 + self.num_agents - 1 + (self.num_agents - 1) * PAST_SAT_LOG_LEN):
                      (11 + self.num_agents - 1 + (self.num_agents - 1) * PAST_SAT_LOG_LEN + (self.num_agents - 1)),
         0:int(len(VIDEO_BIT_RATE)/2)] = np.reshape(one_hot_encode(others_last_bit_rate, int(len(VIDEO_BIT_RATE)/2)),

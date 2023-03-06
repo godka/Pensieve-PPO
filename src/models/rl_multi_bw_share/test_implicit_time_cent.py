@@ -259,9 +259,10 @@ def main():
             state[agent][(11 + USERS-1):(11 + USERS-1 + (USERS-1) * PAST_SAT_LOG_LEN),
             0:2] = np.reshape(other_user_sat_decisions, (-1, 2))
 
-            others_last_bit_rate = np.delete(np.array(last_bit_rate), agent)
+            others_last_bit_rate = np.delete(np.array(last_bit_rate) / 2 , agent)
             state[agent][(11 + USERS-1 + (USERS-1) * PAST_SAT_LOG_LEN):
                          (11 + USERS-1 + (USERS-1) * PAST_SAT_LOG_LEN + (USERS-1)),
+
             0:int(len(VIDEO_BIT_RATE)/2)] = np.reshape(one_hot_encode(others_last_bit_rate, int(len(VIDEO_BIT_RATE)/2)), (-1, int(len(VIDEO_BIT_RATE)/2)))
             # if len(next_sat_user_num) < PAST_LEN:
             #     next_sat_user_num = [0] * (PAST_LEN - len(next_sat_user_num)) + next_sat_user_num

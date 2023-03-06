@@ -78,5 +78,5 @@ def one_hot_encode(input_list, size):
 
     onehot_encoded = []
     for tmp_list in input_list:
-        onehot_encoded.append([0] * tmp_list[0] + [1] + [0] * (size -tmp_list[0] - 1))
+        onehot_encoded.append([0] * int(tmp_list[0]) + [1] + [0] * (size -int(tmp_list[0]) - 1))
     return onehot_encoded
