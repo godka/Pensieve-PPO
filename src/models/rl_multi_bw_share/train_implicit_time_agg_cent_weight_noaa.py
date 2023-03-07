@@ -21,10 +21,10 @@ TRAIN_SEQ_LEN = 300  # take as a train batch
 TRAIN_EPOCH = 20000000
 MODEL_SAVE_INTERVAL = 3000
 RANDOM_SEED = 42
-SUMMARY_DIR = './ppo_imp_agg_weight'
+SUMMARY_DIR = './ppo_imp_agg_weight_noaa'
 MODEL_DIR = '..'
 
-TEST_LOG_FOLDER = './test_results_imp_agg_weight'
+TEST_LOG_FOLDER = './test_results_imp_agg_weight_noaa'
 PPO_TRAINING_EPO = 5
 
 import argparse
