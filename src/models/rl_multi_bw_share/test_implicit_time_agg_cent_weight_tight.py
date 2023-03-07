@@ -21,9 +21,11 @@ ACTOR_LR_RATE = 1e-4
 RANDOM_SEED = 42
 NN_MODEL = sys.argv[1]
 USERS = int(sys.argv[2])
-SUMMARY_DIR = './test_results_imp_agg_weight' + str(USERS)
+SUMMARY_DIR = './test_results_imp_agg_weight_tight' + str(USERS)
 S_INFO = 10 + 8 * (USERS - 1) + 1 + (USERS - 1) * PAST_SAT_LOG_LEN
 
+if not os.path.exists(SUMMARY_DIR):
+    os.makedirs(SUMMARY_DIR)
 LOG_FILE = SUMMARY_DIR + '/log_sim_ppo'
 SUMMARY_PATH = SUMMARY_DIR + '/summary'
 

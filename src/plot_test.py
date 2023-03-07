@@ -6,13 +6,16 @@ from itertools import compress
 
 LOG_PATH = '../data/test_results_pensieve1/log_sim_pensieve_rss_Chicago_2022-9-21-10-00-00'
 SAT_PATH = 'data/sat_data/test/rss_Chicago_2022-9-21-10-00-00.csv'
-LOG_PATH = '../data/test_results_imp5/log_sim_ppo_rss_Chicago_2022-9-21-10-00-00'
+LOG_PATH = '../data/test_results_imp_agg_weight5/log_sim_ppo_rss_Chicago_2022-9-21-10-00-00'
+# LOG_PATH = '../data/test_results_imp5/log_sim_ppo_rss_Chicago_2022-9-21-10-00-00'
 
-LOG_PATH = '../data/test_results_pensieve5/log_sim_pensieve_rss_Chicago_2022-9-21-10-00-00'
+# LOG_PATH = '../data/test_results_pensieve5/log_sim_pensieve_rss_Chicago_2022-9-21-10-00-00'
 # LOG_PATH = '../data/MPC_dist5/log_sim_cent_rss_Chicago_2022-9-21-10-00-00'
 
 # LOG_PATH = 'results/log_sim_mpc_truth_naive_london'
 # PLOT_SAMPLES = 300
+
+AGENT_ID = 0
 
 cooked_time = []
 satellite_bw = {}
@@ -21,6 +24,8 @@ with open(SAT_PATH, 'r') as f:
     line_count = 0
 
     for row in csv_reader:
+        if int(row["time"]) >= 100:
+            break
         if line_count == 0:
             # Get Satellite ID
             satellite_id = list(row.keys())[2:]
@@ -32,6 +37,15 @@ with open(SAT_PATH, 'r') as f:
             # satellite_bw[int(sat_id)].append(float(row[sat_id]))
             satellite_bw[int(sat_id)].append(float(row[sat_id]) * 1/20)
         cooked_time.append(int(row["time"]))
+
+for time_index in cooked_time:
+    num_of_sats = 0
+    for sat_id in satellite_bw:
+        if satellite_bw[sat_id][time_index] != 0:
+            num_of_sats += 1
+    # plt.plot(time_index, num_of_sats, linestyle="-", marker="o", markersize=3)
+# plt.legend()
+# plt.show()
 
 all_time_stamp = []
 all_bw = []
@@ -47,13 +61,14 @@ with open(LOG_PATH, 'r') as f:
     rebuf_time = []
     chunk_size = []
     delay_time = []
+    sat_history = [[] for _ in range(5)]
     qoe = []
     pred_bw = []
-    prev_sat_id = None
+    prev_sat_id = [None for _ in range(5)]
     first_line = True
     for line in f:
         parse = line.split()
-        if parse and float(parse[1]) == 4:
+        if parse and int(float(parse[1])) == AGENT_ID:
             time_stamp.append(float(parse[0]))
             agent_id.append(float(parse[1]))
             # pred_download.append(float(parse[4]))
@@ -64,11 +79,14 @@ with open(LOG_PATH, 'r') as f:
             delay_time.append(float(parse[6]))
             avg_download.append(float(parse[5]) / float(parse[6]) / 1000)
             qoe.append(float(parse[7]))
-            if prev_sat_id is None or prev_sat_id == str(parse[8]):
+            if prev_sat_id[int(float(parse[1]))] is None or prev_sat_id[int(float(parse[1]))] == str(parse[8]):
                 is_handover.append(False)
             else:
                 is_handover.append(True)
-            prev_sat_id = str(parse[8])
+                sat_history[int(float(parse[1]))].append(str(parse[8]))
+            if prev_sat_id[int(float(parse[1]))] is None:
+                sat_history[int(float(parse[1]))].append(str(parse[8]))
+            prev_sat_id[int(float(parse[1]))] = str(parse[8])
             # is_handover.append(bool(parse[9]))
             actual_bw.append(satellite_bw[int(parse[8])][round(float(parse[0]))])
 
@@ -78,8 +96,15 @@ axs[0, 0].plot(time_stamp, avg_download, linestyle="-", marker="o", markersize=1
 time_handover = list(compress(time_stamp, is_handover))
 bw_handover = list(compress(avg_download, is_handover))
 axs[0, 0].plot(time_handover, bw_handover, 'r*', markersize=10, label="HO point")
-if pred_download:
-    axs[0, 0].plot(time_stamp, pred_download, 'g--', markersize=1, label="pred. bw", alpha=0.5)
+sat_log = ""
+print(sat_history[AGENT_ID])
+i = 0
+for sat_his in sat_history[AGENT_ID]:
+    sat_log += "->" + sat_his
+
+axs[0, 0].scatter(time_stamp[0]+30, 0.05, s=15000, c=15000,
+                  marker=r"$ {} $".format(sat_log), edgecolors='none')
+i += 1
 axs[0, 0].set_ylim([0.0, 0.6])
 axs[0, 0].set_title("Download Time")
 
@@ -128,6 +153,7 @@ print("Avg QoE: ", sum(qoe)/len(qoe))
 print("Avg bitrate: ", sum(bit_sel)/len(bit_sel))
 print("Total HO #: ", sum(is_handover))
 print("Avg delay_time", sum(avg_download) / len(avg_download))
+print("Avg buffer_size", sum(buf_size) / len(buf_size))
 
 plt.show()
 plt.savefig('np.png')
