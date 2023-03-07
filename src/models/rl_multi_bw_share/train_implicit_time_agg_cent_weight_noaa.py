@@ -6,7 +6,7 @@ import os
 import sys
 root_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, root_dir + '/../')
-from env.multi_bw_share.env_time_agg import ABREnv
+from env.multi_bw_share.env_time_agg_noaa import ABREnv
 from models.rl_multi_bw_share.ppo_spec import ppo_implicit_agg_weighted as network
 import tensorflow.compat.v1 as tf
 import structlog
@@ -31,7 +31,7 @@ import argparse
 
 parser = argparse.ArgumentParser(description='PyTorch Synthetic Benchmark',
                                  formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-parser.add_argument('--user', type=int, default=5)
+parser.add_argument('--user', type=int, default=2)
 args = parser.parse_args()
 USERS = args.user
 # A_SAT = USERS + 1
@@ -66,8 +66,8 @@ def testing(epoch, nn_model, log_file):
     if not os.path.exists(TEST_LOG_FOLDER):
         os.makedirs(TEST_LOG_FOLDER)
     # run test script
-    log.info('python test_implicit_time_agg_cent_weight.py ', nn_model=nn_model + ' ' + str(USERS))
-    os.system('python test_implicit_time_agg_cent_weight.py ' + nn_model + ' ' + str(USERS))
+    log.info('python test_implicit_time_agg_cent_weight_noaa.py ', nn_model=nn_model + ' ' + str(USERS))
+    os.system('python test_implicit_time_agg_cent_weight_noaa.py ' + nn_model + ' ' + str(USERS))
     log.info('End testing')
 
     # append test performance to the log

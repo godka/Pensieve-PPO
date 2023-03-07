@@ -1,7 +1,7 @@
 import os
 import csv
 
-COOKED_TRACE_FOLDER = 'data/sat_data/real_train/'
+COOKED_TRACE_FOLDER = 'data/sat_data/train/'
 COOKED_DIS_FOLDER = 'dis/'
 
 
@@ -34,7 +34,7 @@ def load_trace(cooked_trace_folder=COOKED_TRACE_FOLDER, split_condition=None):
             for row in csv_reader:
                 if line_count == 0:
                     # Get Satellite ID
-                    satellite_id = list(row.keys())[1:]
+                    satellite_id = list(row.keys())[2:]
                     satellite_bw = {int(sat_id): [] for sat_id in satellite_id}
 
                 line_count += 1
@@ -42,7 +42,7 @@ def load_trace(cooked_trace_folder=COOKED_TRACE_FOLDER, split_condition=None):
                 for sat_id in satellite_id:
                     # satellite_bw[int(sat_id)].append(float(row[sat_id]))
                     satellite_bw[int(sat_id)].append(float(row[sat_id]) * BW_SCALE_FOR_TEST)
-                cooked_time.append(int(row[ list(row.keys())[0]]))
+                cooked_time.append(int(row["time"]))
 
         all_satellite_bw.append(satellite_bw)
         all_cooked_time.append(cooked_time)
