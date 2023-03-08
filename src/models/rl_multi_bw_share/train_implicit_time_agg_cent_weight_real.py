@@ -67,7 +67,7 @@ def testing(epoch, nn_model, log_file):
         os.makedirs(TEST_LOG_FOLDER)
     # run test script
     log.info('python test_implicit_time_agg_cent_weight_real.py ', nn_model=nn_model + ' ' + str(USERS))
-    os.system('python test_implicit_time_agg_cent_weight_noaa.py ' + nn_model + ' ' + str(USERS))
+    os.system('python test_implicit_time_agg_cent_weight_real.py ' + nn_model + ' ' + str(USERS))
     log.info('End testing')
 
     # append test performance to the log
