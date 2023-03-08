@@ -997,7 +997,7 @@ class Environment:
             tmp_time = 0
             tmp_mahimahi_ptr = mahimahi_ptr
             while True:
-                real_sat_bw = self.cur_satellite[sat_id].data_rate_unshared(self.cur_user[agent], tmp_mahimahi_ptr)
+                real_sat_bw = self.cur_satellite[sat_id].data_rate_unshared(tmp_mahimahi_ptr, self.cur_user[agent])
                 if real_sat_bw == 0 or tmp_mahimahi_ptr <= 0:
                     break
                 tmp_mahimahi_ptr -= 1
