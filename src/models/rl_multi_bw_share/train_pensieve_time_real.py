@@ -20,7 +20,7 @@ S_DIM = [6, 8]
 # A_SAT = 2
 ACTOR_LR_RATE = 1e-4
 TRAIN_SEQ_LEN = 300  # take as a train batch
-TRAIN_EPOCH = 5000000
+TRAIN_EPOCH = 20000000
 MODEL_SAVE_INTERVAL = 3000
 RANDOM_SEED = 42
 SUMMARY_DIR = './pensieve_real'
@@ -37,7 +37,7 @@ args = parser.parse_args()
 USERS = args.user
 # A_SAT = USERS + 1
 
-HO_TYPE = "MRSS-Smart"
+HO_TYPE = "MVT"
 REWARD_FUNC = "LIN"
 
 TEST_LOG_FOLDER += str(USERS) + '/'
@@ -277,27 +277,35 @@ def agent(agent_id, net_params_queue, exp_queue):
             for batch_user in r_batch_user:
                 r_batch += batch_user
             """
-            tmp_i = random.randint(0, USERS - 1)
             # if agent_id == 0:
             #     print(len(s_batch), len(a_batch), len(r_batch))
-            v_batch = actor.compute_v(s_batch_user[tmp_i][1:], a_batch_user[tmp_i][1:], r_batch_user[tmp_i][1:], env.check_end())
-            try:
-                exp_queue.put([s_batch_user[tmp_i][1:], a_batch_user[tmp_i][1:], p_batch_user[tmp_i][1:], v_batch])
-                if epoch != TRAIN_SEQ_LEN - 1:
-                    actor_net_params = net_params_queue.get()
-                    actor.set_network_params(actor_net_params)
+            # tmp_i = random.randint(0, USERS - 1)
+            for user_id in range(USERS):
+                tmp_v_batch = actor.compute_v(s_batch_user[user_id][1:], a_batch_user[user_id][1:], r_batch_user[user_id][1:], env.check_end())
+                v_batch += tmp_v_batch
 
+                s_batch += s_batch_user[user_id][1:]
+                a_batch += a_batch_user[user_id][1:]
+                p_batch += p_batch_user[user_id][1:]
 
+            exp_queue.put([s_batch, a_batch, p_batch, v_batch])
 
-                del bit_rate[:]
-                del sat[:]
-                del action_prob[:]
-            except queue.Empty:
-                log.info("Empty")
-                continue
-            except queue.Full:
-                log.info("Full")
-                continue
+            if epoch != TRAIN_SEQ_LEN-1:
+                actor_net_params = net_params_queue.get()
+                actor.set_network_params(actor_net_params)
+            del s_batch_user[:]
+            del a_batch_user[:]
+            del r_batch_user[:]
+            del p_batch_user[:]
+            # del s_batch[:]
+            # del a_batch[:]
+            # del p_batch[:]
+            # del v_batch[:]
+            del actor_net_params[:]
+
+            del bit_rate[:]
+            del sat[:]
+            del action_prob[:]
 
 
 def build_summaries():
