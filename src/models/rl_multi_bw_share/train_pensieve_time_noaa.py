@@ -65,8 +65,8 @@ def testing(epoch, nn_model, log_file):
     if not os.path.exists(TEST_LOG_FOLDER):
         os.makedirs(TEST_LOG_FOLDER)
     # run test script
-    log.info('python test_pensieve_time.py ', nn_model=nn_model + ' ' + str(USERS) + ' ' + HO_TYPE)
-    os.system('python test_pensieve_time.py ' + nn_model + ' ' + str(USERS) + ' ' + HO_TYPE)
+    log.info('python test_pensieve_time_noaa.py ', nn_model=nn_model + ' ' + str(USERS) + ' ' + HO_TYPE)
+    os.system('python test_pensieve_time_noaa.py ' + nn_model + ' ' + str(USERS) + ' ' + HO_TYPE)
     log.info('End testing')
 
     # append test performance to the log
