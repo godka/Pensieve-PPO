@@ -1007,7 +1007,6 @@ class Environment:
                 best_sat_time = tmp_time
 
         return best_sat_id
-
     def switch_sat(self, agent, cur_sat_id):
         pre_sat_id = self.cur_sat_id[agent]
         self.prev_sat_id[agent] = pre_sat_id
