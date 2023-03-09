@@ -6,37 +6,37 @@ import os
 import sys
 root_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, root_dir + '/../')
-from env.multi_bw_share.env_time_agg_real import ABREnv
-from models.rl_multi_bw_share.ppo_spec import ppo_implicit_agg_weighted as network
+from env.multi_bw_share.env_noaa_time import ABREnv
+from models.rl_multi_bw_share.ppo_spec import ppo_implicit as network
 import tensorflow.compat.v1 as tf
 import structlog
-from util.constants import A_DIM, NUM_AGENTS, PAST_SAT_LOG_LEN, TRAIN_REAL_TRACES
+from util.constants import A_DIM, NUM_AGENTS, TRAIN_NOAA_TRACES
 import logging
+
 os.environ['CUDA_VISIBLE_DEVICES'] = '-1'
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 
+S_DIM = [6 + 3, 8]
 A_SAT = 2
 ACTOR_LR_RATE = 1e-4
 TRAIN_SEQ_LEN = 300  # take as a train batch
 TRAIN_EPOCH = 20000000
 MODEL_SAVE_INTERVAL = 3000
 RANDOM_SEED = 42
-SUMMARY_DIR = './ppo_imp_agg_weight_real'
+SUMMARY_DIR = './ppo_imp_noaa'
 MODEL_DIR = '..'
 
-TEST_LOG_FOLDER = './test_results_imp_agg_weight_real'
+TEST_LOG_FOLDER = './test_results_imp_noaa'
 PPO_TRAINING_EPO = 5
 
 import argparse
 
 parser = argparse.ArgumentParser(description='PyTorch Synthetic Benchmark',
                                  formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-parser.add_argument('--user', type=int, default=2)
+parser.add_argument('--user', type=int, default=3)
 args = parser.parse_args()
 USERS = args.user
 # A_SAT = USERS + 1
-S_DIM = [10 + 8 * (USERS - 1) + 1 + (USERS - 1) * PAST_SAT_LOG_LEN, 8]
-
 
 TEST_LOG_FOLDER += str(USERS) + '/'
 SUMMARY_DIR += str(USERS)
@@ -66,8 +66,8 @@ def testing(epoch, nn_model, log_file):
     if not os.path.exists(TEST_LOG_FOLDER):
         os.makedirs(TEST_LOG_FOLDER)
     # run test script
-    log.info('python test_implicit_time_agg_cent_weight_real.py ', nn_model=nn_model + ' ' + str(USERS))
-    os.system('python test_implicit_time_agg_cent_weight_real.py ' + nn_model + ' ' + str(USERS))
+    log.info('python test_implicit_time_noaa.py ', nn_model=nn_model + ' ' + str(USERS))
+    os.system('python test_implicit_time_noaa.py ' + nn_model + ' ' + str(USERS))
     log.info('End testing')
 
     # append test performance to the log
@@ -119,7 +119,7 @@ def central_agent(net_params_queues, exp_queues):
         best_rewards = -1000
         actor = network.Network(sess,
                                 state_dim=S_DIM, action_dim=A_DIM * A_SAT,
-                                learning_rate=ACTOR_LR_RATE, num_of_users=USERS)
+                                learning_rate=ACTOR_LR_RATE)
 
         sess.run(tf.global_variables_initializer())
         writer = tf.summary.FileWriter(SUMMARY_DIR, sess.graph)  # training monitor
@@ -197,11 +197,11 @@ def central_agent(net_params_queues, exp_queues):
 
 
 def agent(agent_id, net_params_queue, exp_queue):
-    env = ABREnv(agent_id, num_agents=USERS, reward_func=REWARD_FUNC, train_traces=TRAIN_REAL_TRACES)
+    env = ABREnv(agent_id, num_agents=USERS, reward_func=REWARD_FUNC, train_traces=TRAIN_NOAA_TRACES)
     with tf.Session() as sess:
         actor = network.Network(sess,
                                 state_dim=S_DIM, action_dim=A_DIM * A_SAT,
-                                learning_rate=ACTOR_LR_RATE, num_of_users=USERS)
+                                learning_rate=ACTOR_LR_RATE)
 
         # initial synchronization of the network parameters from the coordinator
         actor_net_params = net_params_queue.get()
@@ -304,7 +304,7 @@ def agent(agent_id, net_params_queue, exp_queue):
             # del a_batch[:]
             # del p_batch[:]
             # del v_batch[:]
-            # del actor_net_params[:]
+            del actor_net_params[:]
 
             del bit_rate[:]
             del sat[:]
