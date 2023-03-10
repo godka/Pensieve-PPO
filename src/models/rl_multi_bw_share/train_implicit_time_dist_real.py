@@ -21,7 +21,7 @@ A_SAT = 2
 ACTOR_LR_RATE = 1e-4
 TRAIN_SEQ_LEN = 3000  # take as a train batch
 TRAIN_EPOCH = 2000000
-MODEL_SAVE_INTERVAL = 30000
+MODEL_SAVE_INTERVAL = 3000
 RANDOM_SEED = 42
 SUMMARY_DIR = './ppo_imp_dist_real'
 MODEL_DIR = '..'
@@ -113,7 +113,6 @@ def central_agent(net_params_queues, exp_queues):
     assert len(exp_queues) == NUM_AGENTS
     tf_config = tf.ConfigProto(intra_op_parallelism_threads=1,
                                inter_op_parallelism_threads=1)
-    best_rewards = -1000
     with tf.Session(config=tf_config) as sess, open(LOG_FILE + '_test.txt', 'w') as test_log_file:
         summary_ops, summary_vars = build_summaries()
         best_rewards = -1000
@@ -134,35 +133,28 @@ def central_agent(net_params_queues, exp_queues):
 
         for epoch in range(TRAIN_EPOCH):
             # synchronize the network parameters of work agent
-            try:
-                actor_net_params = actor.get_network_params()
-                for i in range(NUM_AGENTS):
-                    net_params_queues[i].put(actor_net_params)
-                s, a, p, g = [], [], [], []
-                for i in range(NUM_AGENTS):
-                    s_, a_, p_, g_ = exp_queues[i].get()
-                    s += s_
-                    a += a_
-                    p += p_
-                    g += g_
-                s_batch = np.stack(s, axis=0)
-                a_batch = np.vstack(a)
-                p_batch = np.vstack(p)
-                v_batch = np.vstack(g)
+            actor_net_params = actor.get_network_params()
+            for i in range(NUM_AGENTS):
+                net_params_queues[i].put(actor_net_params)
+            s, a, p, g = [], [], [], []
+            for i in range(NUM_AGENTS):
+                s_, a_, p_, g_ = exp_queues[i].get()
+                s += s_
+                a += a_
+                p += p_
+                g += g_
+            s_batch = np.stack(s, axis=0)
+            a_batch = np.vstack(a)
+            p_batch = np.vstack(p)
+            v_batch = np.vstack(g)
 
-                # print(s_batch[0], a_batch[0], p_batch[0], v_batch[0], epoch)
-                for _ in range(PPO_TRAINING_EPO):
-                    actor.train(s_batch, a_batch, p_batch, v_batch, None)
-                del s[:]
-                del a[:]
-                del p[:]
-                del g[:]
-            except queue.Empty:
-                log.info("Queue Empty?")
-                continue
-            except queue.Full:
-                log.info("Queue Full?")
-                continue
+            # print(s_batch[0], a_batch[0], p_batch[0], v_batch[0], epoch)
+            for _ in range(PPO_TRAINING_EPO):
+                actor.train(s_batch, a_batch, p_batch, v_batch, None)
+            del s[:]
+            del a[:]
+            del p[:]
+            del g[:]
 
             if epoch % MODEL_SAVE_INTERVAL == 0:
                 # Save the neural net parameters to disk.
@@ -283,26 +275,20 @@ def agent(agent_id, net_params_queue, exp_queue):
             # if agent_id == 0:
             #     print(len(s_batch), len(a_batch), len(r_batch))
             v_batch = actor.compute_v(s_batch_user[tmp_i][1:], a_batch_user[tmp_i][1:], r_batch_user[tmp_i][1:], env.check_end())
-            try:
-                exp_queue.put([s_batch_user[tmp_i][1:], a_batch_user[tmp_i][1:], p_batch_user[tmp_i][1:], v_batch])
-                if epoch != TRAIN_SEQ_LEN - 1:
-                    actor_net_params = net_params_queue.get()
-                    actor.set_network_params(actor_net_params)
-                del s_batch_user[:]
-                del a_batch_user[:]
-                del r_batch_user[:]
-                del p_batch_user[:]
-                del actor_net_params[:]
 
-                del bit_rate[:]
-                del sat[:]
-                del action_prob[:]
-            except queue.Empty:
-                log.info("Empty")
-                continue
-            except queue.Full:
-                log.info("Full")
-                continue
+            exp_queue.put([s_batch_user[tmp_i][1:], a_batch_user[tmp_i][1:], p_batch_user[tmp_i][1:], v_batch])
+            if epoch != TRAIN_SEQ_LEN - 1:
+                actor_net_params = net_params_queue.get()
+                actor.set_network_params(actor_net_params)
+            del s_batch_user[:]
+            del a_batch_user[:]
+            del r_batch_user[:]
+            del p_batch_user[:]
+            del actor_net_params[:]
+
+            del bit_rate[:]
+            del sat[:]
+            del action_prob[:]
 
 
 def build_summaries():
