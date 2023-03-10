@@ -111,7 +111,7 @@ class Environment:
         self.stored_cur_sat_id = None
         self.stored_cur_satellite = None
 
-        # exit(1)
+        # raise Exception
         # multiuser setting
         self.cur_sat_id = []
         self.prev_sat_id = [None for _ in range(self.num_agents)]
@@ -1966,7 +1966,7 @@ class Environment:
                 agent, method="holt-winter")
         else:
             print("Cannot happen")
-            exit(1)
+            raise Exception
 
         start_buffer = self.buffer_size[agent] / MILLISECONDS_IN_SECOND
 
@@ -2010,7 +2010,7 @@ class Environment:
 
                     else:
                         print("Cannot happen")
-                        exit(1)
+                        raise Exception
 
                     for ho_index in range(MPC_FUTURE_CHUNK_COUNT):
                         # all possible combinations of 5 chunk bitrates for 6 bitrate options (6^5 options)
@@ -2213,7 +2213,7 @@ class Environment:
                 agent, method="holt-winter")
         else:
             print("Cannot happen")
-            exit(1)
+            raise Exception
 
         start_buffer = np.array(self.buffer_size) / MILLISECONDS_IN_SECOND
 
@@ -2256,7 +2256,7 @@ class Environment:
                                                 self.mahimahi_ptr[agent] - 1] / cur_user_num)
                     else:
                         print("Cannot happen")
-                        exit(1)
+                        raise Exception
 
                     for ho_index in range(MPC_FUTURE_CHUNK_COUNT):
                         # all possible combinations of 5 chunk bitrates for 6 bitrate options (6^5 options)
@@ -2398,7 +2398,7 @@ class Environment:
                 # target_sat_bw = sum(target_sat_bw) / len(target_sat_bw)
             else:
                 print("Cannot happen")
-                exit(1)
+                raise Exception
 
             assert (real_sat_bw is not None)
             if best_sat_bw < real_sat_bw:

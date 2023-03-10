@@ -624,7 +624,7 @@ class Environment:
                 real_sat_bw = target_sat_bw  # / (self.get_num_of_user_sat(sat_id) + 1)
             else:
                 print("Cannot happen")
-                exit(1)
+                raise Exception
 
             assert (real_sat_bw is not None)
             if best_sat_bw < real_sat_bw:

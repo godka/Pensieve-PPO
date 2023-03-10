@@ -177,7 +177,7 @@ class Satellite:
 
         else:
             print("Wrong")
-            exit(1)
+            raise Exception
         return dr_ue_shared
 
     def data_rate(self, user: User, mahimahi_ptr):

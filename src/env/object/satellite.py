@@ -147,7 +147,7 @@ class Satellite:
                     if elem[1] not in ue_list:
                         print(self.conn_use_log)
                         print(mahimahi_ptr)
-                        exit(1)
+                        raise Exception
                     assert elem[1] in ue_list
                     ue_list.remove(elem[1])
 
@@ -234,8 +234,8 @@ class Satellite:
         # dr_ue_unshared = self.bw * np.log2(1 + snr)
         # For test
         if mahimahi_ptr >= len(self.sat_bw):
-            self.log.info('Error', mahimahi_ptr=mahimahi_ptr, sat_bw=len(self.sat_bw))
-            exit(1)
+            self.log.info('Error in sat_bw', mahimahi_ptr=mahimahi_ptr, sat_bw=len(self.sat_bw))
+            raise Exception
         dr_ue_unshared = self.sat_bw[mahimahi_ptr]
         dr_ue_unshared *= user.get_snr_noise()
         # dr_ue_unshared *= np.random.uniform(SNR_NOISE_LOW, SNR_NOISE_HIGH)
@@ -291,7 +291,7 @@ class Satellite:
                     dr_ue_shared = dr_ue_unshared * (data_rate_ratio[agent_id] + more_ratio / num_conn_ues)
         else:
             print("Wrong")
-            exit(1)
+            raise Exception
         return dr_ue_shared
 
     def data_rate(self, user: User, mahimahi_ptr, plus=False):

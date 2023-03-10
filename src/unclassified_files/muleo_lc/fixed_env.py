@@ -395,7 +395,7 @@ class Environment:
                 agent, method="holt-winter")
         else:
             print("Cannot happen")
-            exit(1)
+            raise Exception
 
         start_buffer = self.buffer_size[agent] / MILLISECONDS_IN_SECOND
 
@@ -426,7 +426,7 @@ class Environment:
                             self.cooked_bw[self.cur_sat_id[agent]][self.mahimahi_ptr[agent]-1]
                     else:
                         print("Cannot happen")
-                        exit(1)
+                        raise Exception
 
                     for ho_index in range(MPC_FUTURE_CHUNK_COUNT):
                         # all possible combinations of 5 chunk bitrates for 6 bitrate options (6^5 options)
@@ -552,7 +552,7 @@ class Environment:
                 # target_sat_bw = sum(target_sat_bw) / len(target_sat_bw)
             else:
                 print("Cannot happen")
-                exit(1)
+                raise Exception
 
             assert (target_sat_bw is not None)
             if best_sat_bw < target_sat_bw:
