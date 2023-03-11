@@ -800,7 +800,7 @@ class Environment:
             self.delay[agent] = HANDOVER_DELAY
             return sat_id
 
-    def get_others_reward(self, agent, last_bit_rate, prev_sat_id, cur_sat_id):
+    def get_others_reward(self, agent, last_bit_rate):
         reward = 0
         prev_sat_id = self.prev_sat_id[agent]
         cur_sat_id = self.cur_sat_id[agent]
