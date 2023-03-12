@@ -25,6 +25,8 @@ NN_MODEL = sys.argv[1]
 USERS = int(sys.argv[2])
 SUMMARY_DIR = './test_results_imp_cent_real' + str(USERS)
 
+if not os.path.exists(SUMMARY_DIR):
+    os.makedirs(SUMMARY_DIR)
 LOG_FILE = SUMMARY_DIR + '/log_sim_ppo'
 SUMMARY_PATH = SUMMARY_DIR + '/summary'
 

@@ -24,6 +24,8 @@ USERS = int(sys.argv[2])
 HO_TYPE = str(sys.argv[3])
 SUMMARY_DIR = './test_results_pensieve_tight' + str(USERS)
 
+if not os.path.exists(SUMMARY_DIR):
+    os.makedirs(SUMMARY_DIR)
 LOG_FILE = SUMMARY_DIR + '/log_sim_pensieve'
 SUMMARY_PATH = SUMMARY_DIR + '/summary'
 

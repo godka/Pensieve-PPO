@@ -29,10 +29,6 @@ if not os.path.exists(SUMMARY_DIR):
 LOG_FILE = SUMMARY_DIR + '/log_sim_ppo'
 SUMMARY_PATH = SUMMARY_DIR + '/summary'
 
-
-LOG_FILE = SUMMARY_DIR + '/log_sim_ppo'
-SUMMARY_PATH = SUMMARY_DIR + '/summary'
-
 # A_SAT = NUM_AGENTS
 structlog.configure(
     wrapper_class=structlog.make_filtering_bound_logger(logging.INFO),

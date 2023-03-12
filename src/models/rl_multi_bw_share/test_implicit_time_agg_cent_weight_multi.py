@@ -26,6 +26,8 @@ S_INFO = 10 + 8 * (USERS - 1) + 1 + (USERS - 1) * PAST_SAT_LOG_LEN + A_SAT - 2
 LOG_FILE = SUMMARY_DIR + '/log_sim_ppo'
 SUMMARY_PATH = SUMMARY_DIR + '/summary'
 
+if not os.path.exists(SUMMARY_DIR):
+    os.makedirs(SUMMARY_DIR)
 # A_SAT = NUM_AGENTS
 structlog.configure(
     wrapper_class=structlog.make_filtering_bound_logger(logging.INFO),
