@@ -140,24 +140,21 @@ class Environment:
         assert quality in [0, 2, 4]
 
         is_handover = False
-        if model_type is not None and "v2" in model_type and (agent == 0 or do_mpc or self.unexpected_change) and \
-                self.end_of_video[agent] is not True:
-            cur_sat_ids, runner_up_sat_ids, ho_stamps, best_combos, best_user_info, final_rate = self.run_mpc(agent,
-                                                                                                              model_type)
+        if model_type is not None and model_type in CENT_MPC_MODELS and (agent == 0 or do_mpc or self.unexpected_change) and self.end_of_video[agent] is not True:
+            cur_sat_ids, runner_up_sat_ids, ho_stamps, best_combos, best_user_info, final_rate = self.run_mpc(agent, model_type)
             self.unexpected_change = False
 
             self.prev_best_combos = copy.deepcopy(best_combos)
             # DO handover all-in-one
+
             if self.cur_sat_id != cur_sat_ids:
                 self.unexpected_change = True
             for i in range(self.num_agents):
                 if ho_stamps[i] == 0:
                     runner_up_sat_id = runner_up_sat_ids[i]
-                    if runner_up_sat_id is None or not self.cur_satellite[runner_up_sat_id].is_visible(
-                            self.mahimahi_ptr[agent]):
+                    if runner_up_sat_id is None or not self.cur_satellite[runner_up_sat_id].is_visible(self.mahimahi_ptr[agent]):
                         self.log.info("Do not update", cur_sat_ids=self.cur_sat_id, runner_up_sat_ids=runner_up_sat_ids,
-                                      is_visible=self.cur_satellite[runner_up_sat_id].is_visible(
-                                          self.mahimahi_ptr[agent]))
+                                      is_visible=self.cur_satellite[runner_up_sat_id].is_visible(self.mahimahi_ptr[agent]))
                         self.unexpected_change = True
 
             if self.unexpected_change:
@@ -176,9 +173,7 @@ class Environment:
             else:
                 if best_user_info:
                     for sat_id in best_user_info:
-                        final_rate[sat_id] = self.cur_satellite[sat_id].set_data_rate_ratio(best_user_info[sat_id][2],
-                                                                                            best_user_info[sat_id][3],
-                                                                                            self.mahimahi_ptr[agent])
+                        final_rate[sat_id] = self.cur_satellite[sat_id].set_data_rate_ratio(best_user_info[sat_id][2], best_user_info[sat_id][3], self.mahimahi_ptr[agent])
                 else:
                     for sat_id in list(set(self.cur_sat_id + runner_up_sat_ids)):
                         if sat_id is None:
@@ -201,8 +196,7 @@ class Environment:
                             self.download_bw[i] = []
 
                             throughput = self.cur_satellite[self.cur_sat_id[i]].data_rate(self.cur_user[i],
-                                                                                          self.mahimahi_ptr[
-                                                                                              agent]) * B_IN_MB / BITS_IN_BYTE
+                                                                                              self.mahimahi_ptr[agent]) * B_IN_MB / BITS_IN_BYTE
                             assert throughput != 0
                         else:
                             ho_stamps[i] = -1
@@ -214,13 +208,19 @@ class Environment:
 
                 runner_up_sat_id = runner_up_sat_ids[agent]
 
-        elif model_type is not None and "v1" in model_type:
+        elif model_type is not None and model_type in DIST_MPC_MODELS:
             is_handover, new_sat_id, bit_rate = self.run_mpc_v1(agent, model_type)
             if is_handover:
                 ho_stamp = 0
                 runner_up_sat_id = new_sat_id
             quality = bit_rate
             runner_up_sat_ids, ho_stamps, best_combos, best_user_info, final_rate = None, None, None, None, None
+
+        elif model_type is not None and model_type in SEP_MPC_MODELS:
+            best_combo, max_reward, best_case = self.run_mpc_sep(agent, model_type)
+            quality = best_combo[0]
+            runner_up_sat_ids, ho_stamps, best_combos, best_user_info, final_rate = None, None, None, None, None
+            ho_stamp = model_type
 
         else:
             runner_up_sat_ids, ho_stamps, best_combos, best_user_info, final_rate = None, None, None, None, None
@@ -261,38 +261,62 @@ class Environment:
             throughput = self.cur_satellite[self.cur_sat_id[agent]].data_rate(self.cur_user[agent], self.mahimahi_ptr[
                 agent]) * B_IN_MB / BITS_IN_BYTE
             assert throughput != 0
+        elif ho_stamp == "MRSS":
+            tmp_best_id = self.get_max_sat_id(agent)
+            if tmp_best_id != self.cur_sat_id[agent]:
+                is_handover = True
+                delay += HANDOVER_DELAY
+                self.update_sat_info(self.cur_sat_id[agent], self.last_mahimahi_time[agent], agent, -1)
+                self.update_sat_info(tmp_best_id, self.last_mahimahi_time[agent], agent, 1)
+                self.prev_sat_id[agent] = self.cur_sat_id[agent]
+                self.cur_sat_id[agent] = tmp_best_id
+                self.download_bw[agent] = []
 
+            throughput = self.cur_satellite[self.cur_sat_id[agent]].data_rate(self.cur_user[agent], self.mahimahi_ptr[
+                agent]) * B_IN_MB / BITS_IN_BYTE
+            # assert throughput != 0
+        elif ho_stamp == "MRSS-Smart":
+            tmp_best_id = self.get_max_sat_id(agent, past_len=PAST_LEN)
+            if tmp_best_id != self.cur_sat_id[agent]:
+                is_handover = True
+                delay += HANDOVER_DELAY
+                self.update_sat_info(self.cur_sat_id[agent], self.last_mahimahi_time[agent], agent, -1)
+                self.update_sat_info(tmp_best_id, self.last_mahimahi_time[agent], agent, 1)
+                self.prev_sat_id[agent] = self.cur_sat_id[agent]
+                self.cur_sat_id[agent] = tmp_best_id
+                self.download_bw[agent] = []
+
+            throughput = self.cur_satellite[self.cur_sat_id[agent]].data_rate(self.cur_user[agent], self.mahimahi_ptr[
+                agent]) * B_IN_MB / BITS_IN_BYTE
+            # assert throughput != 0
         # Do All users' handover
 
         self.last_quality[agent] = quality
 
         if self.video_chunk_counter[agent] != 0:
             self.cur_user[agent].update_download(self.mahimahi_ptr[agent],
-                                                 self.cur_sat_id[agent],
-                                                 TOTAL_VIDEO_CHUNKS - self.video_chunk_counter[agent],
+                                                 self.cur_sat_id[agent], TOTAL_VIDEO_CHUNKS - self.video_chunk_counter[agent],
                                                  quality, self.last_quality[agent],
                                                  self.buffer_size[agent] / MILLISECONDS_IN_SECOND)
         while True:  # download video chunk over mahimahi
-            """
-            num_users = 0
-            for cur_sat_id in self.cur_satellite.keys():
-                num_users += self.cur_satellite[cur_sat_id].num_conn_ues(self.mahimahi_ptr[agent])
-            assert num_users == self.num_agents
-            """
             throughput = self.cur_satellite[self.cur_sat_id[agent]].data_rate(self.cur_user[agent],
                                                                               self.mahimahi_ptr[
                                                                                   agent]) * B_IN_MB / BITS_IN_BYTE
             if throughput == 0.0:
-                # Do the forced handover
-                # Connect the satellite that has the best serving time
-                sat_id = self.get_best_sat_id(agent, self.mahimahi_ptr[agent])
+                if ho_stamp and ho_stamp == "MVT":
+                    sat_id = self.get_mvt_sat_id(agent, self.mahimahi_ptr[agent])
+
+                else:
+                    # Do the forced handover
+                    # Connect the satellite that has the best serving time
+                    sat_id = self.get_best_sat_id(agent, self.mahimahi_ptr[agent])
                 self.log.debug("Forced Handover1", cur_sat_id=self.cur_sat_id[agent], next_sat_id=sat_id,
-                               mahimahi_ptr=self.mahimahi_ptr[agent], agent=agent,
-                               cur_bw=self.cooked_bw[self.cur_sat_id[agent]][
-                                      self.mahimahi_ptr[agent] - 3:self.mahimahi_ptr[agent] + 3],
-                               next_bw=self.cooked_bw[
-                                           sat_id][self.mahimahi_ptr[agent] - 3:self.mahimahi_ptr[agent] + 3]
-                               )
+                              mahimahi_ptr=self.mahimahi_ptr[agent], agent=agent,
+                              cur_bw=self.cooked_bw[self.cur_sat_id[agent]][self.mahimahi_ptr[agent]-3:self.mahimahi_ptr[agent]+3],
+                              next_bw=self.cooked_bw[
+                                  sat_id][self.mahimahi_ptr[agent] - 3:self.mahimahi_ptr[agent] + 3]
+                              )
+                assert self.cur_sat_id[agent] != sat_id
                 self.update_sat_info(self.cur_sat_id[agent], self.last_mahimahi_time[agent], agent, -1)
                 self.update_sat_info(sat_id, self.last_mahimahi_time[agent], agent, 1)
 
@@ -332,7 +356,6 @@ class Environment:
                 # self.end_of_video[agent] = True
                 end_of_network = True
                 break
-
         delay *= MILLISECONDS_IN_SECOND
         delay += LINK_RTT
 
@@ -348,8 +371,8 @@ class Environment:
         # sleep if buffer gets too large
         sleep_time = 0
         if self.buffer_size[agent] > BUFFER_THRESH:
-            self.log.debug("Buffer exceed!", buffer_size=self.buffer_size[agent], mahimahi_ptr=self.mahimahi_ptr[agent],
-                           agent=agent)
+            self.log.info("Buffer exceed!", buffer_size=self.buffer_size[agent], mahimahi_ptr=self.mahimahi_ptr[agent],
+                          agent=agent)
             # exceed the buffer limit
             # we need to skip some network bandwidth here
             # but do not add up the delay
@@ -380,17 +403,21 @@ class Environment:
                 throughput = self.cur_satellite[self.cur_sat_id[agent]].data_rate(self.cur_user[agent],
                                                                                   self.mahimahi_ptr[agent])* B_IN_MB / BITS_IN_BYTE
                 if throughput == 0.0:
+                    if ho_stamp and ho_stamp == "MVT":
+                        sat_id = self.get_mvt_sat_id(agent, self.mahimahi_ptr[agent])
+                    else:
+                        sat_id = self.get_best_sat_id(agent, self.mahimahi_ptr[agent])
                     # Do the forced handover
                     # Connect the satellite that has the best serving time
-                    sat_id = self.get_best_sat_id(agent, self.mahimahi_ptr[agent])
                     assert sat_id != self.cur_sat_id[agent]
                     self.log.debug("Forced Handover2", cur_sat_id=self.cur_sat_id[agent], sat_id=sat_id,
                                    mahimahi_ptr=self.mahimahi_ptr[agent], agent=agent)
+                    assert sat_id != self.cur_sat_id[agent]
                     self.update_sat_info(sat_id, self.last_mahimahi_time[agent], agent, 1)
                     self.update_sat_info(self.cur_sat_id[agent], self.last_mahimahi_time[agent], agent, -1)
                     self.switch_sat(agent, sat_id)
                     is_handover = True
-
+                    delay += HANDOVER_DELAY * MILLISECONDS_IN_SECOND
                     throughput = self.cur_satellite[self.cur_sat_id[agent]].data_rate(self.cur_user[agent],
                                                                                       self.mahimahi_ptr[agent])* B_IN_MB / BITS_IN_BYTE
 
@@ -465,11 +492,9 @@ class Environment:
             runner_up_sat_ids, ho_stamps, best_combos, best_user_info = None, None, None, None
         """
 
-        if False and model_type is not None and "v1" in model_type and ho_stamp == 1 and self.end_of_video[
-            agent] is not True:
+        if False and model_type is not None and "v1" in model_type and ho_stamp == 1 and self.end_of_video[agent] is not True:
             do_handover = True
-            if runner_up_sat_id is None or not self.cur_satellite[runner_up_sat_id].is_visible(
-                    self.mahimahi_ptr[agent]):
+            if runner_up_sat_id is None or not self.cur_satellite[runner_up_sat_id].is_visible(self.mahimahi_ptr[agent]):
                 self.log.info("Do not update2", cur_sat_ids=self.cur_sat_id, runner_up_sat_id=runner_up_sat_id)
                 do_handover = False
                 self.unexpected_change = True
@@ -485,9 +510,8 @@ class Environment:
                     self.cur_sat_id[agent] = runner_up_sat_id
                     self.download_bw[agent] = []
 
-                throughput = self.cur_satellite[self.cur_sat_id[agent]].data_rate(self.cur_user[agent],
-                                                                                  self.mahimahi_ptr[
-                                                                                      agent]) * B_IN_MB / BITS_IN_BYTE
+                throughput = self.cur_satellite[self.cur_sat_id[agent]].data_rate(self.cur_user[agent], self.mahimahi_ptr[
+                    agent]) * B_IN_MB / BITS_IN_BYTE
                 assert throughput != 0
 
         return delay, \
@@ -845,6 +869,25 @@ class Environment:
                 return False
         return True
 
+    def get_max_sat_id(self, agent, mahimahi_ptr=None, past_len=None):
+        best_sat_id = None
+        best_sat_bw = 0
+
+        if mahimahi_ptr is None:
+            mahimahi_ptr = self.mahimahi_ptr[agent]
+
+        for sat_id, sat_bw in self.cooked_bw.items():
+            if past_len:
+                real_sat_bw = self.predict_bw(sat_id, agent, robustness=True, mahimahi_ptr=mahimahi_ptr, past_len=past_len)
+            else:
+                real_sat_bw = self.cur_satellite[sat_id].data_rate_unshared(mahimahi_ptr, self.cur_user[agent])
+
+            if best_sat_bw < real_sat_bw:
+                best_sat_id = sat_id
+                best_sat_bw = real_sat_bw
+
+        return best_sat_id
+
     def get_first_agent(self):
         user = -1
 
@@ -943,6 +986,27 @@ class Environment:
 
         return best_sat_id
 
+    def get_mvt_sat_id(self, agent, mahimahi_ptr=None):
+        best_sat_id = None
+        best_sat_time = 0
+
+        if mahimahi_ptr is None:
+            mahimahi_ptr = self.mahimahi_ptr[agent]
+
+        for sat_id, sat_bw in self.cooked_bw.items():
+            tmp_time = 0
+            tmp_mahimahi_ptr = mahimahi_ptr
+            while True:
+                real_sat_bw = self.cur_satellite[sat_id].data_rate_unshared(tmp_mahimahi_ptr, self.cur_user[agent])
+                if real_sat_bw == 0 or tmp_mahimahi_ptr <= 0:
+                    break
+                tmp_mahimahi_ptr -= 1
+                tmp_time += 1
+            if best_sat_time < tmp_time:
+                best_sat_id = sat_id
+                best_sat_time = tmp_time
+
+        return best_sat_id
     def switch_sat(self, agent, cur_sat_id):
         pre_sat_id = self.cur_sat_id[agent]
         self.prev_sat_id[agent] = pre_sat_id
@@ -964,6 +1028,46 @@ class Environment:
                 agent, centralized=True)
         return is_handover, new_sat_id, bit_rate
 
+    def run_mpc_sep(self, agent, method="harmonic-mean"):
+        # future chunks length (try 4 if that many remaining)
+        video_chunk_remain = self.video_chunk_remain[agent]
+        # last_index = self.get_total_video_chunk() - video_chunk_remain
+        last_index = int(CHUNK_TIL_VIDEO_END_CAP - video_chunk_remain)
+
+        chunk_combo_option = []
+        # make chunk combination options
+        for combo in itertools.product(list(range(int(BITRATE_LEVELS / BITRATE_WEIGHT))),
+                                       repeat=MPC_FUTURE_CHUNK_COUNT):
+            chunk_combo_option.append(list([BITRATE_WEIGHT * x for x in combo]))
+
+        future_chunk_length = MPC_FUTURE_CHUNK_COUNT
+        if video_chunk_remain < MPC_FUTURE_CHUNK_COUNT:
+            future_chunk_length = video_chunk_remain
+
+        max_reward = -10000000
+        best_combo = (self.last_quality[agent],)
+        ho_sat_id = self.cur_sat_id[agent]
+        ho_stamp = MPC_FUTURE_CHUNK_COUNT
+
+        cur_user_num = self.get_num_of_user_sat(self.mahimahi_ptr[agent], self.cur_sat_id[agent])
+        cur_download_bw, runner_up_sat_id = None, None
+        # cur_download_bw = self.predict_download_bw(agent, True)
+        cur_download_bw = self.predict_bw(self.cur_sat_id[agent], agent, True,
+                                          mahimahi_ptr=self.mahimahi_ptr[agent], past_len=self.last_delay[agent])
+        cur_download_bw /= cur_user_num
+        runner_up_sat_id, _ = self.get_runner_up_sat_id(
+            agent, method="harmonic-mean", cur_sat_id=self.cur_sat_id[agent])
+
+        if future_chunk_length == 0:
+            return ho_sat_id, ho_stamp, best_combo, max_reward
+
+        start_buffer = self.buffer_size[agent] / MILLISECONDS_IN_SECOND
+        assert cur_download_bw != 0
+        best_combo, max_reward, best_case = self.calculate_mpc(video_chunk_remain, start_buffer, last_index,
+                                                               cur_download_bw, agent)
+
+        return best_combo, max_reward, best_case
+
     def run_mpc(self, agent, model_type):
         final_rate = {}
         cur_ids = None
@@ -972,9 +1076,9 @@ class Environment:
         best_combos = None
         best_user_info = None
 
-        if model_type == "DualMPC-Centralization-Exhaustive-v2":
+        if model_type == "DualMPC-Centralization-Exhaustive":
             cur_ids, runner_up_sat_ids, ho_stamps, best_combos, max_rewards, best_user_info = self.qoe_v3(agent)
-        elif model_type == "DualMPC-Centralization-Reduced-v2":
+        elif model_type == "DualMPC-Centralization-Reduced":
             cur_ids, runner_up_sat_ids, ho_stamps, best_combos, max_rewards, best_user_info = self.qoe_v3(agent,
                                                                                                           reduced=True)
 
