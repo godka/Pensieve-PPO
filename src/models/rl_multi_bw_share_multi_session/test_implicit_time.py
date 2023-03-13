@@ -1,8 +1,9 @@
 import os
 import sys
-
+root_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+sys.path.insert(0, root_dir + '/../')
 from util.constants import CHUNK_TIL_VIDEO_END_CAP, BUFFER_NORM_FACTOR, VIDEO_BIT_RATE, REBUF_PENALTY, SMOOTH_PENALTY, \
-    DEFAULT_QUALITY, BITRATE_WEIGHT, M_IN_K, A_DIM, S_LEN
+    DEFAULT_QUALITY, BITRATE_WEIGHT, M_IN_K, A_DIM, S_LEN, PAST_LEN, BITRATE_REWARD, TEST_TRACES
 
 os.environ['CUDA_VISIBLE_DEVICES'] = '-1'
 import numpy as np
@@ -12,19 +13,19 @@ from models.rl_multi_bw_share.ppo_spec import ppo_implicit as network
 import structlog
 import logging
 
-S_INFO = 6 + 3 # bit_rate, buffer_size, next_chunk_size, bandwidth_measurement(throughput and time), chunk_til_video_end
-PAST_LEN = 8
+S_INFO = 6 + 3  # bit_rate, buffer_size, next_chunk_size, bandwidth_measurement(throughput and time), chunk_til_video_end
 A_SAT = 2
 ACTOR_LR_RATE = 1e-4
 # CRITIC_LR_RATE = 0.001
 RANDOM_SEED = 42
-TEST_TRACES = 'data/sat_data/test_tight/'
 NN_MODEL = sys.argv[1]
 USERS = int(sys.argv[2])
 SUMMARY_DIR = './test_results_imp_multi' + str(USERS)
 
+if not os.path.exists(SUMMARY_DIR):
+    os.makedirs(SUMMARY_DIR)
 LOG_FILE = SUMMARY_DIR + '/log_sim_ppo'
-SUMMARY_PATH = SUMMARY_DIR + 'summary'
+SUMMARY_PATH = SUMMARY_DIR + '/summary'
 
 # A_SAT = NUM_AGENTS
 structlog.configure(
@@ -46,6 +47,7 @@ def main():
 
     net_env = env.Environment(all_cooked_time=all_cooked_time,
                               all_cooked_bw=all_cooked_bw,
+                              all_cooked_name=all_file_names,
                               num_agents=USERS)
 
     log_path = LOG_FILE + '_' + all_file_names[net_env.trace_idx]
@@ -55,6 +57,10 @@ def main():
 
     results = []
     tmp_results = []
+
+    reward_1 = []
+    reward_2 = []
+    reward_3 = []
 
     with tf.Session() as sess:
 
@@ -87,7 +93,9 @@ def main():
         entropy_record = [[] for _ in range(USERS)]
         entropy_ = 0.5
         video_count = 0
-
+        tmp_reward_1 = []
+        tmp_reward_2 = []
+        tmp_reward_3 = []
         while True:  # serve video forever
 
             agent = net_env.get_first_agent()
@@ -118,13 +126,21 @@ def main():
                 print("network count", video_count)
                 print(sum(tmp_results[1:]) / len(tmp_results[1:]))
                 summary_file = open(SUMMARY_PATH, 'a')
-                summary_file.write('\n')
+                summary_file.write(net_env.get_file_name())
                 summary_file.write('\n')
                 summary_file.write(str(sum(tmp_results[1:]) / len(tmp_results[1:])))
+                summary_file.write('\n')
                 summary_file.close()
                 results += tmp_results[1:]
                 tmp_results = []
                 time_stamp = [0 for _ in range(USERS)]
+                reward_1.append(np.mean(tmp_reward_1[1:]))
+                reward_2.append(np.mean(tmp_reward_2[1:]))
+                reward_3.append(np.mean(tmp_reward_3[1:]))
+
+                tmp_reward_1 = []
+                tmp_reward_2 = []
+                tmp_reward_3 = []
 
                 video_count += 1
 
@@ -202,12 +218,12 @@ def main():
 
             state[agent][7, :PAST_LEN] = np.array(cur_sat_bw_logs[:PAST_LEN]) / 10
 
-            if is_handover:
-                state[agent][8:9, 0:S_LEN] = np.zeros((1, S_LEN))
-                state[agent][9:10, 0:S_LEN] = np.zeros((1, S_LEN))
+            # if is_handover:
+            #     state[agent][8:9, 0:S_LEN] = np.zeros((1, S_LEN))
+            #     state[agent][9:10, 0:S_LEN] = np.zeros((1, S_LEN))
             # state[agent][8:9, -1] = np.array(cur_sat_user_num) / 10
             # state[agent][9:10, -1] = np.array(next_sat_user_num) / 10
-            state[agent][10, :2] = [float(connected_time[0]) / BUFFER_NORM_FACTOR / 10,
+            state[agent][8, :2] = [float(connected_time[0]) / BUFFER_NORM_FACTOR / 10,
                                     float(connected_time[1]) / BUFFER_NORM_FACTOR / 10]
 
             # if len(next_sat_user_num) < PAST_LEN:
@@ -225,6 +241,7 @@ def main():
             # Testing for mpc
             # bit_rate[agent] /= BITRATE_WEIGHT
             # bit_rate[agent] = int(bit_rate[agent])
+            # bit_rate[agent] *= BITRATE_WEIGHT
             bit_rate[agent] *= BITRATE_WEIGHT
 
             if not end_of_video:
@@ -247,6 +264,15 @@ def main():
     summary_file.write('\n')
     summary_file.write(str(sum(results) / len(results)))
     summary_file.close()
+
+    reward_file = open(SUMMARY_PATH + '_reward_parts', 'w')
+    reward_file.write(' '.join(str(elem) for elem in reward_1))
+    reward_file.write('\n')
+    reward_file.write(' '.join(str(elem) for elem in reward_2))
+    reward_file.write('\n')
+    reward_file.write(' '.join(str(elem) for elem in reward_3))
+    reward_file.write('\n')
+
 
 if __name__ == '__main__':
     main()

@@ -11,10 +11,9 @@ from env.object.satellite import Satellite
 from env.object.user import User
 from util.constants import EPSILON, MPC_FUTURE_CHUNK_COUNT, QUALITY_FACTOR, REBUF_PENALTY, SMOOTH_PENALTY, \
     MPC_PAST_CHUNK_COUNT, HO_NUM, TOTAL_VIDEO_CHUNKS, CHUNK_TIL_VIDEO_END_CAP, DEFAULT_QUALITY, SNR_MIN, BUF_RATIO, \
-    VIDEO_CHUNCK_LEN, BITRATE_LEVELS, B_IN_MB, BITS_IN_BYTE, M_IN_K, MILLISECONDS_IN_SECOND
+    VIDEO_CHUNCK_LEN, BITRATE_LEVELS, B_IN_MB, BITS_IN_BYTE, M_IN_K, MILLISECONDS_IN_SECOND, PAST_LEN, VIDEO_SIZE_FILE
 
 RANDOM_SEED = 42
-PAST_LEN = 8
 BUFFER_THRESH = 60.0 * MILLISECONDS_IN_SECOND  # millisec, max buffer limit
 DRAIN_BUFFER_SLEEP_TIME = 500.0  # millisec
 PACKET_PAYLOAD_PORTION = 0.95
@@ -22,7 +21,6 @@ LINK_RTT = 80  # millisec
 PACKET_SIZE = 1500  # bytes
 NOISE_LOW = 0.9
 NOISE_HIGH = 1.1
-VIDEO_SIZE_FILE = 'data/video_data/envivio/video_size_'
 
 # LEO SETTINGS
 HANDOVER_DELAY = 0.2  # sec
@@ -66,6 +64,7 @@ class Environment:
         self.num_of_user_sat = {}
         self.num_sat_info = {}
         self.cur_satellite = {}
+        self.sat_decision_log = [[-1, -1, -1, -1, -1] for _ in range(self.num_agents)]
 
         for sat_id, sat_bw in self.cooked_bw.items():
             self.num_sat_info[sat_id] = [0 for _ in range(len(sat_bw))]

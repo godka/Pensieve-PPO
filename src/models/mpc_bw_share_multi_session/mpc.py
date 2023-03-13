@@ -3,6 +3,9 @@ import structlog
 import sys
 import pathlib
 import os
+import sys
+root_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+sys.path.insert(0, root_dir + '/../')
 
 from env.multi_bw_share_multi_session import fixed_env_time as env, load_trace as load_trace
 import itertools
@@ -10,36 +13,37 @@ import logging
 
 from util.constants import VIDEO_BIT_RATE, BUFFER_NORM_FACTOR, CHUNK_TIL_VIDEO_END_CAP, M_IN_K, REBUF_PENALTY, \
     SMOOTH_PENALTY, DEFAULT_QUALITY, MPC_FUTURE_CHUNK_COUNT, size_video1, size_video2, size_video3, size_video4, \
-    size_video5, size_video6, NUM_AGENTS
+    size_video5, size_video6, BITRATE_REWARD, TEST_TRACES
 
 S_INFO = 5  # bit_rate, buffer_size, rebuffering_time, bandwidth_measurement, chunk_til_video_end
 S_LEN = 8  # take how many frames in the past
 A_DIM = 6
 ACTOR_LR_RATE = 0.0001
 CRITIC_LR_RATE = 0.001
-BITRATE_REWARD = [1, 2, 3, 12, 15, 20]
 RANDOM_SEED = 42
 RAND_RANGE = 1000000
-SUMMARY_DIR = 'test_results_cent_res/'
+SUMMARY_DIR = 'MPC_dist_multi5/'
 LOG_FILE = SUMMARY_DIR + 'log_sim_cent'
-TEST_TRACES = 'data/sat_data/test_tight/'
 SUMMARY_PATH = SUMMARY_DIR + 'summary'
 # log in format of time_stamp bit_rate buffer_size rebuffer_time chunk_size download_time reward
 # NN_MODEL = './models/nn_model_ep_5900.ckpt'
 
 CHUNK_COMBO_OPTIONS = []
+REWARD_FUNC = "LIN"  # LIN
 
 import argparse
 
 parser = argparse.ArgumentParser(description='PyTorch Synthetic Benchmark',
                                  formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-parser.add_argument('--user', type=int, default=3)
+parser.add_argument('--user', type=int, default=5)
 args = parser.parse_args()
 
-# MPC_TYPE = "DualMPC"
+USERS = args.user
+MPC_TYPE = "MVT"
 # MPC_TYPE = "DualMPC-Centralization-Exhaustive"
 MPC_TYPE = "DualMPC-Centralization-Reduced"
-
+# MPC_TYPE = "Oracle"
+# MPC_TYPE = "DualMPC"
 # DualMPC-Centralization
 
 structlog.configure(
@@ -65,7 +69,9 @@ def main():
 
     net_env = env.Environment(all_cooked_time=all_cooked_time,
                               all_cooked_bw=all_cooked_bw,
-                              num_agents=NUM_AGENTS)
+                              all_cooked_name=all_file_names,
+                              num_agents=USERS,
+                              reward_func=REWARD_FUNC)
 
     log_path = LOG_FILE + '_' + all_file_names[net_env.trace_idx]
 
@@ -77,12 +83,20 @@ def main():
 
     log_file = open(log_path, 'w')
 
-    time_stamp = [0 for _ in range(NUM_AGENTS)]
+    time_stamp = [0 for _ in range(USERS)]
 
-    last_bit_rate = [DEFAULT_QUALITY for _ in range(NUM_AGENTS)]
-    bit_rate = [DEFAULT_QUALITY for _ in range(NUM_AGENTS)]
+    last_bit_rate = [DEFAULT_QUALITY for _ in range(USERS)]
+    bit_rate = [DEFAULT_QUALITY for _ in range(USERS)]
 
     video_count = 0
+
+    reward_1 = []
+    reward_2 = []
+    reward_3 = []
+
+    tmp_reward_1 = []
+    tmp_reward_2 = []
+    tmp_reward_3 = []
 
     results = []
     tmp_results = []
@@ -93,9 +107,9 @@ def main():
     # make chunk combination options
     for combo in itertools.product([0, 1, 2, 3, 4, 5], repeat=5):
         CHUNK_COMBO_OPTIONS.append(combo)
-    ho_stamps_log = [MPC_FUTURE_CHUNK_COUNT for _ in range(NUM_AGENTS)]
-    combo_log = [[DEFAULT_QUALITY] for _ in range(NUM_AGENTS)]
-    next_sat_log = [None for _ in range(NUM_AGENTS)]
+    ho_stamps_log = [MPC_FUTURE_CHUNK_COUNT for _ in range(USERS)]
+    combo_log = [[DEFAULT_QUALITY] for _ in range(USERS)]
+    next_sat_log = [None for _ in range(USERS)]
 
     while True:  # serve video forever
         agent = net_env.get_first_agent()
@@ -104,24 +118,35 @@ def main():
             log_file.write('\n')
             log_file.close()
 
-            last_bit_rate = [DEFAULT_QUALITY for _ in range(NUM_AGENTS)]
-            bit_rate = [DEFAULT_QUALITY for _ in range(NUM_AGENTS)]
+            last_bit_rate = [DEFAULT_QUALITY for _ in range(USERS)]
+            bit_rate = [DEFAULT_QUALITY for _ in range(USERS)]
             net_env.reset()
 
             print("network count", video_count)
             print(sum(tmp_results[1:]) / len(tmp_results[1:]))
             summary_file = open(SUMMARY_PATH, 'a')
+            summary_file.write(net_env.get_file_name())
             summary_file.write('\n')
             summary_file.write(str(best_user_infos))
             summary_file.write('\n')
             summary_file.write(str(sum(tmp_results[1:]) / len(tmp_results[1:])))
+            summary_file.write('\n')
             summary_file.close()
 
             results += tmp_results[1:]
             tmp_results = []
             best_user_infos = []
+
+            reward_1.append(np.mean(tmp_reward_1[1:]))
+            reward_2.append(np.mean(tmp_reward_2[1:]))
+            reward_3.append(np.mean(tmp_reward_3[1:]))
+
+            tmp_reward_1 = []
+            tmp_reward_2 = []
+            tmp_reward_3 = []
+
             video_count += 1
-            time_stamp = [0 for _ in range(NUM_AGENTS)]
+            time_stamp = [0 for _ in range(USERS)]
 
             # break
 
@@ -131,19 +156,28 @@ def main():
             log_path = LOG_FILE + '_' + all_file_names[net_env.trace_idx]
             log_file = open(log_path, 'w')
 
-            ho_stamps_log = [MPC_FUTURE_CHUNK_COUNT for _ in range(NUM_AGENTS)]
-            combo_log = [[DEFAULT_QUALITY] for _ in range(NUM_AGENTS)]
-            next_sat_log = [None for _ in range(NUM_AGENTS)]
+            ho_stamps_log = [MPC_FUTURE_CHUNK_COUNT for _ in range(USERS)]
+            combo_log = [[DEFAULT_QUALITY] for _ in range(USERS)]
+            next_sat_log = [None for _ in range(USERS)]
             end_of_video = False
             continue
         else:
+
+            # Priority on handover
+            if 0 in ho_stamps_log:
+                agent = ho_stamps_log.index(0)
+
             if combo_log[agent]:
                 bit_rate[agent] = combo_log[agent].pop(0)
             else:
                 do_mpc = True
 
-            ho_point = ho_stamps_log
+            ho_point = ho_stamps_log[agent]
 
+            if ho_stamps_log[agent] == 0 or ho_stamps_log[agent] == 1:
+                ho_stamps_log[agent] = -1
+            elif ho_stamps_log[agent] != MPC_FUTURE_CHUNK_COUNT:
+                ho_stamps_log[agent] -= 1
             do_mpc = True
         # the action is from the last decision
         # this is to make the framework similar to the real
@@ -193,7 +227,8 @@ def main():
                                    str(VIDEO_BIT_RATE[quality]), str(round(buffer_size, 3)),
                                    str(round(rebuf, 3)),
                                    str(round(video_chunk_size, 3)), str(round(delay, 3)), str(round(reward, 3)),
-                                   str(cur_sat_id), str(is_handover), str(sat_status), str(ho_stamps), str(best_user_info)))
+                                   str(cur_sat_id), str(is_handover), str(sat_status), str(ho_stamps),
+                                   str(best_user_info)))
             log_file.flush()
 
     # print(results, sum(results))
@@ -203,6 +238,14 @@ def main():
     summary_file.write('\n')
     summary_file.write(str(sum(results) / len(results)))
     summary_file.close()
+
+    reward_file = open(SUMMARY_PATH + '_reward_parts', 'w')
+    reward_file.write(' '.join(str(elem) for elem in reward_1))
+    reward_file.write('\n')
+    reward_file.write(' '.join(str(elem) for elem in reward_2))
+    reward_file.write('\n')
+    reward_file.write(' '.join(str(elem) for elem in reward_3))
+    reward_file.write('\n')
 
 
 if __name__ == '__main__':

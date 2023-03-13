@@ -7,6 +7,7 @@ import pandas as pd
 import numpy as np
 import copy
 import multiprocessing as mp
+import time
 from multiprocessing import Process, Value, Array, Manager
 
 from env.object.satellite import Satellite
@@ -14,7 +15,8 @@ from env.object.user import User
 from util.constants import EPSILON, MPC_FUTURE_CHUNK_COUNT, QUALITY_FACTOR, REBUF_PENALTY, SMOOTH_PENALTY, \
     MPC_PAST_CHUNK_COUNT, HO_NUM, TOTAL_VIDEO_CHUNKS, CHUNK_TIL_VIDEO_END_CAP, DEFAULT_QUALITY, INNER_PROCESS_NUMS, \
     VIDEO_CHUNCK_LEN, BITRATE_WEIGHT, SNR_MIN, BUF_RATIO, NO_EXHAUSTIVE, ADAPTIVE_BUF, VIDEO_BIT_RATE, BITRATE_LEVELS, \
-    MILLISECONDS_IN_SECOND, B_IN_MB, M_IN_K, BITS_IN_BYTE, PAST_LEN
+    MILLISECONDS_IN_SECOND, B_IN_MB, M_IN_K, BITS_IN_BYTE, PAST_LEN, CENT_MPC_MODELS, DIST_MPC_MODELS, SEP_MPC_MODELS, \
+    BITRATE_REWARD, VIDEO_SIZE_FILE
 
 RANDOM_SEED = 42
 BUFFER_THRESH = 60.0 * MILLISECONDS_IN_SECOND  # millisec, max buffer limit
@@ -22,7 +24,6 @@ DRAIN_BUFFER_SLEEP_TIME = 500.0  # millisec
 PACKET_PAYLOAD_PORTION = 0.95
 LINK_RTT = 80  # millisec
 PACKET_SIZE = 1500  # bytes
-VIDEO_SIZE_FILE = 'data/video_data/envivio/video_size_'
 
 # LEO SETTINGS
 HANDOVER_DELAY = 0.2  # sec
@@ -36,15 +37,18 @@ SAT_STRATEGY = "resource-fair"
 
 
 class Environment:
-    def __init__(self, all_cooked_time, all_cooked_bw, random_seed=RANDOM_SEED, num_agents=NUM_AGENTS):
+    def __init__(self, all_cooked_time, all_cooked_bw, all_cooked_name=None, random_seed=RANDOM_SEED,
+                 num_agents=NUM_AGENTS, reward_func="LIN", ho_type=None):
         assert len(all_cooked_time) == len(all_cooked_bw)
         self.log = structlog.get_logger()
 
         np.random.seed(random_seed)
         self.num_agents = num_agents
+        self.reward_func = reward_func
 
         self.all_cooked_time = all_cooked_time
         self.all_cooked_bw = all_cooked_bw
+        self.all_cooked_name = all_cooked_name
 
         # pick a random trace file
         self.trace_idx = 0
@@ -83,6 +87,7 @@ class Environment:
         self.stored_video_chunk_counter = None
         self.stored_cur_sat_id = None
         self.stored_cur_satellite = None
+        self.stored_cur_user = None
 
         # raise Exception
         # multiuser setting
@@ -852,6 +857,9 @@ class Environment:
                         user = agent
 
         return user
+
+    def get_file_name(self):
+        return self.all_cooked_name[self.trace_idx]
 
     def get_next_sat_info(self, agent, mahimahi_ptr=None):
         best_sat_id = None
