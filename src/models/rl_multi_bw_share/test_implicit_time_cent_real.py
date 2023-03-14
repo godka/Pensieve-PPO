@@ -11,7 +11,7 @@ from util.encode import encode_other_sat_info, one_hot_encode
 os.environ['CUDA_VISIBLE_DEVICES'] = '-1'
 import numpy as np
 import tensorflow.compat.v1 as tf
-from env.multi_bw_share import fixed_env_cent_time as env
+from env.multi_bw_share import fixed_env_time as env
 from env.multi_bw_share import load_trace_real as load_trace
 from models.rl_multi_bw_share.ppo_spec import ppo_cent_his as network
 import structlog

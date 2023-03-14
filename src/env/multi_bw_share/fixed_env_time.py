@@ -107,6 +107,7 @@ class Environment:
         # self.next_sat_bandwidth = [[] for _ in range(self.num_agents)]
         self.next_sat_id = [[] for _ in range(self.num_agents)]
         self.delay = [0 for _ in range(self.num_agents)]
+        self.sat_decision_log = [[-1, -1, -1, -1, -1] for _ in range(self.num_agents)]
 
         self.bit_rate = None
         self.download_bw = [[] for _ in range(self.num_agents)]
@@ -443,9 +444,11 @@ class Environment:
             # self.cur_sat_id[agent] = None
 
             # wait for overall clean
-            cur_sat_bw_logs, next_sat_bandwidth, next_sat_id, next_sat_bw_logs, connected_time = [], [], None, [], [0, 0]
+            cur_sat_bw_logs, next_sat_bandwidth, next_sat_id, next_sat_bw_logs, connected_time, other_sat_users, other_sat_bw_logs = [], [], None, [], [
+                0,
+                0], {}, {}
         else:
-            cur_sat_bw_logs, next_sat_bandwidth, next_sat_id, next_sat_bw_logs, connected_time = self.get_next_sat_info(
+            cur_sat_bw_logs, next_sat_bandwidth, next_sat_id, next_sat_bw_logs, connected_time, other_sat_users, other_sat_bw_logs = self.get_next_sat_info(
                 agent, self.mahimahi_ptr[agent])
         next_video_chunk_sizes = []
         for i in range(BITRATE_LEVELS):
@@ -524,7 +527,9 @@ class Environment:
                video_chunk_remain, \
                is_handover, self.get_num_of_user_sat(self.mahimahi_ptr[agent], sat_id="all"), \
                next_sat_bandwidth, next_sat_bw_logs, cur_sat_user_num, next_sat_user_num, cur_sat_bw_logs, connected_time, \
-               self.cur_sat_id[agent], runner_up_sat_ids, ho_stamps, best_combos, final_rate, quality
+               self.cur_sat_id[
+                   agent], runner_up_sat_ids, ho_stamps, best_combos, final_rate, quality, other_sat_users, other_sat_bw_logs, \
+               np.delete(self.buffer_size, agent)
 
     def get_video_chunk_oracle(self, quality, agent, mahimahi_ptr, ho_stamp, cur_sat_id, next_sat_id,
                                future_sat_user_nums):
@@ -693,9 +698,9 @@ class Environment:
         if ho_stamp == 0:
             is_handover = True
             delay += HANDOVER_DELAY
-            # runner_up_sat_id, _ = self.get_runner_up_sat_id(agent, method="harmonic-mean")
-            self.update_sat_info(self.cur_sat_id[agent], self.last_mahimahi_time[agent], agent, -1)
-            self.update_sat_info(runner_up_sat_id, self.last_mahimahi_time[agent], agent, 1)
+            runner_up_sat_id, _ = self.get_runner_up_sat_id(agent, method="harmonic-mean")
+            self.update_sat_info(self.cur_sat_id[agent], self.mahimahi_ptr[agent], agent, -1)
+            self.update_sat_info(runner_up_sat_id, self.mahimahi_ptr[agent], agent, 1)
 
             self.cur_sat_id[agent] = runner_up_sat_id
 
@@ -709,11 +714,12 @@ class Environment:
                 # runner_up_sat_id, _ = self.get_runner_up_sat_id(agent, method="harmonic-mean")
                 next_sat_id = self.get_best_sat_id(agent, self.mahimahi_ptr[agent])
                 self.log.debug("Forced Handover1", cur_sat_id=self.cur_sat_id[agent], next_sat_id=next_sat_id,
-                              mahimahi_ptr=self.mahimahi_ptr[agent], agent=agent,
-                              cur_bw=self.cooked_bw[self.cur_sat_id[agent]][self.mahimahi_ptr[agent]-3:self.mahimahi_ptr[agent]+3],
-                              next_bw=self.cooked_bw[
-                                  next_sat_id][self.mahimahi_ptr[agent] - 3:self.mahimahi_ptr[agent] + 3]
-                              )
+                               mahimahi_ptr=self.mahimahi_ptr[agent], agent=agent,
+                               cur_bw=self.cooked_bw[self.cur_sat_id[agent]][
+                                      self.mahimahi_ptr[agent] - 3:self.mahimahi_ptr[agent] + 3],
+                               next_bw=self.cooked_bw[
+                                           sat_id][self.mahimahi_ptr[agent] - 3:self.mahimahi_ptr[agent] + 3]
+                               )
 
                 self.update_sat_info(self.cur_sat_id[agent], self.last_mahimahi_time[agent], agent, -1)
                 self.update_sat_info(next_sat_id, self.last_mahimahi_time[agent], agent, 1)
@@ -834,6 +840,7 @@ class Environment:
         self.num_of_user_sat = {}
         self.download_bw = [[] for _ in range(self.num_agents)]
         self.cur_satellite = {}
+        self.sat_decision_log = [[-1, -1, -1, -1, -1] for _ in range(self.num_agents)]
 
         self.prev_best_combos = [[DEFAULT_QUALITY] * MPC_FUTURE_CHUNK_COUNT] * self.num_agents
 
@@ -912,6 +919,40 @@ class Environment:
         best_sat_bw = 0
         best_bw_list = []
         up_time_list = []
+        other_sat_users = {}
+        other_sat_bw_logs = {}
+
+        for sat_id, sat_bw in self.cooked_bw.items():
+            bw_list = []
+            if sat_id == self.cur_sat_id[agent]:
+                continue
+            for i in range(5, 0, -1):
+                if mahimahi_ptr - i >= 0 and sat_bw[mahimahi_ptr - i] != 0:
+                    if self.get_num_of_user_sat(self.mahimahi_ptr[agent], sat_id) == 0:
+                        bw_list.append(sat_bw[mahimahi_ptr - i])
+                    else:
+                        bw_list.append(
+                            sat_bw[mahimahi_ptr - i] / (self.get_num_of_user_sat(self.mahimahi_ptr[agent], sat_id) + 1))
+            if len(bw_list) == 0:
+                continue
+            bw = sum(bw_list) / len(bw_list)
+            other_sat_users[sat_id] = self.get_num_of_user_sat(self.mahimahi_ptr[agent], sat_id)
+
+            other_sat_bw_logs[sat_id] = bw_list
+
+            if best_sat_bw < bw:
+                best_sat_id = sat_id
+                best_sat_bw = bw
+                best_bw_list = bw_list
+
+        if best_sat_id is None:
+            best_sat_id = self.cur_sat_id[agent]
+
+        if best_sat_id in other_sat_users:
+            del other_sat_users[best_sat_id]
+        if best_sat_id in other_sat_bw_logs:
+            del other_sat_bw_logs[best_sat_id]
+
         if mahimahi_ptr is None:
             mahimahi_ptr = self.mahimahi_ptr[agent]
 
@@ -969,7 +1010,7 @@ class Environment:
         # list1 = [ list1[i] for i in range(1)]
         # list2 = [ list2[i] for i in range(1)]
 
-        return cur_sat_bws, None, next_sat_id, next_sat_bws, up_time_list
+        return cur_sat_bws, None, next_sat_id, next_sat_bws, up_time_list, other_sat_users, other_sat_bw_logs
 
     def get_best_sat_id(self, agent, mahimahi_ptr=None):
         best_sat_id = None
@@ -1093,8 +1134,7 @@ class Environment:
 
     def qoe_v2(self, agent, only_runner_up=True, centralized=False):
         is_handover = False
-        # best_sat_id = self.cur_sat_id[agent]
-        best_sat_id = None
+        best_sat_id = self.cur_sat_id[agent]
         # start_time = time.time()
         ho_sat_id, ho_stamp, best_combo, max_reward = self.calculate_mpc_with_handover_dist(
             agent, only_runner_up=only_runner_up, centralized=centralized)
@@ -1869,7 +1909,8 @@ class Environment:
                         break
                         # continue
 
-                    rebuf, avg_bw = self.get_video_chunk_oracle_v2(bit_rate, cur_agent_id, runner_up_sat_ids[cur_agent_id], ho_point)
+                    rebuf, avg_bw = self.get_video_chunk_oracle_v2(bit_rate, cur_agent_id,
+                                                                   runner_up_sat_ids[cur_agent_id], ho_point)
                     tmp_bws_sum.append(avg_bw)
 
                     bitrate_sum += VIDEO_BIT_RATE[bit_rate]
@@ -3880,3 +3921,101 @@ class Environment:
         self.cur_sat_id = self.stored_cur_sat_id
         self.cur_satellite = copy.deepcopy(self.stored_cur_satellite)
         self.cur_user = copy.deepcopy(self.stored_cur_user)
+
+    def get_others_reward(self, agent, last_bit_rate):
+        reward = 0
+        prev_sat_id = self.prev_sat_id[agent]
+        cur_sat_id = self.cur_sat_id[agent]
+        for i in range(self.num_agents):
+            if i == agent:
+                continue
+            agent_cur_sat_id = self.cur_sat_id[i]
+            if agent_cur_sat_id in [cur_sat_id, prev_sat_id]:
+                reward += self.get_simulated_penalty(i, last_bit_rate[i], prev_sat_id,
+                                                     cur_sat_id) / self.num_agents / 10
+
+        return reward
+
+    def get_simulated_penalty(self, agent, quality, prev_sat_id, next_sat_id):
+        assert quality >= 0
+        assert quality < BITRATE_LEVELS
+
+        video_chunk_size = self.video_size[quality][self.video_chunk_counter[agent]]
+        last_mahimahi_time = self.last_mahimahi_time[agent]
+        mahimahi_ptr = self.mahimahi_ptr[agent]
+        cur_sat_id = self.cur_sat_id[agent]
+        delay = self.delay[agent]
+        buffer_size = self.buffer_size[agent]
+        assert cur_sat_id in [prev_sat_id, next_sat_id]
+
+        if cur_sat_id == prev_sat_id:
+            reward1 = self.calculate_reward(agent, cur_sat_id, video_chunk_size, last_mahimahi_time, mahimahi_ptr,
+                                            delay, buffer_size, self.get_num_of_user_sat(mahimahi_ptr, cur_sat_id) + 1)
+            reward2 = self.calculate_reward(agent, cur_sat_id, video_chunk_size, last_mahimahi_time, mahimahi_ptr,
+                                            delay, buffer_size, self.get_num_of_user_sat(mahimahi_ptr, cur_sat_id))
+        elif cur_sat_id == next_sat_id:
+            reward1 = self.calculate_reward(agent, cur_sat_id, video_chunk_size, last_mahimahi_time, mahimahi_ptr,
+                                            delay, buffer_size, self.get_num_of_user_sat(mahimahi_ptr, cur_sat_id) - 1)
+            reward2 = self.calculate_reward(agent, cur_sat_id, video_chunk_size, last_mahimahi_time, mahimahi_ptr,
+                                            delay, buffer_size, self.get_num_of_user_sat(mahimahi_ptr, cur_sat_id))
+        else:
+            print("Cannot Happen")
+        return reward1 - reward2
+
+    def calculate_reward(self, agent, cur_sat_id, video_chunk_size, last_mahimahi_time, mahimahi_ptr, delay,
+                         buffer_size, num_of_user):
+        if len(self.cooked_time) <= mahimahi_ptr:
+            return 0
+        video_chunk_counter_sent = 0  # in bytes
+
+        while True:  # download video chunk over mahimahi
+            throughput = self.cur_satellite[cur_sat_id].data_rate(self.cur_user[agent],
+                                                                              mahimahi_ptr) * B_IN_MB / BITS_IN_BYTE
+
+            if throughput == 0.0:
+                # Do the forced handover
+                # Connect the satellite that has the best serving time
+                cur_sat_id = self.get_best_sat_id(agent, mahimahi_ptr)
+                # self.update_sat_info(cur_sat_id, self.mahimahi_ptr[agent], 1)
+                # self.update_sat_info(self.cur_sat_id[agent], self.mahimahi_ptr[agent], -1)
+
+                # self.cur_sat_id[agent] = cur_sat_id
+                delay += HANDOVER_DELAY
+
+            duration = self.cooked_time[mahimahi_ptr] \
+                       - last_mahimahi_time
+
+            packet_payload = throughput * duration * PACKET_PAYLOAD_PORTION
+
+            if video_chunk_counter_sent + packet_payload > video_chunk_size:
+                fractional_time = (video_chunk_size - video_chunk_counter_sent) / \
+                                  throughput / PACKET_PAYLOAD_PORTION
+                delay += fractional_time
+                last_mahimahi_time += fractional_time
+                break
+
+            video_chunk_counter_sent += packet_payload
+            delay += duration
+
+            last_mahimahi_time = self.cooked_time[mahimahi_ptr]
+            mahimahi_ptr += 1
+            # self.step_ahead(agent)
+            if mahimahi_ptr >= len(self.cooked_bw[cur_sat_id]):
+                # loop back in the beginning
+                # note: trace file starts with time 0
+                mahimahi_ptr = 1
+                last_mahimahi_time = 0
+                end_of_video = True
+                break
+
+        delay *= MILLISECONDS_IN_SECOND
+        delay += LINK_RTT
+
+        # rebuffer time
+        rebuf = np.maximum(delay - buffer_size, 0.0)
+
+        REBUF_PENALTY = 4.3  # 1 sec rebuffering -> 3 Mbps
+
+        reward = REBUF_PENALTY * rebuf / MILLISECONDS_IN_SECOND
+
+        return reward

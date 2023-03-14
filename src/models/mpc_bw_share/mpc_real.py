@@ -184,7 +184,7 @@ def main():
         delay, sleep_time, buffer_size, rebuf, \
         video_chunk_size, next_video_chunk_sizes, \
         end_of_video, video_chunk_remain, is_handover, sat_status, _, _, _, _, _, _, cur_sat_id, \
-        runner_up_sat_ids, ho_stamps, best_combos, best_user_info, quality \
+        runner_up_sat_ids, ho_stamps, best_combos, best_user_info, quality, _, _, _ \
             = net_env.get_video_chunk(bit_rate[agent], agent, MPC_TYPE, next_sat_log[agent], ho_point, do_mpc)
 
         if best_combos:

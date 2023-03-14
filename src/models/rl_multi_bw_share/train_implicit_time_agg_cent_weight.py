@@ -7,7 +7,7 @@ import sys
 root_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, root_dir + '/../')
 from env.multi_bw_share.env_time_agg import ABREnv
-from models.rl_multi_bw_share.ppo_spec import ppo_implicit_agg_weighted as network
+from models.rl_multi_bw_share.ppo_spec import ppo_implicit_agg_weighted_v2 as network
 import tensorflow.compat.v1 as tf
 import structlog
 from util.constants import A_DIM, NUM_AGENTS, TRAIN_TRACES, PAST_SAT_LOG_LEN
@@ -21,10 +21,10 @@ TRAIN_SEQ_LEN = 300  # take as a train batch
 TRAIN_EPOCH = 20000000
 MODEL_SAVE_INTERVAL = 3000
 RANDOM_SEED = 42
-SUMMARY_DIR = './ppo_imp_agg_weight'
+SUMMARY_DIR = './ppo_imp_agg_weight_v2'
 MODEL_DIR = '..'
 
-TEST_LOG_FOLDER = './test_results_imp_agg_weight'
+TEST_LOG_FOLDER = './test_results_imp_agg_weight_v2'
 PPO_TRAINING_EPO = 5
 
 import argparse

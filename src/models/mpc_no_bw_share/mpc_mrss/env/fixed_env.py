@@ -196,9 +196,9 @@ class Environment:
         # print('--------------------------', self.mahimahi_ptr)
         # print(self.cur_sat_id)
         self.mahimahi_ptr += 1
-        if self.mahimahi_ptr >= len(self.cooked_bw[self.cur_sat_id[0]]):
+        if self.mahimahi_ptr >= len(self.cooked_bw[self.cur_sat_id[agent]]):
             # print('--------------------------')
-            # print(self.mahimahi_ptr, len(self.cooked_bw[self.cur_sat_id[0]]))
+            # print(self.mahimahi_ptr, len(self.cooked_bw[self.cur_sat_id[agent]]))
             # loop back in the beginning
             # note: trace file starts with time 0
             self.mahimahi_ptr = 1
