@@ -11,7 +11,7 @@ import numpy as np
 import tensorflow.compat.v1 as tf
 from env.multi_bw_share import fixed_env_time as env
 from env.multi_bw_share import load_trace_real as load_trace
-from models.rl_multi_bw_share.ppo_spec import ppo_implicit_agg_weighted as network
+from models.rl_multi_bw_share.ppo_spec import ppo_implicit_agg_weighted_v2 as network
 import structlog
 import logging
 
@@ -21,7 +21,7 @@ ACTOR_LR_RATE = 1e-4
 RANDOM_SEED = 42
 NN_MODEL = sys.argv[1]
 USERS = int(sys.argv[2])
-SUMMARY_DIR = './test_results_imp_agg_weight_real' + str(USERS)
+SUMMARY_DIR = './test_results_imp_agg_weight_v2_real' + str(USERS)
 S_INFO = 10 + 8 * (USERS - 1) + 1 + (USERS - 1) * PAST_SAT_LOG_LEN
 
 if not os.path.exists(SUMMARY_DIR):
