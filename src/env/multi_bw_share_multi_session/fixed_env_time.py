@@ -1968,7 +1968,7 @@ class Environment:
 
         runner_up_sat_id = self.get_runner_up_sat_id(agent,
                                                        method="harmonic-mean",
-                                                       mahimahi_ptr=self.last_mahimahi_time[agent],
+                                                       mahimahi_ptr=self.mahimahi_ptr[agent],
                                                        cur_sat_id=cur_sat_id)[0]
 
         assert cur_sat_id != runner_up_sat_id
