@@ -1,7 +1,7 @@
 # add queuing delay into halo
 import numpy as np
 
-from models.rl_multi_bw_share_weights.weight_constant import PAST_TEST_LEN
+from models.rl_multi_bw_share_weights.weight_constant import PAST_LEN
 from util.constants import DEFAULT_QUALITY, REBUF_PENALTY, SMOOTH_PENALTY, VIDEO_BIT_RATE, BUFFER_NORM_FACTOR, \
     BITRATE_WEIGHT, CHUNK_TIL_VIDEO_END_CAP, M_IN_K, A_DIM, BITRATE_REWARD
 from . import core_time as abrenv
@@ -40,7 +40,7 @@ class ABREnv():
 
         self.last_bit_rate = [DEFAULT_QUALITY for _ in range(self.num_agents)]
         self.buffer_size = [0 for _ in range(self.num_agents)]
-        self.state = [np.zeros((S_INFO, PAST_TEST_LEN))for _ in range(self.num_agents)]
+        self.state = [np.zeros((S_INFO, PAST_LEN))for _ in range(self.num_agents)]
         self.sat_decision_log = [[] for _ in range(self.num_agents)]
         self.reward_func = reward_func
 
@@ -67,15 +67,15 @@ class ABREnv():
 
         state[5, -1] = np.minimum(video_chunk_remain,
                                 CHUNK_TIL_VIDEO_END_CAP) / float(CHUNK_TIL_VIDEO_END_CAP)
-        if len(next_sat_bw_logs) < PAST_TEST_LEN:
-            next_sat_bw_logs = [0] * (PAST_TEST_LEN - len(next_sat_bw_logs)) + next_sat_bw_logs
+        if len(next_sat_bw_logs) < PAST_LEN:
+            next_sat_bw_logs = [0] * (PAST_LEN - len(next_sat_bw_logs)) + next_sat_bw_logs
 
-        state[6, :PAST_TEST_LEN] = np.array(next_sat_bw_logs[:PAST_TEST_LEN])
+        state[6, :PAST_LEN] = np.array(next_sat_bw_logs[:PAST_LEN])
 
-        if len(cur_sat_bw_logs) < PAST_TEST_LEN:
-            cur_sat_bw_logs = [0] * (PAST_TEST_LEN - len(cur_sat_bw_logs)) + cur_sat_bw_logs
+        if len(cur_sat_bw_logs) < PAST_LEN:
+            cur_sat_bw_logs = [0] * (PAST_LEN - len(cur_sat_bw_logs)) + cur_sat_bw_logs
 
-        state[7, :PAST_TEST_LEN] = np.array(cur_sat_bw_logs[:PAST_TEST_LEN])
+        state[7, :PAST_LEN] = np.array(cur_sat_bw_logs[:PAST_LEN])
         # if self.is_handover:
         #     state[8:9, 0:S_LEN] = np.zeros((1, S_LEN))
         #     state[9:10, 0:S_LEN] = np.zeros((1, S_LEN))
@@ -98,7 +98,7 @@ class ABREnv():
         self.net_env.reset()
         self.time_stamp = 0
         self.last_bit_rate = [DEFAULT_QUALITY for _ in range(self.num_agents)]
-        self.state = [np.zeros((S_INFO, PAST_TEST_LEN)) for _ in range(self.num_agents)]
+        self.state = [np.zeros((S_INFO, PAST_LEN)) for _ in range(self.num_agents)]
         self.buffer_size = [0 for _ in range(self.num_agents)]
 
         # for agent in range(self.num_agents):
@@ -190,15 +190,15 @@ class ABREnv():
         state[4, :A_DIM] = np.array([next_video_chunk_sizes[index] for index in [0,2,4]]) / M_IN_K / M_IN_K  # mega byte
         state[5, -1] = np.minimum(video_chunk_remain,
                                   CHUNK_TIL_VIDEO_END_CAP) / float(CHUNK_TIL_VIDEO_END_CAP)
-        if len(next_sat_bw_logs) < PAST_TEST_LEN:
-            next_sat_bw_logs = [0] * (PAST_TEST_LEN - len(next_sat_bw_logs)) + next_sat_bw_logs
+        if len(next_sat_bw_logs) < PAST_LEN:
+            next_sat_bw_logs = [0] * (PAST_LEN - len(next_sat_bw_logs)) + next_sat_bw_logs
 
-        state[6, :PAST_TEST_LEN] = np.array(next_sat_bw_logs[:PAST_TEST_LEN]) / 10
+        state[6, :PAST_LEN] = np.array(next_sat_bw_logs[:PAST_LEN]) / 10
 
-        if len(cur_sat_bw_logs) < PAST_TEST_LEN:
-            cur_sat_bw_logs = [0] * (PAST_TEST_LEN - len(cur_sat_bw_logs)) + cur_sat_bw_logs
+        if len(cur_sat_bw_logs) < PAST_LEN:
+            cur_sat_bw_logs = [0] * (PAST_LEN - len(cur_sat_bw_logs)) + cur_sat_bw_logs
 
-        state[7, :PAST_TEST_LEN] = np.array(cur_sat_bw_logs[:PAST_TEST_LEN]) / 10
+        state[7, :PAST_LEN] = np.array(cur_sat_bw_logs[:PAST_LEN]) / 10
         # if self.is_handover:
         #     state[8:9, 0:S_LEN] = np.zeros((1, S_LEN))
         #     state[9:10, 0:S_LEN] = np.zeros((1, S_LEN))

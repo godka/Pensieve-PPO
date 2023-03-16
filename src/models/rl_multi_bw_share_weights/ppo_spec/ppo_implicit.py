@@ -4,7 +4,7 @@ import tensorflow.compat.v1 as tf
 import os
 import time
 
-from models.rl_multi_bw_share_weights.weight_constant import PAST_TEST_LEN, TEST_FEATURE_NUM
+from models.rl_multi_bw_share_weights.weight_constant import PAST_LEN, TEST_FEATURE_NUM
 
 os.environ['CUDA_VISIBLE_DEVICES'] = '2'
 import tflearn
@@ -26,8 +26,8 @@ class Network():
             split_3 = tflearn.conv_1d(inputs[:, 3:4, :], TEST_FEATURE_NUM, DIM_SIZE, activation='relu')
             split_4 = tflearn.conv_1d(inputs[:, 4:5, :self.a_dim], TEST_FEATURE_NUM, DIM_SIZE, activation='relu')
             split_5 = tflearn.fully_connected(inputs[:, 5:6, -1], TEST_FEATURE_NUM, activation='relu')
-            split_6 = tflearn.conv_1d(inputs[:, 6:7, :PAST_TEST_LEN], TEST_FEATURE_NUM, DIM_SIZE, activation='relu')
-            split_7 = tflearn.conv_1d(inputs[:, 7:8, :PAST_TEST_LEN], TEST_FEATURE_NUM, DIM_SIZE, activation='relu')
+            split_6 = tflearn.conv_1d(inputs[:, 6:7, :PAST_LEN], TEST_FEATURE_NUM, DIM_SIZE, activation='relu')
+            split_7 = tflearn.conv_1d(inputs[:, 7:8, :PAST_LEN], TEST_FEATURE_NUM, DIM_SIZE, activation='relu')
             # split_8 = tflearn.conv_1d(inputs[:, 8:9, :], FEATURE_NUM, DIM_SIZE, activation='relu')
             # split_8_1 = tflearn.conv_1d(inputs[:, 9:10, :], FEATURE_NUM, DIM_SIZE, activation='relu')
             split_9 = tflearn.conv_1d(inputs[:, 8:9, :2], TEST_FEATURE_NUM, DIM_SIZE, activation='relu')
@@ -58,8 +58,8 @@ class Network():
             split_3 = tflearn.conv_1d(inputs[:, 3:4, :], TEST_FEATURE_NUM, DIM_SIZE, activation='relu')
             split_4 = tflearn.conv_1d(inputs[:, 4:5, :self.a_dim], TEST_FEATURE_NUM, DIM_SIZE, activation='relu')
             split_5 = tflearn.fully_connected(inputs[:, 5:6, -1], TEST_FEATURE_NUM, activation='relu')
-            split_6 = tflearn.conv_1d(inputs[:, 6:7, :PAST_TEST_LEN], TEST_FEATURE_NUM, DIM_SIZE, activation='relu')
-            split_7 = tflearn.conv_1d(inputs[:, 7:8, :PAST_TEST_LEN], TEST_FEATURE_NUM, DIM_SIZE, activation='relu')
+            split_6 = tflearn.conv_1d(inputs[:, 6:7, :PAST_LEN], TEST_FEATURE_NUM, DIM_SIZE, activation='relu')
+            split_7 = tflearn.conv_1d(inputs[:, 7:8, :PAST_LEN], TEST_FEATURE_NUM, DIM_SIZE, activation='relu')
             # split_8 = tflearn.conv_1d(inputs[:, 8:9, :], FEATURE_NUM, DIM_SIZE, activation='relu')
             # split_8_1 = tflearn.conv_1d(inputs[:, 9:10, :], FEATURE_NUM, DIM_SIZE, activation='relu')
             split_9 = tflearn.conv_1d(inputs[:, 8:9, :2], TEST_FEATURE_NUM, DIM_SIZE, activation='relu')

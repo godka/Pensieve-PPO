@@ -5,7 +5,7 @@ import numpy as np
 import os
 import sys
 
-from weight_constant import PAST_TEST_LEN
+from weight_constant import PAST_LEN
 
 root_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, root_dir + '/../')
@@ -19,7 +19,7 @@ import logging
 os.environ['CUDA_VISIBLE_DEVICES'] = '-1'
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 
-S_DIM = [6 + 3, PAST_TEST_LEN]
+S_DIM = [6 + 3, PAST_LEN]
 A_SAT = 2
 ACTOR_LR_RATE = 1e-4
 TRAIN_SEQ_LEN = 300  # take as a train batch

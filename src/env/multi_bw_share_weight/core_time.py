@@ -9,7 +9,7 @@ import copy
 
 from env.object.satellite import Satellite
 from env.object.user import User
-from models.rl_multi_bw_share_weights.weight_constant import PAST_TEST_LEN
+from models.rl_multi_bw_share_weights.weight_constant import PAST_LEN
 from util.constants import EPSILON, MPC_FUTURE_CHUNK_COUNT, QUALITY_FACTOR, REBUF_PENALTY, SMOOTH_PENALTY, \
     MPC_PAST_CHUNK_COUNT, HO_NUM, TOTAL_VIDEO_CHUNKS, CHUNK_TIL_VIDEO_END_CAP, DEFAULT_QUALITY, SNR_MIN, BUF_RATIO, \
     VIDEO_CHUNCK_LEN, BITRATE_LEVELS, B_IN_MB, BITS_IN_BYTE, M_IN_K, MILLISECONDS_IN_SECOND, VIDEO_SIZE_FILE
@@ -150,7 +150,7 @@ class Environment:
                 agent]) * B_IN_MB / BITS_IN_BYTE
             # assert throughput != 0
         elif ho_stamp and ho_stamp == "MRSS-Smart":
-            tmp_best_id = self.get_max_sat_id(agent, past_len=PAST_TEST_LEN)
+            tmp_best_id = self.get_max_sat_id(agent, past_len=PAST_LEN)
             if tmp_best_id != self.cur_sat_id[agent]:
                 is_handover = True
                 delay += HANDOVER_DELAY
@@ -415,7 +415,7 @@ class Environment:
         list1, next_sat_id, next_sat_bws = [], [], []
         bw_list = []
         sat_bw = self.cooked_bw[self.cur_sat_id[agent]]
-        for i in range(PAST_TEST_LEN, 1, -1):
+        for i in range(PAST_LEN, 1, -1):
             if mahimahi_ptr - i >= 0:
                 if len(self.cur_satellite[self.cur_sat_id[agent]].get_ue_list(mahimahi_ptr)) == 0:
                     bw_list.append(sat_bw[mahimahi_ptr - i])
@@ -437,7 +437,7 @@ class Environment:
         runner_up_sat_id = self.get_runner_up_sat_id(agent, method="harmonic-mean", mahimahi_ptr=mahimahi_ptr)[0]
         if runner_up_sat_id:
             bw_list = []
-            for i in range(PAST_TEST_LEN, 1, -1):
+            for i in range(PAST_LEN, 1, -1):
                 if mahimahi_ptr - i >= 0 and sat_bw[mahimahi_ptr - i] != 0:
                     if len(self.cur_satellite[runner_up_sat_id].get_ue_list(mahimahi_ptr)) == 0:
                         bw_list.append(sat_bw[mahimahi_ptr - i])
@@ -516,7 +516,7 @@ class Environment:
         for sat_id, sat_bw in self.cooked_bw.items():
             if past_len:
                 real_sat_bw = self.predict_bw(sat_id, agent, robustness=True, mahimahi_ptr=mahimahi_ptr,
-                                              past_len=PAST_TEST_LEN)
+                                              past_len=PAST_LEN)
             else:
                 real_sat_bw = self.cur_satellite[sat_id].data_rate_unshared(mahimahi_ptr, self.cur_user[agent])
 
@@ -580,7 +580,7 @@ class Environment:
                 continue
 
             if method == "harmonic-mean":
-                target_sat_bw = self.predict_bw_num(sat_id, agent, mahimahi_ptr=mahimahi_ptr, past_len=PAST_TEST_LEN)
+                target_sat_bw = self.predict_bw_num(sat_id, agent, mahimahi_ptr=mahimahi_ptr, past_len=PAST_LEN)
                 real_sat_bw = target_sat_bw  # / (self.get_num_of_user_sat(sat_id) + 1)
             else:
                 print("Cannot happen")

@@ -4,7 +4,7 @@ import tensorflow.compat.v1 as tf
 import os
 import time
 from util.constants import DEFAULT_QUALITY, REBUF_PENALTY, SMOOTH_PENALTY, VIDEO_BIT_RATE, BUFFER_NORM_FACTOR, \
-    BITRATE_WEIGHT, CHUNK_TIL_VIDEO_END_CAP, M_IN_K, PAST_TEST_LEN, A_DIM, PAST_LEN
+    BITRATE_WEIGHT, CHUNK_TIL_VIDEO_END_CAP, M_IN_K, PAST_LEN, A_DIM, PAST_LEN
 
 os.environ['CUDA_VISIBLE_DEVICES'] = '2'
 import tflearn

@@ -22,7 +22,7 @@ ACTOR_LR_RATE = 0.0001
 CRITIC_LR_RATE = 0.001
 RANDOM_SEED = 42
 RAND_RANGE = 1000000
-SUMMARY_DIR = 'MPC_dist_multi5/'
+SUMMARY_DIR = 'MPC_dist_MB4/'
 LOG_FILE = SUMMARY_DIR + 'log_sim_cent'
 SUMMARY_PATH = SUMMARY_DIR + 'summary'
 # log in format of time_stamp bit_rate buffer_size rebuffer_time chunk_size download_time reward
@@ -35,7 +35,7 @@ import argparse
 
 parser = argparse.ArgumentParser(description='PyTorch Synthetic Benchmark',
                                  formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-parser.add_argument('--user', type=int, default=2)
+parser.add_argument('--user', type=int, default=4)
 args = parser.parse_args()
 
 USERS = args.user

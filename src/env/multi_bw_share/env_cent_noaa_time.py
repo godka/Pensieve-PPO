@@ -2,7 +2,7 @@
 import numpy as np
 
 from util.constants import DEFAULT_QUALITY, REBUF_PENALTY, SMOOTH_PENALTY, VIDEO_BIT_RATE, BUFFER_NORM_FACTOR, \
-    BITRATE_WEIGHT, CHUNK_TIL_VIDEO_END_CAP, M_IN_K, PAST_TEST_LEN, A_DIM, PAST_LEN, BITRATE_REWARD, PAST_SAT_LOG_LEN
+    BITRATE_WEIGHT, CHUNK_TIL_VIDEO_END_CAP, M_IN_K, PAST_LEN, A_DIM, PAST_LEN, BITRATE_REWARD, PAST_SAT_LOG_LEN
 
 from . import core_cent_time as abrenv
 from . import load_trace_noaa as load_trace
@@ -46,7 +46,7 @@ class ABREnv():
 
         self.last_sat_id = [-1 for _ in range(self.num_agents)]
         self.last_penalty = [0 for _ in range(self.num_agents)]
-        self.state = [np.zeros((S_INFO, PAST_TEST_LEN)) for _ in range(self.num_agents)]
+        self.state = [np.zeros((S_INFO, PAST_LEN)) for _ in range(self.num_agents)]
         # self.sat_decision_log = [-1 for _ in range(self.num_agents)]
         self.sat_decision_log = [[-1, -1, -1, -1, -1] for _ in range(self.num_agents)]
         self.reward_func = reward_func
@@ -93,8 +93,8 @@ class ABREnv():
             = encode_other_sat_info(self.sat_decision_log, self.num_agents, cur_sat_id, next_sat_id,
                                     agent, other_sat_users, other_sat_bw_logs, PAST_SAT_LOG_LEN)
         if is_handover:
-            state[8:9, 0:PAST_TEST_LEN] = np.zeros((1, PAST_TEST_LEN))
-            state[9:10, 0:PAST_TEST_LEN] = np.zeros((1, PAST_TEST_LEN))
+            state[8:9, 0:PAST_LEN] = np.zeros((1, PAST_LEN))
+            state[9:10, 0:PAST_LEN] = np.zeros((1, PAST_LEN))
         state[8:9, -1] = np.array(cur_sat_user_num) / 10
         state[9:10, -1] = np.array(next_sat_user_nums) / 10
 
@@ -124,7 +124,7 @@ class ABREnv():
         self.last_sat_id = [-1 for _ in range(self.num_agents)]
 
         self.last_penalty = [0 for _ in range(self.num_agents)]
-        self.state = [np.zeros((S_INFO, PAST_TEST_LEN)) for _ in range(self.num_agents)]
+        self.state = [np.zeros((S_INFO, PAST_LEN)) for _ in range(self.num_agents)]
         self.sat_decision_log = [[-1, -1, -1, -1, -1] for _ in range(self.num_agents)]
 
         # for agent in range(self.num_agents):
@@ -231,8 +231,8 @@ class ABREnv():
                                     agent, other_sat_users, other_sat_bw_logs, PAST_SAT_LOG_LEN)
 
         if is_handover:
-            state[8:9, 0:PAST_TEST_LEN] = np.zeros((1, PAST_TEST_LEN))
-            state[9:10, 0:PAST_TEST_LEN] = np.zeros((1, PAST_TEST_LEN))
+            state[8:9, 0:PAST_LEN] = np.zeros((1, PAST_LEN))
+            state[9:10, 0:PAST_LEN] = np.zeros((1, PAST_LEN))
         state[8:9, -1] = np.array(cur_sat_user_num) / 10
         state[9:10, -1] = np.array(next_sat_user_nums) / 10
         state[10, :2] = [float(connected_time[0]) / BUFFER_NORM_FACTOR / 10, float(connected_time[1]) / BUFFER_NORM_FACTOR / 10]
