@@ -153,7 +153,7 @@ class Environment:
                     final_rate[sat_id] = self.cur_satellite[sat_id].set_data_rate_ratio(best_user_info[sat_id][2], best_user_info[sat_id][3], self.mahimahi_ptr[agent])
 
             self.log.info("Do update", cur_sat_ids=self.cur_sat_id[agent], runner_up_sat_ids=runner_up_sat_ids)
-            if ho_stamps == 0:
+            if ho_stamps == 0 and agent == 0:
                 runner_up_sat_id = runner_up_sat_ids
                 if self.cur_sat_id[agent] != runner_up_sat_id:
                     is_handover = True
