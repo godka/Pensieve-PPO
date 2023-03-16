@@ -5,7 +5,7 @@ import numpy as np
 import os
 import sys
 
-from models.rl_multi_bw_share_weights.weight_constant import PAST_TEST_LEN
+from weight_constant import PAST_TEST_LEN
 
 root_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, root_dir + '/../')
