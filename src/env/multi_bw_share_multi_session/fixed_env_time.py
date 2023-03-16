@@ -155,19 +155,20 @@ class Environment:
             self.log.info("Do update", cur_sat_ids=self.cur_sat_id[agent], runner_up_sat_ids=runner_up_sat_ids)
             if ho_stamps == 0:
                 runner_up_sat_id = runner_up_sat_ids
-                assert self.cur_sat_id[agent] != runner_up_sat_id
-                is_handover = True
-                self.delay[agent] = HANDOVER_DELAY
+                if self.cur_sat_id[agent] != runner_up_sat_id:
+                    is_handover = True
+                    self.delay[agent] = HANDOVER_DELAY
 
-                self.update_sat_info(self.cur_sat_id[agent], self.last_mahimahi_time[agent], 0, -1)
-                self.update_sat_info(runner_up_sat_id, self.last_mahimahi_time[agent], 0, 1)
-                self.prev_sat_id[agent] = self.cur_sat_id[agent]
-                self.cur_sat_id[agent] = runner_up_sat_id
-                self.download_bw[agent] = []
+                    self.update_sat_info(self.cur_sat_id[agent], self.last_mahimahi_time[agent], 0, -1)
+                    self.update_sat_info(runner_up_sat_id, self.last_mahimahi_time[agent], 0, 1)
+                    self.prev_sat_id[agent] = self.cur_sat_id[agent]
+                    self.cur_sat_id[agent] = runner_up_sat_id
+                    self.download_bw[agent] = []
 
-                throughput = self.cur_satellite[self.cur_sat_id[agent]].data_rate(self.cur_user[agent],
-                                                                                  self.mahimahi_ptr[agent]) * B_IN_MB / BITS_IN_BYTE
-                assert throughput != 0
+                    throughput = self.cur_satellite[self.cur_sat_id[agent]].data_rate(self.cur_user[agent],
+                                                                                      self.mahimahi_ptr[agent]) * B_IN_MB / BITS_IN_BYTE
+                    assert throughput != 0
+
             quality = best_combos[agent][0]
             best_combos[agent].pop(0)
             ho_stamp = -1
@@ -1967,8 +1968,10 @@ class Environment:
 
         runner_up_sat_id = self.get_runner_up_sat_id(agent,
                                                        method="harmonic-mean",
-                                                       mahimahi_ptr=mahimahi_ptr[agent],
+                                                       mahimahi_ptr=self.last_mahimahi_time[agent],
                                                        cur_sat_id=cur_sat_id)[0]
+
+        assert cur_sat_id != runner_up_sat_id
         # make chunk combination options
         for combo in itertools.product(list(range(int(BITRATE_LEVELS / BITRATE_WEIGHT))),
                                        repeat=MPC_FUTURE_CHUNK_COUNT * self.num_agents):
