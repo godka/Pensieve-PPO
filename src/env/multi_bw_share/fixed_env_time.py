@@ -1121,9 +1121,7 @@ class Environment:
         if model_type == "DualMPC-Centralization-Exhaustive":
             cur_ids, runner_up_sat_ids, ho_stamps, best_combos, max_rewards, best_user_info = self.qoe_v3(agent)
         elif model_type == "DualMPC-Centralization-Reduced":
-            start_time = time.time()
             cur_ids, runner_up_sat_ids, ho_stamps, best_combos, max_rewards, best_user_info = self.qoe_v3(agent, reduced=True)
-            print(time.time() - start_time)
         elif model_type == "Oracle":
             cur_ids, runner_up_sat_ids, ho_stamps, best_combos, max_rewards, best_user_info = self.qoe_v4(
                 agent)

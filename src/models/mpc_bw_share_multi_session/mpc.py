@@ -35,7 +35,7 @@ import argparse
 
 parser = argparse.ArgumentParser(description='PyTorch Synthetic Benchmark',
                                  formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-parser.add_argument('--user', type=int, default=5)
+parser.add_argument('--user', type=int, default=3)
 args = parser.parse_args()
 
 USERS = args.user
@@ -109,7 +109,7 @@ def main():
         CHUNK_COMBO_OPTIONS.append(combo)
     ho_stamps_log = [MPC_FUTURE_CHUNK_COUNT for _ in range(USERS)]
     combo_log = [[DEFAULT_QUALITY] for _ in range(USERS)]
-    next_sat_log = [None for _ in range(USERS)]
+    next_sat_log = None
 
     while True:  # serve video forever
         agent = net_env.get_first_agent()
@@ -158,26 +158,18 @@ def main():
 
             ho_stamps_log = [MPC_FUTURE_CHUNK_COUNT for _ in range(USERS)]
             combo_log = [[DEFAULT_QUALITY] for _ in range(USERS)]
-            next_sat_log = [None for _ in range(USERS)]
             end_of_video = False
             continue
         else:
 
             # Priority on handover
-            if 0 in ho_stamps_log:
-                agent = ho_stamps_log.index(0)
-
             if combo_log[agent]:
                 bit_rate[agent] = combo_log[agent].pop(0)
             else:
                 do_mpc = True
 
-            ho_point = ho_stamps_log[agent]
+            ho_point = ho_stamps_log
 
-            if ho_stamps_log[agent] == 0 or ho_stamps_log[agent] == 1:
-                ho_stamps_log[agent] = -1
-            elif ho_stamps_log[agent] != MPC_FUTURE_CHUNK_COUNT:
-                ho_stamps_log[agent] -= 1
             do_mpc = True
         # the action is from the last decision
         # this is to make the framework similar to the real
@@ -185,7 +177,7 @@ def main():
         video_chunk_size, next_video_chunk_sizes, \
         end_of_video, video_chunk_remain, is_handover, sat_status, _, _, _, _, _, _, cur_sat_id, \
         runner_up_sat_ids, ho_stamps, best_combos, best_user_info, quality, _, _, _ \
-            = net_env.get_video_chunk(bit_rate[agent], agent, MPC_TYPE, next_sat_log[agent], ho_point, do_mpc)
+            = net_env.get_video_chunk(bit_rate[agent], agent, MPC_TYPE, next_sat_log, ho_point, do_mpc)
 
         if best_combos:
             do_mpc = False
@@ -202,11 +194,24 @@ def main():
             best_user_infos.append(best_user_info)
 
         # reward is video quality - rebuffer penalty
-        reward = VIDEO_BIT_RATE[quality] / M_IN_K \
-                 - REBUF_PENALTY * rebuf \
-                 - SMOOTH_PENALTY * np.abs(VIDEO_BIT_RATE[quality] -
-                                           VIDEO_BIT_RATE[last_bit_rate[agent]]) / M_IN_K
+        if REWARD_FUNC == "LIN":
+            reward = VIDEO_BIT_RATE[quality] / M_IN_K \
+                     - REBUF_PENALTY * rebuf \
+                     - SMOOTH_PENALTY * np.abs(VIDEO_BIT_RATE[quality] -
+                                               VIDEO_BIT_RATE[last_bit_rate[agent]]) / M_IN_K
+            tmp_reward_1.append(VIDEO_BIT_RATE[quality] / M_IN_K)
+            tmp_reward_2.append(-REBUF_PENALTY * rebuf)
+            tmp_reward_3.append(- SMOOTH_PENALTY * np.abs(VIDEO_BIT_RATE[quality] -
+                                                          VIDEO_BIT_RATE[last_bit_rate[agent]]) / M_IN_K)
+        elif REWARD_FUNC == "HD":
+            reward = BITRATE_REWARD[quality] \
+                     - 8 * rebuf - np.abs(BITRATE_REWARD[quality] - BITRATE_REWARD[last_bit_rate[agent]])
 
+            tmp_reward_1.append(BITRATE_REWARD[quality])
+            tmp_reward_2.append(-8 * rebuf)
+            tmp_reward_3.append(-np.abs(BITRATE_REWARD[quality] - BITRATE_REWARD[last_bit_rate[agent]]))
+        else:
+            raise Exception
         tmp_results.append(reward)
 
         # print(net_env.video_chunk_counter)
