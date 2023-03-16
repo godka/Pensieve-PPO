@@ -77,12 +77,13 @@ class Environment:
         self.prev_best_combos = [[DEFAULT_QUALITY] * MPC_FUTURE_CHUNK_COUNT] * self.num_agents
 
         # multiuser setting
-        self.cur_sat_id = []
         self.prev_sat_id = [None for _ in range(self.num_agents)]
+        self.cur_sat_id = []
+        cur_sat_id = self.get_best_sat_id(0)
         for agent in range(self.num_agents):
-            cur_sat_id = self.get_best_sat_id(agent)
+            # self.connection[cur_sat_id] = agent
             self.cur_sat_id.append(cur_sat_id)
-            self.update_sat_info(cur_sat_id, self.last_mahimahi_time[agent], agent, 1)
+        self.update_sat_info(cur_sat_id, self.last_mahimahi_time[0], 0, 1)
 
         self.video_chunk_counter = [0 for _ in range(self.num_agents)]
         self.buffer_size = [0 for _ in range(self.num_agents)]
@@ -163,10 +164,11 @@ class Environment:
                 # assert throughput != 0
 
         while True:  # download video chunk over mahimahi
-            cur_sat_id = self.cur_user[agent].get_conn_sat_id(self.last_mahimahi_time[agent])
-            if self.cur_sat_id[agent] != cur_sat_id:
+            if self.cur_sat_id[agent] != self.cur_user[agent].get_conn_sat_id(self.last_mahimahi_time[agent]):
                 delay += HANDOVER_DELAY
-                self.cur_sat_id[agent] = cur_sat_id
+                self.cur_sat_id[agent] = self.cur_user[agent].get_conn_sat_id(self.last_mahimahi_time[agent])
+            assert len(self.cur_satellite[self.cur_sat_id[agent]].get_ue_list(self.last_mahimahi_time[agent])) == self.num_agents
+
             throughput = self.cur_satellite[self.cur_sat_id[agent]].data_rate(self.cur_user[agent],
                                                                               self.mahimahi_ptr[
                                                                                   agent]) * B_IN_MB / BITS_IN_BYTE
@@ -374,12 +376,14 @@ class Environment:
         self.mahimahi_ptr = [np.random.randint(1, len(self.cooked_time) - TOTAL_VIDEO_CHUNKS)] * self.num_agents
         self.last_mahimahi_time = [self.mahimahi_ptr[i] - 1 for i in range(self.num_agents)]
 
+        # multiuser setting
+        self.prev_sat_id = [None for _ in range(self.num_agents)]
         self.cur_sat_id = []
+        cur_sat_id = self.get_best_sat_id(0)
         for agent in range(self.num_agents):
-            cur_sat_id = self.get_best_sat_id(agent)
             # self.connection[cur_sat_id] = agent
             self.cur_sat_id.append(cur_sat_id)
-            self.update_sat_info(cur_sat_id, self.last_mahimahi_time[agent], agent, 1)
+        self.update_sat_info(cur_sat_id, self.last_mahimahi_time[0], 0, 1)
 
         self.last_delay = [MPC_PAST_CHUNK_COUNT for _ in range(self.num_agents)]
 

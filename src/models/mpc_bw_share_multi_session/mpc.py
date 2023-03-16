@@ -40,8 +40,9 @@ args = parser.parse_args()
 
 USERS = args.user
 MPC_TYPE = "MVT"
+MPC_TYPE = "MB"
 # MPC_TYPE = "DualMPC-Centralization-Exhaustive"
-MPC_TYPE = "DualMPC-Centralization-Reduced"
+# MPC_TYPE = "DualMPC-Centralization-Reduced"
 # MPC_TYPE = "Oracle"
 # MPC_TYPE = "DualMPC"
 # DualMPC-Centralization

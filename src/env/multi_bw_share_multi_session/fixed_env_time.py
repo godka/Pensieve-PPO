@@ -269,6 +269,7 @@ class Environment:
             if self.cur_sat_id[agent] != self.cur_user[agent].get_conn_sat_id(self.last_mahimahi_time[agent]):
                 delay += HANDOVER_DELAY
                 self.cur_sat_id[agent] = self.cur_user[agent].get_conn_sat_id(self.last_mahimahi_time[agent])
+            assert len(self.cur_satellite[self.cur_sat_id[agent]].get_ue_list(self.last_mahimahi_time[agent])) == self.num_agents
             throughput = self.cur_satellite[self.cur_sat_id[agent]].data_rate(self.cur_user[agent],
                                                                               self.mahimahi_ptr[
                                                                                   agent]) * B_IN_MB / BITS_IN_BYTE
@@ -1059,12 +1060,11 @@ class Environment:
         ho_sat_id = self.cur_sat_id[agent]
         ho_stamp = MPC_FUTURE_CHUNK_COUNT
 
-        cur_user_num = self.get_num_of_user_sat(self.mahimahi_ptr[agent], self.cur_sat_id[agent])
         cur_download_bw, runner_up_sat_id = None, None
         # cur_download_bw = self.predict_download_bw(agent, True)
         cur_download_bw = self.predict_bw(self.cur_sat_id[agent], agent, True,
                                           mahimahi_ptr=self.mahimahi_ptr[agent], past_len=self.last_delay[agent])
-        cur_download_bw /= cur_user_num
+        cur_download_bw /= self.num_agents
         runner_up_sat_id, _ = self.get_runner_up_sat_id(
             agent, method="harmonic-mean", cur_sat_id=self.cur_sat_id[agent])
 
@@ -3396,7 +3396,6 @@ class Environment:
         for combo in itertools.product(list(range(int(BITRATE_LEVELS / BITRATE_WEIGHT))),
                                        repeat=MPC_FUTURE_CHUNK_COUNT):
             chunk_combo_option.append(list([BITRATE_WEIGHT * x for x in combo]))
-        cur_user_num = self.get_num_of_user_sat(self.mahimahi_ptr[agent], self.cur_sat_id[agent])
         future_chunk_length = MPC_FUTURE_CHUNK_COUNT
         if video_chunk_remain < MPC_FUTURE_CHUNK_COUNT:
             future_chunk_length = video_chunk_remain
@@ -3461,7 +3460,7 @@ class Environment:
                              "start_buffer": start_buffer, "future_chunk_length": future_chunk_length,
                              "last_index": last_index, "combo": combo, "next_download_bw": None,
                              "ho_index": MPC_FUTURE_CHUNK_COUNT, "next_sat_id": None, "reward": reward,
-                             "cur_user_num": cur_user_num, "cur_sat_id": self.cur_sat_id[agent], "next_user_num": 0}
+                             "cur_sat_id": self.cur_sat_id[agent], "next_user_num": 0}
             elif reward == max_reward and (combo[0] >= best_combo[0]):
                 best_combo = combo
                 max_reward = reward
@@ -3469,7 +3468,7 @@ class Environment:
                              "start_buffer": start_buffer, "future_chunk_length": future_chunk_length,
                              "last_index": last_index, "combo": combo, "next_download_bw": None,
                              "ho_index": MPC_FUTURE_CHUNK_COUNT, "next_sat_id": None, "reward": reward,
-                             "cur_user_num": cur_user_num, "cur_sat_id": self.cur_sat_id[agent], "next_user_num": 0}
+                             "cur_sat_id": self.cur_sat_id[agent], "next_user_num": 0}
 
         return best_combo, max_reward, best_case
 
@@ -3786,7 +3785,7 @@ class Environment:
 
         if sat is None:
             return
-        if sat == 1:
+        if sat == 1 and agent == 0:
             if sat_id == self.cur_sat_id[agent] or sat_id is None:
                 # print("Can't do handover. Only one visible satellite")
                 return
