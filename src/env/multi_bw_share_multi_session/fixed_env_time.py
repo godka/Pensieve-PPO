@@ -2035,8 +2035,7 @@ class Environment:
             tmp_bws = []
             tmp_bws_sum = []
             impossible_route = False
-
-            if impossible_route:
+            if best_ho_positions != MPC_FUTURE_CHUNK_COUNT and runner_up_sat_id is None:
                 continue
 
             cur_sat_id = cur_sat_id
@@ -2098,6 +2097,8 @@ class Environment:
         for i in range(-ho_combination_len, 0, 1):
             future_sat_user_nums = future_sat_user_nums_list[best_bws_args[i]]
             best_ho_positions = best_ho_positions_list[best_bws_args[i]]
+            if best_ho_positions != MPC_FUTURE_CHUNK_COUNT and runner_up_sat_id is None:
+                continue
             self.log.debug("HO COMBO", best_ho_positions=best_ho_positions, future_sat_user_list=future_sat_user_nums)
 
             mp_inputs = []
