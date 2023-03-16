@@ -154,18 +154,18 @@ class Environment:
 
             self.log.info("Do update", cur_sat_ids=self.cur_sat_id[agent], runner_up_sat_ids=runner_up_sat_ids)
             if ho_stamps == 0:
-                runner_up_sat_id = runner_up_sat_ids[0]
+                runner_up_sat_id = runner_up_sat_ids
                 assert self.cur_sat_id[agent] != runner_up_sat_id
                 is_handover = True
-                self.delay[i] = HANDOVER_DELAY
+                self.delay[agent] = HANDOVER_DELAY
 
                 self.update_sat_info(self.cur_sat_id[agent], self.last_mahimahi_time[agent], 0, -1)
                 self.update_sat_info(runner_up_sat_id, self.last_mahimahi_time[agent], 0, 1)
                 self.prev_sat_id = self.cur_sat_id[agent]
                 self.cur_sat_id[agent] = runner_up_sat_id
-                self.download_bw[i] = []
+                self.download_bw[agent] = []
 
-                throughput = self.cur_satellite[self.cur_sat_id[agent]].data_rate(self.cur_user[i],
+                throughput = self.cur_satellite[self.cur_sat_id[agent]].data_rate(self.cur_user[agent],
                                                                                   self.mahimahi_ptr[agent]) * B_IN_MB / BITS_IN_BYTE
                 assert throughput != 0
             quality = best_combos[agent][0]
@@ -265,6 +265,9 @@ class Environment:
                                                  quality, self.last_quality[agent],
                                                  self.buffer_size[agent] / MILLISECONDS_IN_SECOND)
         while True:  # download video chunk over mahimahi
+            if self.cur_sat_id[agent] != self.cur_user[agent].get_conn_sat_id(self.last_mahimahi_time[agent]):
+                delay += HANDOVER_DELAY
+                self.cur_sat_id[agent] = self.cur_user[agent].get_conn_sat_id(self.last_mahimahi_time[agent])
             throughput = self.cur_satellite[self.cur_sat_id[agent]].data_rate(self.cur_user[agent],
                                                                               self.mahimahi_ptr[
                                                                                   agent]) * B_IN_MB / BITS_IN_BYTE
