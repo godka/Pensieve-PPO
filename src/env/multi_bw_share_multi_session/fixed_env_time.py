@@ -406,7 +406,7 @@ class Environment:
             self.end_of_video[agent] = True
             self.buffer_size[agent] = 0
             self.video_chunk_counter[agent] = 0
-            self.update_sat_info(self.cur_sat_id[agent], self.last_mahimahi_time[agent], agent, -1)
+            # self.update_sat_info(self.cur_sat_id[agent], self.last_mahimahi_time[agent], agent, -1)
 
             # Refresh satellite info
             # self.connection[self.cur_sat_id[agent]] = -1
