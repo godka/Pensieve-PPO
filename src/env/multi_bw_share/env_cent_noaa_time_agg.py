@@ -2,7 +2,7 @@
 import numpy as np
 
 from util.constants import DEFAULT_QUALITY, REBUF_PENALTY, SMOOTH_PENALTY, VIDEO_BIT_RATE, BUFFER_NORM_FACTOR, \
-    BITRATE_WEIGHT, CHUNK_TIL_VIDEO_END_CAP, M_IN_K, S_LEN, A_DIM, PAST_LEN, BITRATE_REWARD, PAST_SAT_LOG_LEN
+    BITRATE_WEIGHT, CHUNK_TIL_VIDEO_END_CAP, M_IN_K, PAST_TEST_LEN, A_DIM, PAST_LEN, BITRATE_REWARD, PAST_SAT_LOG_LEN
 from util.encode import encode_other_sat_info
 from . import core_cent_time as abrenv
 from . import load_trace_noaa as load_trace
@@ -50,7 +50,7 @@ class ABREnv():
         self.cur_sat_bw_logs = [[] for _ in range(self.num_users)]
         self.connected_time = [[] for _ in range(self.num_users)]
 
-        self.state = [np.zeros((S_INFO, S_LEN)) for _ in range(self.num_users)]
+        self.state = [np.zeros((S_INFO, PAST_TEST_LEN)) for _ in range(self.num_users)]
         self.reward_func = reward_func
 
     def seed(self, num):
@@ -102,8 +102,8 @@ class ABREnv():
 
         state[7, :PAST_LEN] = np.array(self.cur_sat_bw_logs[agent][:PAST_LEN])
         if self.is_handover:
-            state[8, 0:S_LEN] = np.zeros((1, S_LEN))
-            state[9, 0:S_LEN] = np.zeros((1, S_LEN))
+            state[8, 0:PAST_TEST_LEN] = np.zeros((1, PAST_TEST_LEN))
+            state[9, 0:PAST_TEST_LEN] = np.zeros((1, PAST_TEST_LEN))
 
         state[8, -1] = np.array(cur_sat_user_num) / 10
         state[9, -1] = np.array(next_sat_user_num) / 10
@@ -167,7 +167,7 @@ class ABREnv():
         self.net_env.reset()
         self.time_stamp = 0
         self.last_bit_rate = [DEFAULT_QUALITY for _ in range(self.num_users)]
-        self.state = [np.zeros((S_INFO, S_LEN)) for _ in range(self.num_users)]
+        self.state = [np.zeros((S_INFO, PAST_TEST_LEN)) for _ in range(self.num_users)]
         self.buffer_size = [0 for _ in range(self.num_users)]
         self.rebuf = [0 for _ in range(self.num_users)]
         self.video_chunk_size = [0 for _ in range(self.num_users)]
@@ -271,8 +271,8 @@ class ABREnv():
 
         state[7, :PAST_LEN] = np.array(self.cur_sat_bw_logs[agent][:PAST_LEN])
         if self.is_handover:
-            state[8, 0:S_LEN] = np.zeros((1, S_LEN))
-            state[9, 0:S_LEN] = np.zeros((1, S_LEN))
+            state[8, 0:PAST_TEST_LEN] = np.zeros((1, PAST_TEST_LEN))
+            state[9, 0:PAST_TEST_LEN] = np.zeros((1, PAST_TEST_LEN))
 
         state[8, -1] = np.array(cur_sat_user_num) / 10
         state[9, -1] = np.array(next_sat_user_num) / 10

@@ -3,7 +3,7 @@ import sys
 root_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, root_dir + '/../')
 from util.constants import CHUNK_TIL_VIDEO_END_CAP, BUFFER_NORM_FACTOR, VIDEO_BIT_RATE, REBUF_PENALTY, SMOOTH_PENALTY, \
-    DEFAULT_QUALITY, BITRATE_WEIGHT, M_IN_K, A_DIM, S_LEN, PAST_LEN, BITRATE_REWARD, TEST_TRACES, PAST_SAT_LOG_LEN
+    DEFAULT_QUALITY, BITRATE_WEIGHT, M_IN_K, A_DIM, PAST_TEST_LEN, PAST_LEN, BITRATE_REWARD, TEST_TRACES, PAST_SAT_LOG_LEN
 from util.encode import encode_other_sat_info, one_hot_encode
 
 os.environ['CUDA_VISIBLE_DEVICES'] = '-1'
@@ -78,7 +78,7 @@ def main():
     with tf.Session() as sess:
 
         actor = network.Network(sess,
-                                state_dim=[S_INFO, S_LEN], action_dim=A_DIM * A_SAT,
+                                state_dim=[S_INFO, PAST_TEST_LEN], action_dim=A_DIM * A_SAT,
                                 learning_rate=ACTOR_LR_RATE, num_of_users=USERS)
 
         sess.run(tf.global_variables_initializer())
@@ -99,10 +99,10 @@ def main():
         for i in range(USERS):
             action_vec[i][bit_rate] = 1
 
-        s_batch = [[np.zeros((S_INFO, S_LEN))] for _ in range(USERS)]
+        s_batch = [[np.zeros((S_INFO, PAST_TEST_LEN))] for _ in range(USERS)]
         a_batch = [[action_vec] for _ in range(USERS)]
         r_batch = [[] for _ in range(USERS)]
-        state = [[np.zeros((S_INFO, S_LEN))] for _ in range(USERS)]
+        state = [[np.zeros((S_INFO, PAST_TEST_LEN))] for _ in range(USERS)]
         entropy_record = [[] for _ in range(USERS)]
         entropy_ = 0.5
         video_count = 0
@@ -129,12 +129,12 @@ def main():
                 for i in range(USERS):
                     action_vec[i][bit_rate[agent]] = 1
 
-                s_batch = [[np.zeros((S_INFO, S_LEN))] for _ in range(USERS)]
+                s_batch = [[np.zeros((S_INFO, PAST_TEST_LEN))] for _ in range(USERS)]
                 a_batch = [[action_vec] for _ in range(USERS)]
                 r_batch = [[] for _ in range(USERS)]
                 entropy_record = [[] for _ in range(USERS)]
 
-                state = [[np.zeros((S_INFO, S_LEN))] for _ in range(USERS)]
+                state = [[np.zeros((S_INFO, PAST_TEST_LEN))] for _ in range(USERS)]
 
                 print("network count", video_count)
                 print(sum(tmp_results[1:]) / len(tmp_results[1:]))
@@ -231,7 +231,7 @@ def main():
 
             # retrieve previous state
             if len(s_batch[agent]) == 0:
-                state[agent] = [np.zeros((S_INFO, S_LEN))]
+                state[agent] = [np.zeros((S_INFO, PAST_TEST_LEN))]
             else:
                 state[agent] = np.array(s_batch[agent][-1], copy=True)
 
@@ -267,8 +267,8 @@ def main():
 
                 state[agent][7 + 9 * i, :PAST_LEN] = np.array(prev_cur_sat_bw_logs[i][:PAST_LEN])
                 if is_handover:
-                    state[agent][8 + 9 * i, 0:S_LEN] = np.zeros((1, S_LEN))
-                    state[agent][9 + 9 * i, 0:S_LEN] = np.zeros((1, S_LEN))
+                    state[agent][8 + 9 * i, 0:PAST_TEST_LEN] = np.zeros((1, PAST_TEST_LEN))
+                    state[agent][9 + 9 * i, 0:PAST_TEST_LEN] = np.zeros((1, PAST_TEST_LEN))
 
                 state[agent][8 + 9 * i, -1] = np.array(cur_sat_user_num) / 10
                 state[agent][9 + 9 * i, -1] = np.array(next_sat_user_num) / 10
@@ -293,7 +293,7 @@ def main():
 
             # state[agent][8, :PAST_LEN] = next_sat_user_num[:5]
 
-            action_prob = actor.predict(np.reshape(state[agent], (1, S_INFO, S_LEN)))
+            action_prob = actor.predict(np.reshape(state[agent], (1, S_INFO, PAST_TEST_LEN)))
             noise = np.random.gumbel(size=len(action_prob))
             action = np.argmax(np.log(action_prob) + noise)
 

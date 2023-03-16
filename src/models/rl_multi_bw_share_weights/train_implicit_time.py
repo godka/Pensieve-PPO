@@ -4,10 +4,13 @@ import random
 import numpy as np
 import os
 import sys
+
+from models.rl_multi_bw_share_weights.weight_constant import PAST_TEST_LEN
+
 root_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, root_dir + '/../')
-from env.multi_bw_share.env_time import ABREnv
-from .ppo_spec import ppo_implicit as network
+from env.multi_bw_share_weight.env_time import ABREnv
+from ppo_spec import ppo_implicit as network
 import tensorflow.compat.v1 as tf
 import structlog
 from util.constants import A_DIM, NUM_AGENTS, TRAIN_TRACES
@@ -16,7 +19,7 @@ import logging
 os.environ['CUDA_VISIBLE_DEVICES'] = '-1'
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 
-S_DIM = [6 + 3, 2]
+S_DIM = [6 + 3, PAST_TEST_LEN]
 A_SAT = 2
 ACTOR_LR_RATE = 1e-4
 TRAIN_SEQ_LEN = 300  # take as a train batch
@@ -33,7 +36,7 @@ import argparse
 
 parser = argparse.ArgumentParser(description='PyTorch Synthetic Benchmark',
                                  formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-parser.add_argument('--user', type=int, default=3)
+parser.add_argument('--user', type=int, default=1)
 args = parser.parse_args()
 USERS = args.user
 # A_SAT = USERS + 1

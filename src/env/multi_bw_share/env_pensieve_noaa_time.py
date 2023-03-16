@@ -2,7 +2,7 @@
 import numpy as np
 
 from util.constants import DEFAULT_QUALITY, REBUF_PENALTY, SMOOTH_PENALTY, VIDEO_BIT_RATE, BUFFER_NORM_FACTOR, \
-    BITRATE_WEIGHT, CHUNK_TIL_VIDEO_END_CAP, M_IN_K, S_LEN, A_DIM, PAST_LEN, BITRATE_REWARD, TRAIN_TRACES
+    BITRATE_WEIGHT, CHUNK_TIL_VIDEO_END_CAP, M_IN_K, PAST_TEST_LEN, A_DIM, PAST_LEN, BITRATE_REWARD, TRAIN_TRACES
 from . import core_time as abrenv
 from . import load_trace_noaa as load_trace
 
@@ -38,7 +38,7 @@ class ABREnv():
 
         self.last_bit_rate = [DEFAULT_QUALITY for _ in range(self.num_agents)]
         self.buffer_size = [0 for _ in range(self.num_agents)]
-        self.state = [np.zeros((S_INFO, S_LEN))for _ in range(self.num_agents)]
+        self.state = [np.zeros((S_INFO, PAST_TEST_LEN)) for _ in range(self.num_agents)]
         self.sat_decision_log = [[] for _ in range(self.num_agents)]
         self.reward_func = reward_func
 
@@ -75,7 +75,7 @@ class ABREnv():
         self.net_env.reset()
         self.time_stamp = 0
         self.last_bit_rate = [DEFAULT_QUALITY for _ in range(self.num_agents)]
-        self.state = [np.zeros((S_INFO, S_LEN)) for _ in range(self.num_agents)]
+        self.state = [np.zeros((S_INFO, PAST_TEST_LEN)) for _ in range(self.num_agents)]
         self.buffer_size = [0 for _ in range(self.num_agents)]
 
         # for agent in range(self.num_agents):
