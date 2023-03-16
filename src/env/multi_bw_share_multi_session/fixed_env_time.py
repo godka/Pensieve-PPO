@@ -2035,7 +2035,7 @@ class Environment:
             tmp_bws = []
             tmp_bws_sum = []
             impossible_route = False
-            if best_ho_positions != MPC_FUTURE_CHUNK_COUNT and runner_up_sat_id is None:
+            if ho_positions != MPC_FUTURE_CHUNK_COUNT and runner_up_sat_id is None:
                 continue
 
             cur_sat_id = cur_sat_id
