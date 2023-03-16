@@ -161,7 +161,7 @@ class Environment:
 
                 self.update_sat_info(self.cur_sat_id[agent], self.last_mahimahi_time[agent], 0, -1)
                 self.update_sat_info(runner_up_sat_id, self.last_mahimahi_time[agent], 0, 1)
-                self.prev_sat_id = self.cur_sat_id[agent]
+                self.prev_sat_id[agent] = self.cur_sat_id[agent]
                 self.cur_sat_id[agent] = runner_up_sat_id
                 self.download_bw[agent] = []
 
