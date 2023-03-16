@@ -167,11 +167,12 @@ class Environment:
             if self.cur_sat_id[agent] != self.cur_user[agent].get_conn_sat_id(self.last_mahimahi_time[agent]):
                 delay += HANDOVER_DELAY
                 self.cur_sat_id[agent] = self.cur_user[agent].get_conn_sat_id(self.last_mahimahi_time[agent])
-            assert len(self.cur_satellite[self.cur_sat_id[agent]].get_ue_list(self.last_mahimahi_time[agent])) == self.num_agents
+            # assert len(self.cur_satellite[self.cur_sat_id[agent]].get_ue_list(self.last_mahimahi_time[agent])) == self.num_agents
 
-            throughput = self.cur_satellite[self.cur_sat_id[agent]].data_rate(self.cur_user[agent],
-                                                                              self.mahimahi_ptr[
-                                                                                  agent]) * B_IN_MB / BITS_IN_BYTE
+            throughput = self.cur_satellite[self.cur_sat_id[agent]].data_rate_unshared(self.mahimahi_ptr[agent],
+                                                                                       self.cur_user[
+                                                                                           agent]) * B_IN_MB / BITS_IN_BYTE
+            throughput /= self.num_agents
             if throughput == 0.0:
                 if ho_stamp and ho_stamp == "MVT":
                     sat_id = self.get_mvt_sat_id(agent, self.mahimahi_ptr[agent])
@@ -185,17 +186,20 @@ class Environment:
                                            sat_id][self.mahimahi_ptr[agent] - 3:self.mahimahi_ptr[agent] + 3]
                                )
                 assert self.cur_sat_id[agent] != sat_id
-                self.update_sat_info(self.cur_sat_id[agent], self.last_mahimahi_time[agent], agent, -1)
-                self.update_sat_info(sat_id, self.last_mahimahi_time[agent], agent, 1)
+                if agent == 0:
+                    self.update_sat_info(self.cur_sat_id[agent], self.last_mahimahi_time[agent], agent, -1)
+                    self.update_sat_info(sat_id, self.last_mahimahi_time[agent], agent, 1)
 
                 self.switch_sat(agent, sat_id)
                 delay += HANDOVER_DELAY
                 is_handover = True
                 self.download_bw[agent] = []
                 self.unexpected_change = True
-                throughput = self.cur_satellite[self.cur_sat_id[agent]].data_rate(self.cur_user[agent],
-                                                                                  self.mahimahi_ptr[
-                                                                                      agent]) * B_IN_MB / BITS_IN_BYTE
+                throughput = self.cur_satellite[self.cur_sat_id[agent]].data_rate_unshared(self.mahimahi_ptr[agent],
+                                                                                           self.cur_user[
+                                                                                               agent]) * B_IN_MB / BITS_IN_BYTE
+                throughput /= self.num_agents
+
                 assert throughput != 0
             duration = self.cooked_time[self.mahimahi_ptr[agent]] \
                        - self.last_mahimahi_time[agent]
@@ -270,9 +274,11 @@ class Environment:
                 self.last_mahimahi_time[agent] = self.cooked_time[self.mahimahi_ptr[agent]]
                 self.mahimahi_ptr[agent] += 1
 
-                throughput = self.cur_satellite[self.cur_sat_id[agent]].data_rate(self.cur_user[agent],
-                                                                                  self.mahimahi_ptr[
-                                                                                      agent]) * B_IN_MB / BITS_IN_BYTE
+                throughput = self.cur_satellite[self.cur_sat_id[agent]].data_rate_unshared(self.mahimahi_ptr[agent],
+                                                                                           self.cur_user[
+                                                                                               agent]) * B_IN_MB / BITS_IN_BYTE
+                throughput /= self.num_agents
+
                 if throughput == 0.0:
                     # Do the forced handover
                     # Connect the satellite that has the best serving time
@@ -285,14 +291,16 @@ class Environment:
                     self.log.debug("Forced Handover2", cur_sat_id=self.cur_sat_id[agent], sat_id=sat_id,
                                    mahimahi_ptr=self.mahimahi_ptr[agent], agent=agent)
                     assert sat_id != self.cur_sat_id[agent]
-                    self.update_sat_info(sat_id, self.last_mahimahi_time[agent], agent, 1)
-                    self.update_sat_info(self.cur_sat_id[agent], self.last_mahimahi_time[agent], agent, -1)
+                    if agent == 0:
+                        self.update_sat_info(sat_id, self.last_mahimahi_time[agent], agent, 1)
+                        self.update_sat_info(self.cur_sat_id[agent], self.last_mahimahi_time[agent], agent, -1)
                     self.switch_sat(agent, sat_id)
                     is_handover = True
                     delay += HANDOVER_DELAY * MILLISECONDS_IN_SECOND
-                    throughput = self.cur_satellite[self.cur_sat_id[agent]].data_rate(self.cur_user[agent],
-                                                                                      self.mahimahi_ptr[
-                                                                                          agent]) * B_IN_MB / BITS_IN_BYTE
+                    throughput = self.cur_satellite[self.cur_sat_id[agent]].data_rate_unshared(self.mahimahi_ptr[agent],
+                                                                                               self.cur_user[
+                                                                                                   agent]) * B_IN_MB / BITS_IN_BYTE
+                    throughput /= self.num_agents
 
         # the "last buffer size" return to the controller
         # Note: in old version of dash the lowest buffer is 0.
@@ -309,7 +317,7 @@ class Environment:
             self.end_of_video[agent] = True
             self.buffer_size[agent] = 0
             self.video_chunk_counter[agent] = 0
-            self.update_sat_info(self.cur_sat_id[agent], self.last_mahimahi_time[agent], agent, -1)
+            # self.update_sat_info(self.cur_sat_id[agent], self.last_mahimahi_time[agent], agent, -1)
 
             # Refresh satellite info
             # self.connection[self.cur_sat_id[agent]] = -1
@@ -344,7 +352,7 @@ class Environment:
                next_video_chunk_sizes, \
                self.end_of_video[agent], \
                video_chunk_remain, \
-               is_handover, self.get_num_of_user_sat(self.mahimahi_ptr[agent], sat_id="all"), \
+               is_handover, None, \
                next_sat_bandwidth, next_sat_bw_logs, cur_sat_user_num, next_sat_user_num, cur_sat_bw_logs, connected_time, \
                self.cur_sat_id[agent], runner_up_sat_ids, ho_stamps, best_combos, final_rate
 
@@ -438,7 +446,7 @@ class Environment:
         # list1.append(bw)
         cur_sat_bws = bw_list
 
-        runner_up_sat_id = self.get_runner_up_sat_id(agent, method="harmonic-mean", mahimahi_ptr=mahimahi_ptr)[0]
+        runner_up_sat_id = self.get_runner_up_sat_id(agent, cur_sat_id=self.cur_sat_id[agent])[0]
         if runner_up_sat_id:
             bw_list = []
             for i in range(PAST_LEN, 1, -1):
@@ -556,7 +564,6 @@ class Environment:
             else:
                 self.num_of_user_sat[sat_id] = variation
             total_num += self.num_of_user_sat[sat_id]
-        assert self.num_of_user_sat[sat_id] >= 0
 
     def get_num_of_user_sat(self, mahimahi_ptr, sat_id):
         # update sat info
@@ -572,7 +579,7 @@ class Environment:
         self.log.info("Error", sat_id=sat_id, cur_sat_ids=self.cur_satellite.keys(), mahimahi_ptr=mahimahi_ptr)
         raise Exception
 
-    def get_runner_up_sat_id(self, agent, method="holt-winter", mahimahi_ptr=None, cur_sat_id=None, plus=False):
+    def get_runner_up_sat_id(self, agent, method="harmonic-mean", mahimahi_ptr=None, cur_sat_id=None, plus=False):
         best_sat_id = None
         best_sat_bw = 0
         if mahimahi_ptr is None:
@@ -589,8 +596,8 @@ class Environment:
                 continue
 
             if method == "harmonic-mean":
-                target_sat_bw = self.predict_bw_num(sat_id, agent, mahimahi_ptr=mahimahi_ptr, past_len=PAST_LEN)
-                real_sat_bw = target_sat_bw  # / (self.get_num_of_user_sat(sat_id) + 1)
+                target_sat_bw = self.predict_bw(sat_id, agent, mahimahi_ptr=mahimahi_ptr, past_len=PAST_LEN)
+                real_sat_bw = target_sat_bw / self.num_agents
             else:
                 print("Cannot happen")
                 raise Exception

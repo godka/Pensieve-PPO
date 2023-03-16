@@ -174,8 +174,8 @@ def central_agent(net_params_queues, exp_queues):
                                                   test_log_file)
 
                 if best_rewards < avg_reward:
-                    os.system('cp ' + TEST_LOG_FOLDER + '/summary_reward_parts ' + SUMMARY_DIR)
-                    os.system('cp ' + TEST_LOG_FOLDER + '/summary ' + SUMMARY_DIR)
+                    os.system('cp ' + TEST_LOG_FOLDER + 'summary_reward_parts ' + SUMMARY_DIR)
+                    os.system('cp ' + TEST_LOG_FOLDER + 'summary ' + SUMMARY_DIR)
                     os.system('cp ' + SUMMARY_DIR + "/nn_model_ep_" + str(epoch) + ".ckpt.index " + SUMMARY_DIR + "/best_model.ckpt.index")
                     os.system('cp ' + SUMMARY_DIR + "/nn_model_ep_" + str(epoch) + ".ckpt.meta " + SUMMARY_DIR + "/best_model.ckpt.meta")
 

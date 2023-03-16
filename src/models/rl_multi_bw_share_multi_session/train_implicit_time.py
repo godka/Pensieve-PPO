@@ -33,7 +33,7 @@ import argparse
 
 parser = argparse.ArgumentParser(description='PyTorch Synthetic Benchmark',
                                  formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-parser.add_argument('--user', type=int, default=3)
+parser.add_argument('--user', type=int, default=2)
 args = parser.parse_args()
 USERS = args.user
 # A_SAT = USERS + 1
@@ -174,8 +174,8 @@ def central_agent(net_params_queues, exp_queues):
                                                   test_log_file)
 
                 if best_rewards < avg_reward:
-                    os.system('cp ' + TEST_LOG_FOLDER + '/summary_reward_parts ' + SUMMARY_DIR)
-                    os.system('cp ' + TEST_LOG_FOLDER + '/summary ' + SUMMARY_DIR)
+                    os.system('cp ' + TEST_LOG_FOLDER + 'summary_reward_parts ' + SUMMARY_DIR)
+                    os.system('cp ' + TEST_LOG_FOLDER + 'summary ' + SUMMARY_DIR)
                     os.system('cp ' + SUMMARY_DIR + "/nn_model_ep_" + str(epoch) + ".ckpt.index " + SUMMARY_DIR + "/best_model.ckpt.index")
                     os.system('cp ' + SUMMARY_DIR + "/nn_model_ep_" + str(epoch) + ".ckpt.meta " + SUMMARY_DIR + "/best_model.ckpt.meta")
 

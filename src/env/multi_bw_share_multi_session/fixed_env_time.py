@@ -165,8 +165,10 @@ class Environment:
                     self.cur_sat_id[agent] = runner_up_sat_id
                     self.download_bw[agent] = []
 
-                    throughput = self.cur_satellite[self.cur_sat_id[agent]].data_rate(self.cur_user[agent],
-                                                                                      self.mahimahi_ptr[agent]) * B_IN_MB / BITS_IN_BYTE
+                    throughput = self.cur_satellite[self.cur_sat_id[agent]].data_rate_unshared(self.mahimahi_ptr[agent],
+                                                                                               self.cur_user[
+                                                                                                   agent]) * B_IN_MB / BITS_IN_BYTE
+                    throughput /= self.num_agents
                     assert throughput != 0
 
             quality = best_combos[agent][0]
@@ -224,9 +226,8 @@ class Environment:
                 self.prev_sat_id[agent] = self.cur_sat_id[agent]
                 self.cur_sat_id[agent] = runner_up_sat_id
                 self.download_bw[agent] = []
-
-            throughput = self.cur_satellite[self.cur_sat_id[agent]].data_rate(self.cur_user[agent], self.mahimahi_ptr[
-                agent]) * B_IN_MB / BITS_IN_BYTE
+            throughput = self.cur_satellite[self.cur_sat_id[agent]].data_rate_unshared(self.mahimahi_ptr[agent], self.cur_user[agent]) * B_IN_MB / BITS_IN_BYTE
+            throughput /= self.num_agents
             assert throughput != 0
         elif ho_stamp == "MRSS":
             tmp_best_id = self.get_max_sat_id(agent)
@@ -269,10 +270,9 @@ class Environment:
             if self.cur_sat_id[agent] != self.cur_user[agent].get_conn_sat_id(self.last_mahimahi_time[agent]):
                 delay += HANDOVER_DELAY
                 self.cur_sat_id[agent] = self.cur_user[agent].get_conn_sat_id(self.last_mahimahi_time[agent])
-            assert len(self.cur_satellite[self.cur_sat_id[agent]].get_ue_list(self.last_mahimahi_time[agent])) == self.num_agents
-            throughput = self.cur_satellite[self.cur_sat_id[agent]].data_rate(self.cur_user[agent],
-                                                                              self.mahimahi_ptr[
-                                                                                  agent]) * B_IN_MB / BITS_IN_BYTE
+            # assert len(self.cur_satellite[self.cur_sat_id[agent]].get_ue_list(self.last_mahimahi_time[agent])) == self.num_agents
+            throughput = self.cur_satellite[self.cur_sat_id[agent]].data_rate_unshared(self.mahimahi_ptr[agent], self.cur_user[agent]) * B_IN_MB / BITS_IN_BYTE
+            throughput /= self.num_agents
             if throughput == 0.0:
                 if ho_stamp and ho_stamp == "MVT":
                     sat_id = self.get_mvt_sat_id(agent, self.mahimahi_ptr[agent])
@@ -282,23 +282,25 @@ class Environment:
                     # Connect the satellite that has the best serving time
                     sat_id = self.get_best_sat_id(agent, self.mahimahi_ptr[agent])
                 self.log.debug("Forced Handover1", cur_sat_id=self.cur_sat_id[agent], next_sat_id=sat_id,
-                              mahimahi_ptr=self.mahimahi_ptr[agent], agent=agent,
+                              mahimahi_ptr=self.last_mahimahi_time[agent], agent=agent,
                               cur_bw=self.cooked_bw[self.cur_sat_id[agent]][self.mahimahi_ptr[agent]-3:self.mahimahi_ptr[agent]+3],
                               next_bw=self.cooked_bw[
                                   sat_id][self.mahimahi_ptr[agent] - 3:self.mahimahi_ptr[agent] + 3]
                               )
                 assert self.cur_sat_id[agent] != sat_id
-                self.update_sat_info(self.cur_sat_id[agent], self.last_mahimahi_time[agent], agent, -1)
-                self.update_sat_info(sat_id, self.last_mahimahi_time[agent], agent, 1)
+                if agent == 0:
+                    self.update_sat_info(self.cur_sat_id[agent], self.last_mahimahi_time[agent], agent, -1)
+                    self.update_sat_info(sat_id, self.last_mahimahi_time[agent], agent, 1)
 
                 self.switch_sat(agent, sat_id)
                 delay += HANDOVER_DELAY
                 is_handover = True
                 self.download_bw[agent] = []
                 self.unexpected_change = True
-                throughput = self.cur_satellite[self.cur_sat_id[agent]].data_rate(self.cur_user[agent],
-                                                                                  self.mahimahi_ptr[
-                                                                                      agent]) * B_IN_MB / BITS_IN_BYTE
+                throughput = self.cur_satellite[self.cur_sat_id[agent]].data_rate_unshared(self.mahimahi_ptr[agent],
+                                                                                           self.cur_user[
+                                                                                               agent]) * B_IN_MB / BITS_IN_BYTE
+                throughput /= self.num_agents
                 assert throughput != 0
             duration = self.cooked_time[self.mahimahi_ptr[agent]] \
                        - self.last_mahimahi_time[agent]
@@ -370,9 +372,10 @@ class Environment:
                 sleep_time -= duration * MILLISECONDS_IN_SECOND
                 self.last_mahimahi_time[agent] = self.cooked_time[self.mahimahi_ptr[agent]]
                 self.mahimahi_ptr[agent] += 1
-
-                throughput = self.cur_satellite[self.cur_sat_id[agent]].data_rate(self.cur_user[agent],
-                                                                                  self.mahimahi_ptr[agent])* B_IN_MB / BITS_IN_BYTE
+                throughput = self.cur_satellite[self.cur_sat_id[agent]].data_rate_unshared(self.mahimahi_ptr[agent],
+                                                                                           self.cur_user[
+                                                                                               agent]) * B_IN_MB / BITS_IN_BYTE
+                throughput /= self.num_agents
                 if throughput == 0.0:
                     if ho_stamp and ho_stamp == "MVT":
                         sat_id = self.get_mvt_sat_id(agent, self.mahimahi_ptr[agent])
@@ -384,8 +387,9 @@ class Environment:
                     self.log.debug("Forced Handover2", cur_sat_id=self.cur_sat_id[agent], sat_id=sat_id,
                                    mahimahi_ptr=self.mahimahi_ptr[agent], agent=agent)
                     assert sat_id != self.cur_sat_id[agent]
-                    self.update_sat_info(sat_id, self.last_mahimahi_time[agent], agent, 1)
-                    self.update_sat_info(self.cur_sat_id[agent], self.last_mahimahi_time[agent], agent, -1)
+                    if agent == 0:
+                        self.update_sat_info(sat_id, self.last_mahimahi_time[agent], agent, 1)
+                        self.update_sat_info(self.cur_sat_id[agent], self.last_mahimahi_time[agent], agent, -1)
                     self.switch_sat(agent, sat_id)
                     is_handover = True
                     delay += HANDOVER_DELAY * MILLISECONDS_IN_SECOND
@@ -453,8 +457,6 @@ class Environment:
                     if throughput == 0:
                         runner_up_sat_id, _ = self.get_runner_up_sat_id(i, method="harmonic-mean", plus=True)
 
-                    self.update_sat_info(self.cur_sat_id[agent][i], self.mahimahi_ptr[i], i, -1)
-                    self.update_sat_info(runner_up_sat_id, self.mahimahi_ptr[i], i, 1)
                     self.prev_sat_id[i] = self.cur_sat_id[agent][i]
                     self.cur_sat_id[agent][i] = runner_up_sat_id
 
@@ -482,9 +484,10 @@ class Environment:
                     self.prev_sat_id[agent] = self.cur_sat_id[agent]
                     self.cur_sat_id[agent] = runner_up_sat_id
                     self.download_bw[agent] = []
-
-                throughput = self.cur_satellite[self.cur_sat_id[agent]].data_rate(self.cur_user[agent], self.mahimahi_ptr[
-                    agent]) * B_IN_MB / BITS_IN_BYTE
+                throughput = self.cur_satellite[self.cur_sat_id[agent]].data_rate_unshared(self.mahimahi_ptr[agent],
+                                                                                           self.cur_user[
+                                                                                               agent]) * B_IN_MB / BITS_IN_BYTE
+                throughput /= self.num_agents
                 assert throughput != 0
 
         return delay, \
@@ -495,306 +498,11 @@ class Environment:
                next_video_chunk_sizes, \
                self.end_of_video[agent], \
                video_chunk_remain, \
-               is_handover, self.get_num_of_user_sat(self.mahimahi_ptr[agent], sat_id="all"), \
+               is_handover, None, \
                next_sat_bandwidth, next_sat_bw_logs, cur_sat_user_num, next_sat_user_num, cur_sat_bw_logs, connected_time, \
                self.cur_sat_id[agent], runner_up_sat_ids, ho_stamps, best_combos, final_rate, quality, other_sat_users, other_sat_bw_logs, \
                np.delete(self.buffer_size, agent)
 
-    def get_video_chunk_oracle(self, quality, agent, mahimahi_ptr, ho_stamp, cur_sat_id, next_sat_id,
-                               future_sat_user_nums):
-        assert quality is not None
-        assert quality >= 0
-        assert quality < BITRATE_LEVELS
-        assert quality in [0, 2, 4]
-
-        video_chunk_counter = self.video_chunk_counter[agent]
-        # use the delivery opportunity in mahimahi
-        # delay = 0.0  # in ms
-        # self.delay[agent] = 0
-        end_of_network = False
-        is_handover = False
-        # cur_sat_id = self.cur_sat_id[agent]
-        mahimahi_ptr = self.mahimahi_ptr[agent]
-        last_mahimahi_time = self.last_mahimahi_time[agent]
-        buffer_size = self.buffer_size[agent]
-
-        avg_bws = []
-        rebuf = 0
-        for idx, bitrate_level in enumerate(quality):
-            video_chunk_size = self.video_size[bitrate_level][video_chunk_counter]
-            delay = 0  # in ms
-            video_chunk_counter_sent = 0  # in bytes
-
-            if ho_stamp == idx:
-                is_handover = True
-                delay += HANDOVER_DELAY
-                runner_up_sat_id, _ = self.get_runner_up_sat_id(agent, mahimahi_ptr=mahimahi_ptr,
-                                                                method="harmonic-mean")
-                self.update_sat_info(cur_sat_id, mahimahi_ptr, agent, -1)
-                self.update_sat_info(runner_up_sat_id, mahimahi_ptr, agent, 1)
-
-                cur_sat_id = runner_up_sat_id
-
-            while True:  # download video chunk over mahimahi
-                # num_of_users = 1 if future_sat_user_nums[cur_sat_id][idx] == 0 else future_sat_user_nums[cur_sat_id][idx]
-                throughput = self.cur_satellite[self.cur_sat_id[agent]].data_rate(self.cur_user[agent],
-                                                                                  self.mahimahi_ptr[agent])* B_IN_MB / BITS_IN_BYTE
-
-                if throughput == 0.0:
-                    # Do the forced handover
-                    # Connect the satellite that has the best serving time
-                    # runner_up_sat_id, _ = self.get_runner_up_sat_id(agent, method="harmonic-mean")
-                    next_sat_id = self.get_best_sat_id(agent, mahimahi_ptr)
-
-                    self.update_sat_info(cur_sat_id, mahimahi_ptr, agent, -1)
-                    self.update_sat_info(next_sat_id, mahimahi_ptr, agent, 1)
-
-                    cur_sat_id = next_sat_id
-                    delay += HANDOVER_DELAY
-                    if ho_stamp != MPC_FUTURE_CHUNK_COUNT:
-                        return 100, 0
-                    # self.download_bw[agent] = []
-                    # print("Forced Handover")
-
-                duration = self.cooked_time[mahimahi_ptr] \
-                           - last_mahimahi_time
-
-                packet_payload = throughput * duration * PACKET_PAYLOAD_PORTION
-
-                if video_chunk_counter_sent + packet_payload > video_chunk_size:
-                    fractional_time = (video_chunk_size - video_chunk_counter_sent) / \
-                                      throughput / PACKET_PAYLOAD_PORTION
-                    delay += fractional_time
-                    last_mahimahi_time += fractional_time
-                    break
-
-                video_chunk_counter_sent += packet_payload
-                delay += duration
-                last_mahimahi_time = self.cooked_time[mahimahi_ptr]
-
-                mahimahi_ptr += 1
-
-                if mahimahi_ptr >= len(self.cooked_bw[cur_sat_id]):
-                    # loop back in the beginning
-                    # note: trace file starts with time 0
-                    mahimahi_ptr = 1
-                    last_mahimahi_time = 0
-                    end_of_video = True
-                    end_of_network = True
-                    break
-
-            delay *= MILLISECONDS_IN_SECOND
-            delay += LINK_RTT
-
-            # rebuffer time
-            rebuf += np.maximum(delay - buffer_size, 0.0)
-            # update the buffer
-            buffer_size = np.maximum(buffer_size - delay, 0.0)
-
-            # add in the new chunk
-            buffer_size += VIDEO_CHUNCK_LEN
-
-            # sleep if buffer gets too large
-            sleep_time = 0
-            if buffer_size > BUFFER_THRESH:
-                drain_buffer_time = buffer_size - BUFFER_THRESH
-                sleep_time = np.ceil(drain_buffer_time / DRAIN_BUFFER_SLEEP_TIME) * \
-                             DRAIN_BUFFER_SLEEP_TIME
-                buffer_size -= sleep_time
-
-                while True:
-                    if mahimahi_ptr >= len(self.cooked_bw[cur_sat_id]):
-                        # loop back in the beginning
-                        # note: trace file starts with time 0
-                        mahimahi_ptr = 1
-                        last_mahimahi_time = 0
-                        end_of_video = True
-                        end_of_network = True
-                        break
-
-                    duration = self.cooked_time[mahimahi_ptr] \
-                               - last_mahimahi_time
-                    if duration > sleep_time / MILLISECONDS_IN_SECOND:
-                        last_mahimahi_time += sleep_time / MILLISECONDS_IN_SECOND
-                        break
-                    sleep_time -= duration * MILLISECONDS_IN_SECOND
-                    last_mahimahi_time = self.cooked_time[mahimahi_ptr]
-                    mahimahi_ptr += 1
-
-                    throughput = self.cooked_bw[cur_sat_id][mahimahi_ptr] \
-                                 * B_IN_MB / BITS_IN_BYTE / len(self.cur_satellite[cur_sat_id].get_ue_list(mahimahi_ptr))
-
-                    if throughput == 0.0:
-                        # Do the forced handover
-                        # Connect the satellite that has the best serving time
-                        sat_id = self.get_best_sat_id(agent, mahimahi_ptr)
-                        self.update_sat_info(cur_sat_id, mahimahi_ptr, agent, -1)
-                        self.update_sat_info(sat_id, mahimahi_ptr, agent, 1)
-                        prev_sat_id = cur_sat_id
-                        cur_sat_id = sat_id
-                        if ho_stamp != MPC_FUTURE_CHUNK_COUNT:
-                            return 100, 0
-
-            video_chunk_counter += 1
-            avg_bws.append(float(video_chunk_size) / delay / M_IN_K * BITS_IN_BYTE)
-
-            if video_chunk_counter >= TOTAL_VIDEO_CHUNKS or end_of_network:
-                end_of_video = True
-                buffer_size = 0
-                video_chunk_counter = 0
-                break
-
-        return rebuf / MILLISECONDS_IN_SECOND, sum(avg_bws) / len(avg_bws)
-
-    def get_video_chunk_oracle_v2(self, quality, agent, runner_up_sat_id, ho_stamp):
-        assert quality is not None
-        assert quality >= 0
-        assert quality < BITRATE_LEVELS
-        assert quality in [0, 2, 4]
-        # use the delivery opportunity in mahimahi
-        # delay = 0.0  # in ms
-        # self.delay[agent] = 0
-        end_of_network = False
-        is_handover = False
-        # cur_sat_id = self.cur_sat_id[agent]
-
-        avg_bws = []
-        rebuf = 0
-        video_chunk_size = self.video_size[quality][self.video_chunk_counter[agent]]
-        delay = 0  # in ms
-        video_chunk_counter_sent = 0  # in bytes
-
-        if ho_stamp == 0:
-            is_handover = True
-            delay += HANDOVER_DELAY
-            runner_up_sat_id, _ = self.get_runner_up_sat_id(agent, method="harmonic-mean")
-            self.update_sat_info(self.cur_sat_id[agent], self.mahimahi_ptr[agent], agent, -1)
-            self.update_sat_info(runner_up_sat_id, self.mahimahi_ptr[agent], agent, 1)
-
-            self.cur_sat_id[agent] = runner_up_sat_id
-
-        while True:  # download video chunk over mahimahi
-            # num_of_users = 1 if future_sat_user_nums[cur_sat_id][idx] == 0 else future_sat_user_nums[cur_sat_id][idx]
-            throughput = self.cur_satellite[self.cur_sat_id[agent]].data_rate(self.cur_user[agent],
-                                                                              self.mahimahi_ptr[agent])* B_IN_MB / BITS_IN_BYTE
-
-            if throughput == 0.0:
-                # Connect the satellite that has the best serving time
-                # runner_up_sat_id, _ = self.get_runner_up_sat_id(agent, method="harmonic-mean")
-                next_sat_id = self.get_best_sat_id(agent, self.mahimahi_ptr[agent])
-                self.log.debug("Forced Handover1", cur_sat_id=self.cur_sat_id[agent], next_sat_id=next_sat_id,
-                               mahimahi_ptr=self.mahimahi_ptr[agent], agent=agent,
-                               cur_bw=self.cooked_bw[self.cur_sat_id[agent]][
-                                      self.mahimahi_ptr[agent] - 3:self.mahimahi_ptr[agent] + 3],
-                               next_bw=self.cooked_bw[
-                                           sat_id][self.mahimahi_ptr[agent] - 3:self.mahimahi_ptr[agent] + 3]
-                               )
-
-                self.update_sat_info(self.cur_sat_id[agent], self.last_mahimahi_time[agent], agent, -1)
-                self.update_sat_info(next_sat_id, self.last_mahimahi_time[agent], agent, 1)
-
-                self.switch_sat(agent, next_sat_id)
-                delay += HANDOVER_DELAY
-                is_handover = True
-                self.download_bw[agent] = []
-                self.unexpected_change = True
-                throughput = self.cur_satellite[self.cur_sat_id[agent]].data_rate(self.cur_user[agent],
-                                                                                  self.mahimahi_ptr[
-                                                                                      agent]) * B_IN_MB / BITS_IN_BYTE
-
-
-            duration = self.cooked_time[self.mahimahi_ptr[agent]] \
-                       - self.last_mahimahi_time[agent]
-
-            packet_payload = throughput * duration * PACKET_PAYLOAD_PORTION
-
-            if video_chunk_counter_sent + packet_payload > video_chunk_size:
-                fractional_time = (video_chunk_size - video_chunk_counter_sent) / \
-                                  throughput / PACKET_PAYLOAD_PORTION
-                delay += fractional_time
-                self.last_mahimahi_time[agent] += fractional_time
-                break
-
-            video_chunk_counter_sent += packet_payload
-            delay += duration
-            self.last_mahimahi_time[agent] = self.cooked_time[self.mahimahi_ptr[agent]]
-
-            self.mahimahi_ptr[agent] += 1
-
-            if self.mahimahi_ptr[agent] >= len(self.cooked_bw[self.cur_sat_id[agent]]):
-                # loop back in the beginning
-                # note: trace file starts with time 0
-                self.mahimahi_ptr[agent] = 1
-                self.last_mahimahi_time[agent] = 0
-                end_of_video = True
-                end_of_network = True
-                break
-
-        delay *= MILLISECONDS_IN_SECOND
-        delay += LINK_RTT
-
-        # rebuffer time
-        rebuf = np.maximum(delay - self.buffer_size[agent], 0.0)
-        # update the buffer
-        self.buffer_size[agent] = np.maximum(self.buffer_size[agent] - delay, 0.0)
-
-        # add in the new chunk
-        self.buffer_size[agent] += VIDEO_CHUNCK_LEN
-
-        # sleep if buffer gets too large
-        sleep_time = 0
-        if self.buffer_size[agent] > BUFFER_THRESH:
-            self.log.info("Buffer exceed!", buffer_size=self.buffer_size[agent], mahimahi_ptr=self.mahimahi_ptr[agent],
-                          agent=agent)
-            drain_buffer_time = self.buffer_size[agent] - BUFFER_THRESH
-            sleep_time = np.ceil(drain_buffer_time / DRAIN_BUFFER_SLEEP_TIME) * \
-                         DRAIN_BUFFER_SLEEP_TIME
-            self.buffer_size[agent] -= sleep_time
-
-            while True:
-                if self.mahimahi_ptr[agent] >= len(self.cooked_bw[self.cur_sat_id[agent]]):
-                    # loop back in the beginning
-                    # note: trace file starts with time 0
-                    self.mahimahi_ptr[agent] = 1
-                    self.last_mahimahi_time[agent] = 0
-                    end_of_video = True
-                    end_of_network = True
-                    break
-
-                duration = self.cooked_time[self.mahimahi_ptr[agent]] \
-                           - self.last_mahimahi_time[agent]
-                if duration > sleep_time / MILLISECONDS_IN_SECOND:
-                    self.last_mahimahi_time[agent] += sleep_time / MILLISECONDS_IN_SECOND
-                    break
-                sleep_time -= duration * MILLISECONDS_IN_SECOND
-                self.last_mahimahi_time[agent] = self.cooked_time[self.mahimahi_ptr[agent]]
-                self.mahimahi_ptr[agent] += 1
-                throughput = self.cur_satellite[self.cur_sat_id[agent]].data_rate(self.cur_user[agent],
-                                                                                  self.mahimahi_ptr[agent])* B_IN_MB / BITS_IN_BYTE
-
-                if throughput == 0.0:
-                    # Connect the satellite that has the best serving time
-                    sat_id = self.get_best_sat_id(agent, self.mahimahi_ptr[agent])
-                    assert sat_id != self.cur_sat_id[agent]
-                    self.update_sat_info(sat_id, self.last_mahimahi_time[agent], agent, 1)
-                    self.update_sat_info(self.cur_sat_id[agent], self.last_mahimahi_time[agent], agent, -1)
-                    self.switch_sat(agent, sat_id)
-                    is_handover = True
-                    self.log.debug("Forced Handover2", cur_sat_id=self.cur_sat_id[agent], sat_id=sat_id,
-                                  mahimahi_ptr=self.mahimahi_ptr[agent], agent=agent)
-                    throughput = self.cur_satellite[self.cur_sat_id[agent]].data_rate(self.cur_user[agent],
-                                                                                      self.mahimahi_ptr[agent])* B_IN_MB / BITS_IN_BYTE
-
-
-        self.video_chunk_counter[agent] += 1
-        avg_bws.append(float(video_chunk_size) / delay / M_IN_K * BITS_IN_BYTE)
-
-        if self.video_chunk_counter[agent] >= TOTAL_VIDEO_CHUNKS or end_of_network:
-            end_of_video = True
-            self.buffer_size[agent] = 0
-            self.video_chunk_counter[agent] = 0
-
-        return rebuf / MILLISECONDS_IN_SECOND, float(video_chunk_size) / delay / M_IN_K * BITS_IN_BYTE
 
     def reset(self):
         self.video_chunk_counter = [0 for _ in range(self.num_agents)]
@@ -947,7 +655,7 @@ class Environment:
         # list1.append(bw)
         cur_sat_bws = bw_list
 
-        runner_up_sat_id = self.get_runner_up_sat_id(agent, method="harmonic-mean", mahimahi_ptr=mahimahi_ptr)[0]
+        runner_up_sat_id = self.get_runner_up_sat_id(agent, cur_sat_id=self.cur_sat_id[agent])[0]
         if runner_up_sat_id:
             bw_list = []
             for i in range(PAST_LEN, 1, -1):
@@ -1018,6 +726,7 @@ class Environment:
                 best_sat_time = tmp_time
 
         return best_sat_id
+
     def switch_sat(self, agent, cur_sat_id):
         pre_sat_id = self.cur_sat_id[agent]
         self.prev_sat_id[agent] = pre_sat_id
@@ -3318,7 +3027,7 @@ class Environment:
 
         return pred_bw
 
-    def get_runner_up_sat_id(self, agent, method="holt-winter", mahimahi_ptr=None, cur_sat_id=None, past_len=None):
+    def get_runner_up_sat_id(self, agent, method="harmonic-mean", mahimahi_ptr=None, cur_sat_id=None, past_len=None):
         best_sat_id = None
         best_sat_bw = 0
         if mahimahi_ptr is None:
@@ -3350,41 +3059,6 @@ class Environment:
                 best_sat_bw = real_sat_bw
 
         return best_sat_id, best_sat_bw
-
-    def predict_bw_holt_winter(self, sat_id, agent, num=1):
-        start_index = self.mahimahi_ptr[agent] - MPC_PAST_CHUNK_COUNT
-        cur_sat_past_list = []
-        if start_index < 0:
-            for i in range(0, start_index + MPC_PAST_CHUNK_COUNT):
-                cur_sat_past_list.append(
-                    self.cooked_bw[sat_id][0:start_index + MPC_PAST_CHUNK_COUNT] / self.get_num_of_user_sat(sat_id))
-        else:
-            for i in range(start_index, start_index + MPC_PAST_CHUNK_COUNT):
-                cur_sat_past_list.append(
-                    self.cooked_bw[sat_id][0:start_index + MPC_PAST_CHUNK_COUNT] / self.get_num_of_user_sat(sat_id))
-
-        while len(cur_sat_past_list) != 0 and cur_sat_past_list[0] == 0.0:
-            cur_sat_past_list = cur_sat_past_list[1:]
-
-        if len(cur_sat_past_list) <= 1:
-            # Just past bw
-            return self.cooked_bw[sat_id][self.mahimahi_ptr[agent] - 1] / self.get_num_of_user_sat(sat_id)
-        cur_sat_past_bws = pd.Series(cur_sat_past_list)
-        cur_sat_past_bws.index.freq = 's'
-
-        # alpha = 1 / (2 * m)
-        fitted_model = ExponentialSmoothing(
-            cur_sat_past_bws, trend='add').fit()
-        # fitted_model = ExponentialSmoothing(cur_sat_past_bws, trend='mul').fit()
-
-        # fitted_model = ExponentialSmoothing(cur_sat_past_bws
-        test_predictions = fitted_model.forecast(1)
-        # test_predictions = fitted_model.forecast(num)
-
-        pred_bw = sum(test_predictions) / len(test_predictions)
-
-        return pred_bw
-        # return list(test_predictions)
 
     def calculate_mpc(self, video_chunk_remain, start_buffer, last_index, cur_download_bw, agent, centralized=False):
         max_reward = -10000000
@@ -3764,7 +3438,6 @@ class Environment:
             else:
                 self.num_of_user_sat[sat_id] = variation
             total_num += self.num_of_user_sat[sat_id]
-        assert self.num_of_user_sat[sat_id] >= 0
 
     def get_num_of_user_sat(self, mahimahi_ptr, sat_id):
         # update sat info
