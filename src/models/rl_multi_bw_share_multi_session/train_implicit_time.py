@@ -280,30 +280,35 @@ def agent(agent_id, net_params_queue, exp_queue):
             for batch_user in r_batch_user:
                 r_batch += batch_user
             """
-            tmp_i = 0
             # if agent_id == 0:
             #     print(len(s_batch), len(a_batch), len(r_batch))
-            v_batch = actor.compute_v(s_batch_user[tmp_i][1:], a_batch_user[tmp_i][1:], r_batch_user[tmp_i][1:], env.check_end())
-            try:
-                exp_queue.put([s_batch_user[tmp_i][1:], a_batch_user[tmp_i][1:], p_batch_user[tmp_i][1:], v_batch])
-                if epoch != TRAIN_SEQ_LEN - 1:
-                    actor_net_params = net_params_queue.get()
-                    actor.set_network_params(actor_net_params)
-                del s_batch_user[:]
-                del a_batch_user[:]
-                del r_batch_user[:]
-                del p_batch_user[:]
-                del actor_net_params[:]
+            # tmp_i = random.randint(0, USERS - 1)
+            for user_id in range(USERS):
+                tmp_v_batch = actor.compute_v(s_batch_user[user_id][1:], a_batch_user[user_id][1:], r_batch_user[user_id][1:], env.check_end())
+                v_batch += tmp_v_batch
 
-                del bit_rate[:]
-                del sat[:]
-                del action_prob[:]
-            except queue.Empty:
-                log.info("Empty")
-                continue
-            except queue.Full:
-                log.info("Full")
-                continue
+                s_batch += s_batch_user[user_id][1:]
+                a_batch += a_batch_user[user_id][1:]
+                p_batch += p_batch_user[user_id][1:]
+
+            exp_queue.put([s_batch, a_batch, p_batch, v_batch])
+
+            if epoch != TRAIN_SEQ_LEN-1:
+                actor_net_params = net_params_queue.get()
+                actor.set_network_params(actor_net_params)
+            del s_batch_user[:]
+            del a_batch_user[:]
+            del r_batch_user[:]
+            del p_batch_user[:]
+            # del s_batch[:]
+            # del a_batch[:]
+            # del p_batch[:]
+            # del v_batch[:]
+            del actor_net_params[:]
+
+            del bit_rate[:]
+            del sat[:]
+            del action_prob[:]
 
 
 def build_summaries():
