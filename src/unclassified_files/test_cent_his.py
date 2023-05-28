@@ -5,7 +5,7 @@ from util.encode import encode_other_sat_info, one_hot_encode
 os.environ['CUDA_VISIBLE_DEVICES']='-1'
 import numpy as np
 import tensorflow.compat.v1 as tf
-from env.multi_bw_share import fixed_env_cent3 as env, load_trace
+from env.multi_bw_share import fixed_env_cent_his as env, load_trace
 from models.rl_multi_bw_share.ppo_spec import ppo_cent_his as network
 
 # S_INFO = 10 + 1 + 3 + 6 * 5  # Original + nums of sat + bw of sats + decisions of users

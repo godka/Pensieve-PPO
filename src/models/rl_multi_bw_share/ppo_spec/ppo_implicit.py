@@ -154,7 +154,7 @@ class Network():
             self.entropy_weight: self._entropy_weight
         })
         # adaptive entropy weight
-        # https://arxiv.org/abs/2003.13590
+        # https://arxiv.org/tabs/2003.13590
         p_batch = np.clip(p_batch, self.lr_rate, 1. - self.lr_rate)
         _H = np.mean(np.sum(-np.log(p_batch) * p_batch, axis=1))
         _g = _H - self.H_target

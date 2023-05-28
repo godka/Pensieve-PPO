@@ -43,9 +43,9 @@ for time_index in cooked_time:
     for sat_id in satellite_bw:
         if satellite_bw[sat_id][time_index] != 0:
             num_of_sats += 1
-    # plt.plot(time_index, num_of_sats, linestyle="-", marker="o", markersize=3)
-# plt.legend()
-# plt.show()
+plt.plot(cooked_time, satellite_bw[int(satellite_id[1])], linestyle="-", marker="o", markersize=3)
+plt.legend()
+plt.show()
 
 all_time_stamp = []
 all_bw = []
