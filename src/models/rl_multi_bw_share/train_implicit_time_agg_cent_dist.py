@@ -6,13 +6,12 @@ import os
 import sys
 root_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, root_dir + '/../')
-from env.multi_bw_share.env_time_agg_noaa import ABREnv
-from models.rl_multi_bw_share.ppo_spec import ppo_implicit_agg_weighted_v2 as network
+from env.multi_bw_share.env_time_agg import ABREnv
+from models.rl_multi_bw_share.ppo_spec import ppo_implicit_agg_weighted_cent_dist as network
 import tensorflow.compat.v1 as tf
 import structlog
-from util.constants import A_DIM, NUM_AGENTS, TRAIN_TRACES, PAST_SAT_LOG_LEN, TRAIN_NOAA_TRACES
+from util.constants import A_DIM, NUM_AGENTS, TRAIN_TRACES, PAST_SAT_LOG_LEN
 import logging
-
 os.environ['CUDA_VISIBLE_DEVICES'] = '-1'
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 
@@ -22,17 +21,17 @@ TRAIN_SEQ_LEN = 300  # take as a train batch
 TRAIN_EPOCH = 20000000
 MODEL_SAVE_INTERVAL = 3000
 RANDOM_SEED = 42
-SUMMARY_DIR = './ppo_imp_agg_weight_v2_noaa'
+SUMMARY_DIR = './ppo_imp_agg_weight_v2'
 MODEL_DIR = '..'
 
-TEST_LOG_FOLDER = './test_results_imp_agg_weight_v2_noaa'
+TEST_LOG_FOLDER = './test_results_imp_agg_weight_v2'
 PPO_TRAINING_EPO = 5
 
 import argparse
 
 parser = argparse.ArgumentParser(description='PyTorch Synthetic Benchmark',
                                  formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-parser.add_argument('--user', type=int, default=3)
+parser.add_argument('--user', type=int, default=5)
 args = parser.parse_args()
 USERS = args.user
 # A_SAT = USERS + 1
@@ -67,8 +66,8 @@ def testing(epoch, nn_model, log_file):
     if not os.path.exists(TEST_LOG_FOLDER):
         os.makedirs(TEST_LOG_FOLDER)
     # run test script
-    log.info('python test_implicit_time_agg_cent_weight_noaa.py ', nn_model=nn_model + ' ' + str(USERS))
-    os.system('python test_implicit_time_agg_cent_weight_noaa.py ' + nn_model + ' ' + str(USERS))
+    log.info('python test_implicit_time_agg_cent_weight.py ', nn_model=nn_model + ' ' + str(USERS))
+    os.system('python test_implicit_time_agg_cent_weight.py ' + nn_model + ' ' + str(USERS))
     log.info('End testing')
 
     # append test performance to the log
@@ -198,7 +197,7 @@ def central_agent(net_params_queues, exp_queues):
 
 
 def agent(agent_id, net_params_queue, exp_queue):
-    env = ABREnv(agent_id, num_agents=USERS, reward_func=REWARD_FUNC, train_traces=TRAIN_NOAA_TRACES)
+    env = ABREnv(agent_id, num_agents=USERS, reward_func=REWARD_FUNC, train_traces=TRAIN_TRACES)
     with tf.Session() as sess:
         actor = network.Network(sess,
                                 state_dim=S_DIM, action_dim=A_DIM * A_SAT,

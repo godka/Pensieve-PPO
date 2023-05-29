@@ -7,7 +7,7 @@ import sys
 root_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, root_dir + '/../')
 from env.multi_bw_share.env_time_agg_real import ABREnv
-from models.rl_multi_bw_share.ppo_spec import ppo_implicit_agg_weighted_v2 as network
+from models.rl_multi_bw_share.ppo_spec import ppo_implicit_agg_weighted_cent_dist as network
 import tensorflow.compat.v1 as tf
 import structlog
 from util.constants import A_DIM, NUM_AGENTS, PAST_SAT_LOG_LEN, TRAIN_REAL_TRACES
