@@ -22,13 +22,13 @@ ACTOR_LR_RATE = 1e-4
 RANDOM_SEED = 42
 NN_MODEL = sys.argv[1]
 USERS = int(sys.argv[2])
-SUMMARY_DIR = './test_results_imp_cent_one_reward' + str(USERS)
+SUMMARY_DIR = './test_results_imp_cent' + str(USERS)
 
-if not os.path.exists(SUMMARY_DIR):
-    os.makedirs(SUMMARY_DIR)
 LOG_FILE = SUMMARY_DIR + '/log_sim_ppo'
 SUMMARY_PATH = SUMMARY_DIR + '/summary'
 
+if not os.path.exists(SUMMARY_DIR):
+    os.makedirs(SUMMARY_DIR)
 # A_SAT = NUM_AGENTS
 structlog.configure(
     wrapper_class=structlog.make_filtering_bound_logger(logging.INFO),
@@ -38,7 +38,7 @@ log = structlog.get_logger()
 log.debug('Test init')
 
 REWARD_FUNC = "LIN"
-S_INFO = 11 + USERS-1 + (USERS-1) * PAST_SAT_LOG_LEN + (USERS-1)*2
+S_INFO = 11 + USERS-1 + (USERS-1) * PAST_SAT_LOG_LEN + (USERS-1)
 
 
 def main():
@@ -66,15 +66,6 @@ def main():
     reward_1 = []
     reward_2 = []
     reward_3 = []
-    prev_buffer_size = [0 for _ in range(USERS)]
-    prev_rebuf = [0 for _ in range(USERS)]
-    prev_video_chunk_size = [0 for _ in range(USERS)]
-    prev_delay = [0 for _ in range(USERS)]
-    prev_next_video_chunk_sizes = [[] for _ in range(USERS)]
-    prev_video_chunk_remain = [0 for _ in range(USERS)]
-    prev_next_sat_bw_logs = [[] for _ in range(USERS)]
-    prev_cur_sat_bw_logs = [[] for _ in range(USERS)]
-    prev_connected_time = [[] for _ in range(USERS)]
 
     with tf.Session() as sess:
 
@@ -177,16 +168,9 @@ def main():
             time_stamp[agent] += delay  # in ms
             time_stamp[agent] += sleep_time  # in ms
 
-            prev_buffer_size[agent] = buffer_size
-            prev_rebuf[agent] = rebuf
-            prev_video_chunk_size[agent] = video_chunk_size
-            prev_delay[agent] = delay
-            prev_next_video_chunk_sizes[agent] = next_video_chunk_sizes
-            prev_video_chunk_remain[agent] = video_chunk_remain
-            prev_next_sat_bw_logs[agent] = next_sat_bw_logs
-            prev_cur_sat_bw_logs[agent] = cur_sat_bw_logs
-            prev_connected_time[agent] = connected_time
-
+            next_sat_id = None
+            if next_sat_ids is not None:
+                next_sat_id = next_sat_ids[agent]
             # reward is video quality - rebuffer penalty
             if REWARD_FUNC == "LIN":
                 reward = VIDEO_BIT_RATE[bit_rate[agent]] / M_IN_K \
@@ -198,7 +182,7 @@ def main():
                 tmp_reward_3.append(- SMOOTH_PENALTY * np.abs(VIDEO_BIT_RATE[bit_rate[agent]] -
                                                               VIDEO_BIT_RATE[last_bit_rate[agent]]) / M_IN_K)
 
-                # reward += self.net_env.get_others_reward(agent, self.last_bit_rate)
+                train_reward = reward + net_env.get_others_reward(agent, last_bit_rate)
             elif REWARD_FUNC == "HD":
                 reward = BITRATE_REWARD[bit_rate[agent]] \
                          - 8 * rebuf - np.abs(BITRATE_REWARD[bit_rate[agent]] - BITRATE_REWARD[last_bit_rate[agent]])
@@ -209,7 +193,7 @@ def main():
             else:
                 raise Exception
 
-            r_batch[agent].append(reward)
+            r_batch[agent].append(train_reward)
             tmp_results.append(reward)
 
             last_bit_rate[agent] = bit_rate[agent]
@@ -266,9 +250,7 @@ def main():
             state[agent][9:10, -1] = np.array(next_sat_user_num) / 10
             state[agent][10, :2] = [float(connected_time[0]) / BUFFER_NORM_FACTOR / 10,
                                     float(connected_time[1]) / BUFFER_NORM_FACTOR / 10]
-            next_sat_id = None
-            if next_sat_ids is not None:
-                next_sat_id = next_sat_ids[agent]
+
             other_user_sat_decisions, other_sat_num_users, other_sat_bws, cur_user_sat_decisions \
                 = encode_other_sat_info(net_env.sat_decision_log, USERS, cur_sat_id, next_sat_id, agent,
                                         other_sat_users, other_sat_bw_logs, PAST_SAT_LOG_LEN)
@@ -278,21 +260,11 @@ def main():
             state[agent][(11 + USERS-1):(11 + USERS-1 + (USERS-1) * PAST_SAT_LOG_LEN),
             0:2] = np.reshape(other_user_sat_decisions, (-1, 2))
 
-            others_last_bit_rate = np.delete(np.array(last_bit_rate), agent)
-            for i in others_last_bit_rate:
-                state[agent][(11 + USERS-1 + (USERS-1) * PAST_SAT_LOG_LEN) + i:
-                             (11 + USERS-1 + (USERS-1) * PAST_SAT_LOG_LEN + (USERS-1)) + i, -1] \
-                    = VIDEO_BIT_RATE[i] / float(np.max(VIDEO_BIT_RATE))
-            i = 0
-            for u_id in range(USERS):
-                if u_id == agent:
-                    continue
-                if len(prev_cur_sat_bw_logs[u_id]) < PAST_LEN:
-                    prev_cur_sat_bw_logs[u_id] = [0] * (PAST_LEN - len(prev_cur_sat_bw_logs[u_id])) + \
-                                                  prev_cur_sat_bw_logs[u_id]
-                state[agent][(11 + USERS-1 + (USERS-1) * PAST_SAT_LOG_LEN + (USERS-1))+i, :PAST_LEN] = np.array(prev_cur_sat_bw_logs[u_id][:PAST_LEN]) / 10
+            others_last_bit_rate = np.delete(np.array(last_bit_rate) / 2 , agent)
+            state[agent][(11 + USERS-1 + (USERS-1) * PAST_SAT_LOG_LEN):
+                         (11 + USERS-1 + (USERS-1) * PAST_SAT_LOG_LEN + (USERS-1)),
 
-                i += 1
+            0:int(len(VIDEO_BIT_RATE)/2)] = np.reshape(one_hot_encode(others_last_bit_rate, int(len(VIDEO_BIT_RATE)/2)), (-1, int(len(VIDEO_BIT_RATE)/2)))
             # if len(next_sat_user_num) < PAST_LEN:
             #     next_sat_user_num = [0] * (PAST_LEN - len(next_sat_user_num)) + next_sat_user_num
 

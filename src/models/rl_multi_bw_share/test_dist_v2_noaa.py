@@ -3,26 +3,25 @@ import sys
 root_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, root_dir + '/../')
 from util.constants import CHUNK_TIL_VIDEO_END_CAP, BUFFER_NORM_FACTOR, VIDEO_BIT_RATE, REBUF_PENALTY, SMOOTH_PENALTY, \
-    DEFAULT_QUALITY, BITRATE_WEIGHT, M_IN_K, A_DIM, PAST_LEN, PAST_LEN, BITRATE_REWARD, MAX_SAT, PAST_SAT_LOG_LEN, \
-    TEST_TRACES
-from util.encode import encode_other_sat_info, one_hot_encode
+    DEFAULT_QUALITY, BITRATE_WEIGHT, M_IN_K, A_DIM, PAST_LEN, PAST_LEN, BITRATE_REWARD, TEST_NOAA_TRACES
 
 os.environ['CUDA_VISIBLE_DEVICES'] = '-1'
 import numpy as np
 import tensorflow.compat.v1 as tf
 from env.multi_bw_share import fixed_env_time as env
-from env.multi_bw_share import load_trace as load_trace
-from models.rl_multi_bw_share.ppo_spec import ppo_cent_his as network
+from env.multi_bw_share import load_trace_noaa as load_trace
+from models.rl_multi_bw_share.ppo_spec import ppo_implicit_dist as network
 import structlog
 import logging
 
+S_INFO = 6 + 1  # bit_rate, buffer_size, next_chunk_size, bandwidth_measurement(throughput and time), chunk_til_video_end
 A_SAT = 2
 ACTOR_LR_RATE = 1e-4
 # CRITIC_LR_RATE = 0.001
 RANDOM_SEED = 42
 NN_MODEL = sys.argv[1]
 USERS = int(sys.argv[2])
-SUMMARY_DIR = './test_results_imp_cent_one_reward' + str(USERS)
+SUMMARY_DIR = './test_results_imp_dist_noaa' + str(USERS)
 
 if not os.path.exists(SUMMARY_DIR):
     os.makedirs(SUMMARY_DIR)
@@ -38,7 +37,6 @@ log = structlog.get_logger()
 log.debug('Test init')
 
 REWARD_FUNC = "LIN"
-S_INFO = 11 + USERS-1 + (USERS-1) * PAST_SAT_LOG_LEN + (USERS-1)*2
 
 
 def main():
@@ -48,7 +46,7 @@ def main():
 
     is_handover = False
 
-    all_cooked_time, all_cooked_bw, all_file_names = load_trace.load_trace(TEST_TRACES)
+    all_cooked_time, all_cooked_bw, all_file_names = load_trace.load_trace(TEST_NOAA_TRACES)
 
     net_env = env.Environment(all_cooked_time=all_cooked_time,
                               all_cooked_bw=all_cooked_bw,
@@ -66,21 +64,12 @@ def main():
     reward_1 = []
     reward_2 = []
     reward_3 = []
-    prev_buffer_size = [0 for _ in range(USERS)]
-    prev_rebuf = [0 for _ in range(USERS)]
-    prev_video_chunk_size = [0 for _ in range(USERS)]
-    prev_delay = [0 for _ in range(USERS)]
-    prev_next_video_chunk_sizes = [[] for _ in range(USERS)]
-    prev_video_chunk_remain = [0 for _ in range(USERS)]
-    prev_next_sat_bw_logs = [[] for _ in range(USERS)]
-    prev_cur_sat_bw_logs = [[] for _ in range(USERS)]
-    prev_connected_time = [[] for _ in range(USERS)]
 
     with tf.Session() as sess:
 
         actor = network.Network(sess,
                                 state_dim=[S_INFO, PAST_LEN], action_dim=A_DIM * A_SAT,
-                                learning_rate=ACTOR_LR_RATE, num_of_users=USERS)
+                                learning_rate=ACTOR_LR_RATE)
 
         sess.run(tf.global_variables_initializer())
         saver = tf.train.Saver()  # save neural net parameters
@@ -170,22 +159,11 @@ def main():
             delay, sleep_time, buffer_size, rebuf, \
             video_chunk_size, next_video_chunk_sizes, \
             end_of_video, video_chunk_remain, is_handover, _, _, next_sat_bw_logs, \
-            cur_sat_user_num, next_sat_user_num, cur_sat_bw_logs, connected_time, cur_sat_id, next_sat_ids, _, _, _, _,\
-            other_sat_users, other_sat_bw_logs, other_buffer_sizes = \
+            cur_sat_user_num, next_sat_user_num, cur_sat_bw_logs, connected_time, cur_sat_id, _, _, _, _, _ = \
                 net_env.get_video_chunk(bit_rate[agent], agent, model_type=None)
 
             time_stamp[agent] += delay  # in ms
             time_stamp[agent] += sleep_time  # in ms
-
-            prev_buffer_size[agent] = buffer_size
-            prev_rebuf[agent] = rebuf
-            prev_video_chunk_size[agent] = video_chunk_size
-            prev_delay[agent] = delay
-            prev_next_video_chunk_sizes[agent] = next_video_chunk_sizes
-            prev_video_chunk_remain[agent] = video_chunk_remain
-            prev_next_sat_bw_logs[agent] = next_sat_bw_logs
-            prev_cur_sat_bw_logs[agent] = cur_sat_bw_logs
-            prev_connected_time[agent] = connected_time
 
             # reward is video quality - rebuffer penalty
             if REWARD_FUNC == "LIN":
@@ -197,8 +175,6 @@ def main():
                 tmp_reward_2.append(-REBUF_PENALTY * rebuf)
                 tmp_reward_3.append(- SMOOTH_PENALTY * np.abs(VIDEO_BIT_RATE[bit_rate[agent]] -
                                                               VIDEO_BIT_RATE[last_bit_rate[agent]]) / M_IN_K)
-
-                # reward += self.net_env.get_others_reward(agent, self.last_bit_rate)
             elif REWARD_FUNC == "HD":
                 reward = BITRATE_REWARD[bit_rate[agent]] \
                          - 8 * rebuf - np.abs(BITRATE_REWARD[bit_rate[agent]] - BITRATE_REWARD[last_bit_rate[agent]])
@@ -249,54 +225,7 @@ def main():
 
             state[agent][5, -1] = np.minimum(video_chunk_remain, CHUNK_TIL_VIDEO_END_CAP) / float(
                 CHUNK_TIL_VIDEO_END_CAP)
-            if len(next_sat_bw_logs) < PAST_LEN:
-                next_sat_bw_logs = [0] * (PAST_LEN - len(next_sat_bw_logs)) + next_sat_bw_logs
-
-            state[agent][6, :PAST_LEN] = np.array(next_sat_bw_logs[:PAST_LEN]) / 10
-
-            if len(cur_sat_bw_logs) < PAST_LEN:
-                cur_sat_bw_logs = [0] * (PAST_LEN - len(cur_sat_bw_logs)) + cur_sat_bw_logs
-
-            state[agent][7, :PAST_LEN] = np.array(cur_sat_bw_logs[:PAST_LEN]) / 10
-
-            if is_handover:
-                state[agent][8:9, 0:PAST_LEN] = np.zeros((1, PAST_LEN))
-                state[agent][9:10, 0:PAST_LEN] = np.zeros((1, PAST_LEN))
-            state[agent][8:9, -1] = np.array(cur_sat_user_num) / 10
-            state[agent][9:10, -1] = np.array(next_sat_user_num) / 10
-            state[agent][10, :2] = [float(connected_time[0]) / BUFFER_NORM_FACTOR / 10,
-                                    float(connected_time[1]) / BUFFER_NORM_FACTOR / 10]
-            next_sat_id = None
-            if next_sat_ids is not None:
-                next_sat_id = next_sat_ids[agent]
-            other_user_sat_decisions, other_sat_num_users, other_sat_bws, cur_user_sat_decisions \
-                = encode_other_sat_info(net_env.sat_decision_log, USERS, cur_sat_id, next_sat_id, agent,
-                                        other_sat_users, other_sat_bw_logs, PAST_SAT_LOG_LEN)
-
-            # state[agent][11:11+MAX_SAT - A_SAT, -1] = np.reshape(np.array(other_sat_num_users), (MAX_SAT - A_SAT, 1)) / 10
-            state[agent][11:(11 + USERS-1), -1:] = np.reshape(np.array(other_buffer_sizes) / BUFFER_NORM_FACTOR, (-1, 1))
-            state[agent][(11 + USERS-1):(11 + USERS-1 + (USERS-1) * PAST_SAT_LOG_LEN),
-            0:2] = np.reshape(other_user_sat_decisions, (-1, 2))
-
-            others_last_bit_rate = np.delete(np.array(last_bit_rate), agent)
-            for i in others_last_bit_rate:
-                state[agent][(11 + USERS-1 + (USERS-1) * PAST_SAT_LOG_LEN) + i:
-                             (11 + USERS-1 + (USERS-1) * PAST_SAT_LOG_LEN + (USERS-1)) + i, -1] \
-                    = VIDEO_BIT_RATE[i] / float(np.max(VIDEO_BIT_RATE))
-            i = 0
-            for u_id in range(USERS):
-                if u_id == agent:
-                    continue
-                if len(prev_cur_sat_bw_logs[u_id]) < PAST_LEN:
-                    prev_cur_sat_bw_logs[u_id] = [0] * (PAST_LEN - len(prev_cur_sat_bw_logs[u_id])) + \
-                                                  prev_cur_sat_bw_logs[u_id]
-                state[agent][(11 + USERS-1 + (USERS-1) * PAST_SAT_LOG_LEN + (USERS-1))+i, :PAST_LEN] = np.array(prev_cur_sat_bw_logs[u_id][:PAST_LEN]) / 10
-
-                i += 1
-            # if len(next_sat_user_num) < PAST_LEN:
-            #     next_sat_user_num = [0] * (PAST_LEN - len(next_sat_user_num)) + next_sat_user_num
-
-            # state[agent][8, :PAST_LEN] = next_sat_user_num[:5]
+            state[agent][6, -1] = float(connected_time[0]) / BUFFER_NORM_FACTOR / 10
 
             action_prob = actor.predict(np.reshape(state[agent], (1, S_INFO, PAST_LEN)))
             noise = np.random.gumbel(size=len(action_prob))
@@ -339,7 +268,6 @@ def main():
     reward_file.write('\n')
     reward_file.write(' '.join(str(elem) for elem in reward_3))
     reward_file.write('\n')
-
 
 if __name__ == '__main__':
     main()
