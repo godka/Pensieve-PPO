@@ -260,12 +260,12 @@ def main():
                 prev_next_sat_bw_logs[agent] = [0] * (PAST_LEN - len(prev_next_sat_bw_logs[agent])) + prev_next_sat_bw_logs[
                     agent]
 
-            state[agent][6, :PAST_LEN] = np.array(prev_next_sat_bw_logs[agent][:PAST_LEN])
+            state[agent][6, :PAST_LEN] = np.array(prev_next_sat_bw_logs[agent][:PAST_LEN]) / 10
 
             if len(prev_cur_sat_bw_logs[agent]) < PAST_LEN:
                 prev_cur_sat_bw_logs[agent] = [0] * (PAST_LEN - len(prev_cur_sat_bw_logs[agent])) + prev_cur_sat_bw_logs[agent]
 
-            state[agent][7, :PAST_LEN] = np.array(prev_cur_sat_bw_logs[agent][:PAST_LEN])
+            state[agent][7, :PAST_LEN] = np.array(prev_cur_sat_bw_logs[agent][:PAST_LEN]) / 10
             if is_handover:
                 state[agent][8, 0:PAST_LEN] = np.zeros((1, PAST_LEN))
                 state[agent][9, 0:PAST_LEN] = np.zeros((1, PAST_LEN))

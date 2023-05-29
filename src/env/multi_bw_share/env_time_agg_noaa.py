@@ -97,12 +97,12 @@ class ABREnv():
         if len(self.next_sat_bw_logs[agent]) < PAST_LEN:
             self.next_sat_bw_logs[agent] = [0] * (PAST_LEN - len(self.next_sat_bw_logs[agent])) + self.next_sat_bw_logs[agent]
 
-        state[6, :PAST_LEN] = np.array(self.next_sat_bw_logs[agent][:PAST_LEN])
+        state[6, :PAST_LEN] = np.array(self.next_sat_bw_logs[agent][:PAST_LEN]) / 10
 
         if len(self.cur_sat_bw_logs[agent]) < PAST_LEN:
             self.cur_sat_bw_logs[agent] = [0] * (PAST_LEN - len(self.cur_sat_bw_logs[agent])) + self.cur_sat_bw_logs[agent]
 
-        state[7, :PAST_LEN] = np.array(self.cur_sat_bw_logs[agent][:PAST_LEN])
+        state[7, :PAST_LEN] = np.array(self.cur_sat_bw_logs[agent][:PAST_LEN]) / 10
         if self.is_handover:
             state[8, 0:PAST_LEN] = np.zeros((1, PAST_LEN))
             state[9, 0:PAST_LEN] = np.zeros((1, PAST_LEN))
@@ -264,13 +264,13 @@ class ABREnv():
             self.next_sat_bw_logs[agent] = [0] * (PAST_LEN - len(self.next_sat_bw_logs[agent])) + self.next_sat_bw_logs[
                 agent]
 
-        state[6, :PAST_LEN] = np.array(self.next_sat_bw_logs[agent][:PAST_LEN])
+        state[6, :PAST_LEN] = np.array(self.next_sat_bw_logs[agent][:PAST_LEN]) / 10
 
         if len(self.cur_sat_bw_logs[agent]) < PAST_LEN:
             self.cur_sat_bw_logs[agent] = [0] * (PAST_LEN - len(self.cur_sat_bw_logs[agent])) + self.cur_sat_bw_logs[
                 agent]
 
-        state[7, :PAST_LEN] = np.array(self.cur_sat_bw_logs[agent][:PAST_LEN])
+        state[7, :PAST_LEN] = np.array(self.cur_sat_bw_logs[agent][:PAST_LEN]) / 10
         if self.is_handover:
             state[8, 0:PAST_LEN] = np.zeros((1, PAST_LEN))
             state[9, 0:PAST_LEN] = np.zeros((1, PAST_LEN))

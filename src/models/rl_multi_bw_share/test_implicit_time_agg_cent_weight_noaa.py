@@ -30,7 +30,6 @@ if not os.path.exists(SUMMARY_DIR):
 LOG_FILE = SUMMARY_DIR + '/log_sim_ppo'
 SUMMARY_PATH = SUMMARY_DIR + '/summary'
 
-
 # A_SAT = NUM_AGENTS
 structlog.configure(
     wrapper_class=structlog.make_filtering_bound_logger(logging.INFO),
@@ -241,33 +240,28 @@ def main():
             state[agent] = np.roll(state[agent], -1, axis=1)
 
             # this should be S_INFO number of terms
-            state[agent][0, -1] = VIDEO_BIT_RATE[last_bit_rate[agent]] / float(
-                np.max(VIDEO_BIT_RATE))  # last quality
+            state[agent][0, -1] = VIDEO_BIT_RATE[last_bit_rate[agent]] / float(np.max(VIDEO_BIT_RATE))  # last quality
             state[agent][1, -1] = prev_buffer_size[agent] / BUFFER_NORM_FACTOR  # 10 sec
             if prev_delay[agent] != 0:
-                state[agent][2, -1] = float(prev_video_chunk_size[agent]) / \
-                                              float(prev_delay[agent]) / M_IN_K  # kilo byte / ms
+                state[agent][2, -1] = float(prev_video_chunk_size[agent]) / float(prev_delay[agent]) / M_IN_K  # kilo byte / ms
             else:
                 state[agent][2, -1] = 0
             state[agent][3, -1] = float(prev_delay[agent]) / M_IN_K / BUFFER_NORM_FACTOR  # 10 sec
             # state[4, :A_DIM] = np.array(next_video_chunk_sizes) / M_IN_K / M_IN_K  # mega byte
             if prev_next_video_chunk_sizes[agent]:
-                state[agent][4, :A_DIM] = np.array(
-                    [prev_next_video_chunk_sizes[agent][index] for index in [0, 2, 4]]) / M_IN_K / M_IN_K  # mega byte
+                state[agent][4, :A_DIM] = np.array([prev_next_video_chunk_sizes[agent][index] for index in [0, 2, 4]]) / M_IN_K / M_IN_K  # mega byte
             else:
                 state[agent][4, :A_DIM] = [0, 0, 0]
-            state[agent][5, -1] = np.minimum(prev_video_chunk_remain[agent],
-                                                     CHUNK_TIL_VIDEO_END_CAP) / float(CHUNK_TIL_VIDEO_END_CAP)
+            state[agent][5, -1] = np.minimum(prev_video_chunk_remain[agent], CHUNK_TIL_VIDEO_END_CAP) / float(CHUNK_TIL_VIDEO_END_CAP)
             if len(prev_next_sat_bw_logs[agent]) < PAST_LEN:
-                prev_next_sat_bw_logs[agent] = [0] * (PAST_LEN - len(prev_next_sat_bw_logs[agent])) + prev_next_sat_bw_logs[
-                    agent]
+                prev_next_sat_bw_logs[agent] = [0] * (PAST_LEN - len(prev_next_sat_bw_logs[agent])) + prev_next_sat_bw_logs[agent]
 
-            state[agent][6, :PAST_LEN] = np.array(prev_next_sat_bw_logs[agent][:PAST_LEN])
+            state[agent][6, :PAST_LEN] = np.array(prev_next_sat_bw_logs[agent][:PAST_LEN]) / 10
 
             if len(prev_cur_sat_bw_logs[agent]) < PAST_LEN:
                 prev_cur_sat_bw_logs[agent] = [0] * (PAST_LEN - len(prev_cur_sat_bw_logs[agent])) + prev_cur_sat_bw_logs[agent]
 
-            state[agent][7, :PAST_LEN] = np.array(prev_cur_sat_bw_logs[agent][:PAST_LEN])
+            state[agent][7, :PAST_LEN] = np.array(prev_cur_sat_bw_logs[agent][:PAST_LEN]) / 10
             if is_handover:
                 state[agent][8, 0:PAST_LEN] = np.zeros((1, PAST_LEN))
                 state[agent][9, 0:PAST_LEN] = np.zeros((1, PAST_LEN))

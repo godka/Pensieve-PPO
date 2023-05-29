@@ -36,8 +36,6 @@ class Network():
             split_4_flat = tflearn.flatten(split_4)
             split_6_flat = tflearn.flatten(split_6)
             split_7_flat = tflearn.flatten(split_7)
-            # split_8_flat = tflearn.flatten(split_8)
-            # split_8_1_flat = tflearn.flatten(split_8_1)
             split_9_flat = tflearn.flatten(split_9)
 
             merge_net = tflearn.merge(
