@@ -36,7 +36,7 @@ parser.add_argument('--user', type=int, default=3)
 args = parser.parse_args()
 USERS = args.user
 # A_SAT = USERS + 1
-S_DIM = [9 + 9 * (USERS - 1) + 1 + (USERS - 1) * PAST_SAT_LOG_LEN, 8]
+S_DIM = [9 + 8 * (USERS - 1) + (USERS - 1) * PAST_SAT_LOG_LEN, 8]
 
 
 TEST_LOG_FOLDER += str(USERS) + '/'
