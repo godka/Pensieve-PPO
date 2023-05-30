@@ -21,7 +21,7 @@ TRAIN_SEQ_LEN = 300  # take as a train batch
 TRAIN_EPOCH = 20000000
 MODEL_SAVE_INTERVAL = 3000
 RANDOM_SEED = 42
-SUMMARY_DIR = './ppo_imp_agg'
+SUMMARY_DIR = './ppo_imp_agg_cent_cent'
 MODEL_DIR = '..'
 
 TEST_LOG_FOLDER = './test_results_imp_agg'
@@ -31,11 +31,11 @@ import argparse
 
 parser = argparse.ArgumentParser(description='PyTorch Synthetic Benchmark',
                                  formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-parser.add_argument('--user', type=int, default=5)
+parser.add_argument('--user', type=int, default=3)
 args = parser.parse_args()
 USERS = args.user
 # A_SAT = USERS + 1
-S_DIM = [10 + 8 * (USERS - 1) + 1 + (USERS - 1) * PAST_SAT_LOG_LEN, 8]
+S_DIM = [9 + 8 * (USERS - 1) + (USERS - 1) * PAST_SAT_LOG_LEN, 8]
 
 
 TEST_LOG_FOLDER += str(USERS) + '/'

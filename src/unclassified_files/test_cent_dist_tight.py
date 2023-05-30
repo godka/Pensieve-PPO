@@ -22,7 +22,7 @@ RANDOM_SEED = 42
 NN_MODEL = sys.argv[1]
 USERS = int(sys.argv[2])
 SUMMARY_DIR = './test_results_imp_agg_weight_tight' + str(USERS)
-S_INFO = 9 + 8 * (USERS - 1)+ (USERS - 1) * PAST_SAT_LOG_LEN
+S_INFO = 9 + 8 * (USERS - 1) + (USERS - 1) * PAST_SAT_LOG_LEN
 
 if not os.path.exists(SUMMARY_DIR):
     os.makedirs(SUMMARY_DIR)

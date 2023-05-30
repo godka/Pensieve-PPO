@@ -47,7 +47,6 @@ class Network():
             pi_net = tflearn.fully_connected(merge_net, FEATURE_NUM, activation='relu')
             # pi_net2 = tflearn.fully_connected(pi_net, int(FEATURE_NUM/2), activation='relu')
             # pi_net3 = tflearn.fully_connected(pi_net2, int(FEATURE_NUM/4), activation='relu')
-
             pi = tflearn.fully_connected(pi_net, self.a_dim, activation='softmax')
 
         with tf.variable_scope('critic'):

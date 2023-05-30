@@ -9,8 +9,6 @@ from . import load_trace as load_trace
 
 # bit_rate, buffer_size, next_chunk_size, bandwidth_measurement(throughput and time), chunk_til_video_end
 A_SAT = 2
-MAX_SAT = 5
-
 RANDOM_SEED = 42
 RAND_RANGE = 1000
 EPS = 1e-6
@@ -317,12 +315,10 @@ class ABREnv():
         state[
         9 + 8 * (self.num_users - 1):(9 + 8 * (self.num_users - 1) + (self.num_users - 1) * PAST_SAT_LOG_LEN),
         0:2] = np.reshape(other_user_sat_decisions, (-1, 2))
-
         # if len(next_sat_user_nums) < PAST_LEN:
         #     next_sat_user_nums = [0] * (PAST_LEN - len(next_sat_user_nums)) + next_sat_user_nums
 
         # state[agent][8, :PAST_LEN] = next_sat_user_nums[:5]
-
         self.state[agent] = state
 
         # observation, reward, done, info = ppo_spec.step(action)
