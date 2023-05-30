@@ -3,14 +3,14 @@ import sys
 root_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, root_dir + '/../')
 from util.constants import CHUNK_TIL_VIDEO_END_CAP, BUFFER_NORM_FACTOR, VIDEO_BIT_RATE, REBUF_PENALTY, SMOOTH_PENALTY, \
-    DEFAULT_QUALITY, BITRATE_WEIGHT, M_IN_K, A_DIM, PAST_LEN, PAST_LEN, BITRATE_REWARD, TEST_TRACES, PAST_SAT_LOG_LEN
+    DEFAULT_QUALITY, BITRATE_WEIGHT, M_IN_K, A_DIM, PAST_LEN, PAST_LEN, BITRATE_REWARD, TEST_REAL_TRACES, PAST_SAT_LOG_LEN
 from util.encode import encode_other_sat_info, one_hot_encode
 
 os.environ['CUDA_VISIBLE_DEVICES'] = '-1'
 import numpy as np
 import tensorflow.compat.v1 as tf
 from env.multi_bw_share import fixed_env_time as env
-from env.multi_bw_share import load_trace as load_trace
+from env.multi_bw_share import load_trace_real as load_trace
 from models.rl_multi_bw_share.ppo_spec import ppo_cent_cent as network
 import structlog
 import logging
@@ -21,7 +21,7 @@ ACTOR_LR_RATE = 1e-4
 RANDOM_SEED = 42
 NN_MODEL = sys.argv[1]
 USERS = int(sys.argv[2])
-SUMMARY_DIR = './test_results_imp_agg' + str(USERS)
+SUMMARY_DIR = './test_results_imp_agg_cent_cent_real' + str(USERS)
 S_INFO = 9 + 8 * (USERS - 1) + (USERS - 1) * PAST_SAT_LOG_LEN
 
 if not os.path.exists(SUMMARY_DIR):
@@ -47,7 +47,7 @@ def main():
 
     is_handover = False
 
-    all_cooked_time, all_cooked_bw, all_file_names = load_trace.load_trace(TEST_TRACES)
+    all_cooked_time, all_cooked_bw, all_file_names = load_trace.load_trace(TEST_REAL_TRACES)
 
     net_env = env.Environment(all_cooked_time=all_cooked_time,
                               all_cooked_bw=all_cooked_bw,
