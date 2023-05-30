@@ -6,7 +6,7 @@ os.environ['CUDA_VISIBLE_DEVICES']='-1'
 import numpy as np
 import tensorflow.compat.v1 as tf
 from env.multi_bw_share import fixed_env_cent as env, load_trace
-from models.rl_multi_bw_share.ppo_spec import ppo_cent as network
+from models.rl_multi_bw_share.ppo_spec import ppo_cent_cent as network
 
 # S_INFO = 10 + 1 + 3 + 6 * 5  # Original + nums of sat + bw of sats + decisions of users
 S_LEN = 8  # take how many frames in the past

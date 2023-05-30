@@ -24,11 +24,11 @@ USERS = int(sys.argv[2])
 SUMMARY_DIR = './test_results_imp_agg_cent_cent_noaa' + str(USERS)
 S_INFO = 9 + 8 * (USERS - 1) + (USERS - 1) * PAST_SAT_LOG_LEN
 
+if not os.path.exists(SUMMARY_DIR):
+    os.makedirs(SUMMARY_DIR)
 LOG_FILE = SUMMARY_DIR + '/log_sim_ppo'
 SUMMARY_PATH = SUMMARY_DIR + '/summary'
 
-if not os.path.exists(SUMMARY_DIR):
-    os.makedirs(SUMMARY_DIR)
 # A_SAT = NUM_AGENTS
 structlog.configure(
     wrapper_class=structlog.make_filtering_bound_logger(logging.INFO),
