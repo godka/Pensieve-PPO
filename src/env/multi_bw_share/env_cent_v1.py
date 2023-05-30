@@ -152,7 +152,7 @@ class ABREnv():
             = encode_other_sat_info(self.net_env.sat_decision_log, self.num_users, cur_sat_id, next_sat_id,
                                     agent, other_sat_users, other_sat_bw_logs, PAST_SAT_LOG_LEN)
 
-        state[8 + 8 * (self.num_users - 1) + 1:(8 + 8 * (self.num_users - 1) + 1 + (self.num_users - 1) * PAST_SAT_LOG_LEN),
+        state[9 + 9 * (self.num_users - 1) + 1:(9 + 9 * (self.num_users - 1) + 1 + (self.num_users - 1) * PAST_SAT_LOG_LEN),
         0:2] = np.reshape(other_user_sat_decisions, (-1, 2))
 
         # if len(next_sat_user_nums) < PAST_LEN:
@@ -315,7 +315,7 @@ class ABREnv():
                                     agent, other_sat_users, other_sat_bw_logs, PAST_SAT_LOG_LEN)
 
         state[
-        8 + 8 * (self.num_users - 1) + 1:(8 + 8 * (self.num_users - 1) + 1 + (self.num_users - 1) * PAST_SAT_LOG_LEN),
+        9 + 9 * (self.num_users - 1) + 1:(9 + 9 * (self.num_users - 1) + 1 + (self.num_users - 1) * PAST_SAT_LOG_LEN),
         0:2] = np.reshape(other_user_sat_decisions, (-1, 2))
 
         # if len(next_sat_user_nums) < PAST_LEN:

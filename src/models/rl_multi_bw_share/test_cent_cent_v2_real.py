@@ -22,7 +22,7 @@ RANDOM_SEED = 42
 NN_MODEL = sys.argv[1]
 USERS = int(sys.argv[2])
 SUMMARY_DIR = './test_results_imp_agg_weight_cent_real' + str(USERS)
-S_INFO = 8 + 8 * (USERS - 1) + 1 + (USERS - 1) * PAST_SAT_LOG_LEN
+S_INFO = 9 + 9 * (USERS - 1) + 1 + (USERS - 1) * PAST_SAT_LOG_LEN
 
 LOG_FILE = SUMMARY_DIR + '/log_sim_ppo'
 SUMMARY_PATH = SUMMARY_DIR + '/summary'

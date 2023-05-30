@@ -111,10 +111,10 @@ class Network():
             tmp_net = []
             for i in range((self.num_agents - 1) * PAST_SAT_LOG_LEN):
                 split_tmp = tflearn.fully_connected(
-                    inputs[:, 8 + 8 * (self.num_agents - 1) + 1 + i:8 + 8 * (self.num_agents - 1) + 1 + i + 1, 0],
+                    inputs[:, 9 + 9 * (self.num_agents - 1) + 1 + i:9 + 9 * (self.num_agents - 1) + 1 + i + 1, 0],
                     FEATURE_NUM, activation='relu')
                 split_tmp_1 = tflearn.fully_connected(
-                    inputs[:, 8 + 8 * (self.num_agents - 1) + 1 + i:8 + 8 * (self.num_agents - 1) + 1 + i + 1, 1],
+                    inputs[:, 9 + 9 * (self.num_agents - 1) + 1 + i:9 + 9 * (self.num_agents - 1) + 1 + i + 1, 1],
                     FEATURE_NUM, activation='relu')
                 # split_tmp_flat = tflearn.flatten(split_tmp)
 
