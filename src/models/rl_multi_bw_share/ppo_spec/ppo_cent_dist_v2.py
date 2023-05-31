@@ -3,6 +3,9 @@ import numpy as np
 import tensorflow.compat.v1 as tf
 import os
 import time
+
+from util.constants import PAST_SAT_LOG_LEN
+
 os.environ['CUDA_VISIBLE_DEVICES'] = '2'
 import tflearn
 
@@ -46,6 +49,8 @@ class Network():
             pi = tflearn.fully_connected(pi_net, self.a_dim, activation='softmax')
 
         with tf.variable_scope('critic'):
+            split_list = []
+            tmp_list = []
             split_0 = tflearn.fully_connected(inputs[:, 0:1, -1], FEATURE_NUM, activation='relu')
             split_1 = tflearn.fully_connected(inputs[:, 1:2, -1], FEATURE_NUM, activation='relu')
             split_2 = tflearn.conv_1d(inputs[:, 2:3, :], FEATURE_NUM, DIM_SIZE, activation='relu')
@@ -63,15 +68,43 @@ class Network():
             split_7_flat = tflearn.flatten(split_7)
             split_9_flat = tflearn.flatten(split_9)
 
-            merge_net = tflearn.merge(
-                [split_0, split_1, split_2_flat, split_3_flat, split_4_flat, split_5, split_6_flat, split_7_flat,
-                 split_9_flat], 'concat')
-            pi_net = tflearn.fully_connected(merge_net, FEATURE_NUM, activation='relu')
-            # pi_net2 = tflearn.fully_connected(pi_net, int(FEATURE_NUM/2), activation='relu')
-            # pi_net3 = tflearn.fully_connected(pi_net2, int(FEATURE_NUM/4), activation='relu')
-            # value_net2 = tflearn.fully_connected(value_net, FEATURE_NUM, activation='relu')
+            tmp_list.append(split_0)
+            tmp_list.append(split_1)
+            tmp_list.append(split_2_flat)
+            tmp_list.append(split_3_flat)
+            tmp_list.append(split_4_flat)
+            tmp_list.append(split_5)
+            tmp_list.append(split_6_flat)
+            tmp_list.append(split_7_flat)
+            tmp_list.append(split_9_flat)
 
-            value = tflearn.fully_connected(pi_net, 1, activation='linear')
+            tmp_net = tflearn.merge(tmp_list, 'concat')
+            user_list = tflearn.fully_connected(tmp_net, int(FEATURE_NUM), activation='relu')
+            split_list.append(user_list)
+            tmp_net = []
+
+            for i in range((self.num_agents - 1) * PAST_SAT_LOG_LEN):
+                split_tmp = tflearn.fully_connected(
+                    inputs[:, 9 + 8 * (self.num_agents - 1) + i:9 + 8 * (self.num_agents - 1) + i + 1, 0],
+                    FEATURE_NUM, activation='relu')
+                split_tmp_1 = tflearn.fully_connected(
+                    inputs[:, 9 + 8 * (self.num_agents - 1) + i:9 + 8 * (self.num_agents - 1) + i + 1, 1],
+                    FEATURE_NUM, activation='relu')
+                # split_tmp_flat = tflearn.flatten(split_tmp)
+
+                tmp_net.append(split_tmp)
+                tmp_net.append(split_tmp_1)
+
+            tmp_net = tflearn.merge(tmp_net, 'concat')
+            decision_list = tflearn.fully_connected(tmp_net, int(FEATURE_NUM), activation='relu')
+            split_list.append(decision_list)
+
+            value_net = tflearn.merge(split_list, 'concat')
+
+            # pi_net2 = tflearn.fully_connected(value_net, int(FEATURE_NUM / 2), activation='relu')
+            # value_net3 = tflearn.fully_connected(value_net2, int(FEATURE_NUM/4), activation='relu')
+
+            value = tflearn.fully_connected(value_net, 1, activation='linear')
             return pi, value
 
     def get_network_params(self):
@@ -84,15 +117,16 @@ class Network():
 
     def r(self, pi_new, pi_old, acts):
         return tf.reduce_sum(tf.multiply(pi_new, acts), reduction_indices=1, keepdims=True) / \
-                tf.reduce_sum(tf.multiply(pi_old, acts), reduction_indices=1, keepdims=True)
+               tf.reduce_sum(tf.multiply(pi_old, acts), reduction_indices=1, keepdims=True)
 
-    def __init__(self, sess, state_dim, action_dim, learning_rate):
+    def __init__(self, sess, state_dim, action_dim, learning_rate, num_of_users):
         self.s_dim = state_dim
         self.a_dim = action_dim
         self.lr_rate = learning_rate
         self.sess = sess
         self._entropy_weight = np.log(self.a_dim)
         self.H_target = 0.1
+        self.num_agents = num_of_users
 
         self.R = tf.placeholder(tf.float32, [None, 1])
         self.inputs = tf.placeholder(tf.float32, [None, self.s_dim[0], self.s_dim[1]])
@@ -102,11 +136,13 @@ class Network():
         self.pi, self.val = self.CreateNetwork(inputs=self.inputs)
         self.real_out = tf.clip_by_value(self.pi, self.lr_rate, 1. - self.lr_rate)
 
-        self.entropy = -tf.reduce_sum(tf.multiply(self.real_out, tf.log(self.real_out)), reduction_indices=1, keepdims=True)
+        self.entropy = -tf.reduce_sum(tf.multiply(self.real_out, tf.log(self.real_out)), reduction_indices=1,
+                                      keepdims=True)
         self.adv = tf.stop_gradient(self.R - self.val)
         self.ppo2loss = tf.minimum(self.r(self.real_out, self.old_pi, self.acts) * self.adv,
-                            tf.clip_by_value(self.r(self.real_out, self.old_pi, self.acts), 1 - EPS, 1 + EPS) * self.adv
-                        )
+                                   tf.clip_by_value(self.r(self.real_out, self.old_pi, self.acts), 1 - EPS,
+                                                    1 + EPS) * self.adv
+                                   )
         self.dual_loss = tf.where(tf.less(self.adv, 0.), tf.maximum(self.ppo2loss, 3. * self.adv), self.ppo2loss)
 
         # Get all network parameters
@@ -145,7 +181,7 @@ class Network():
             self.entropy_weight: self._entropy_weight
         })
         # adaptive entropy weight
-        # https://arxiv.org/tabs/2003.13590
+        # https://arxiv.org/abs/2003.13590
         p_batch = np.clip(p_batch, self.lr_rate, 1. - self.lr_rate)
         _H = np.mean(np.sum(-np.log(p_batch) * p_batch, axis=1))
         _g = _H - self.H_target

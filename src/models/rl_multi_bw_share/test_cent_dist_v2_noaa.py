@@ -3,15 +3,16 @@ import sys
 root_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, root_dir + '/../')
 from util.constants import CHUNK_TIL_VIDEO_END_CAP, BUFFER_NORM_FACTOR, VIDEO_BIT_RATE, REBUF_PENALTY, SMOOTH_PENALTY, \
-    DEFAULT_QUALITY, BITRATE_WEIGHT, M_IN_K, A_DIM, PAST_LEN, BITRATE_REWARD, PAST_SAT_LOG_LEN, TEST_REAL_TRACES
+    DEFAULT_QUALITY, BITRATE_WEIGHT, M_IN_K, A_DIM, PAST_LEN, BITRATE_REWARD, TEST_TRACES, PAST_SAT_LOG_LEN, \
+    TEST_NOAA_TRACES
 from util.encode import encode_other_sat_info, one_hot_encode
 
 os.environ['CUDA_VISIBLE_DEVICES'] = '-1'
 import numpy as np
 import tensorflow.compat.v1 as tf
 from env.multi_bw_share import fixed_env_time as env
-from env.multi_bw_share import load_trace_real as load_trace
-from models.rl_multi_bw_share.ppo_spec import ppo_cent_dist as network
+from env.multi_bw_share import load_trace_noaa as load_trace
+from models.rl_multi_bw_share.ppo_spec import ppo_cent_dist_v2 as network
 import structlog
 import logging
 
@@ -21,7 +22,7 @@ ACTOR_LR_RATE = 1e-4
 RANDOM_SEED = 42
 NN_MODEL = sys.argv[1]
 USERS = int(sys.argv[2])
-SUMMARY_DIR = './test_results_imp_agg_weight_v2_real' + str(USERS)
+SUMMARY_DIR = './test_results_imp_agg_weight_v2_noaa_v2' + str(USERS)
 S_INFO = 9 + 8 * (USERS - 1) + (USERS - 1) * PAST_SAT_LOG_LEN
 
 if not os.path.exists(SUMMARY_DIR):
@@ -47,7 +48,7 @@ def main():
 
     is_handover = False
 
-    all_cooked_time, all_cooked_bw, all_file_names = load_trace.load_trace(TEST_REAL_TRACES)
+    all_cooked_time, all_cooked_bw, all_file_names = load_trace.load_trace(TEST_NOAA_TRACES)
 
     net_env = env.Environment(all_cooked_time=all_cooked_time,
                               all_cooked_bw=all_cooked_bw,
@@ -272,6 +273,7 @@ def main():
                                                 float(prev_connected_time[agent][1]) / BUFFER_NORM_FACTOR / 10]
             else:
                 state[agent][8, :2] = [0, 0]
+
             # if len(next_sat_user_num) < PAST_LEN:
             #     next_sat_user_num = [0] * (PAST_LEN - len(next_sat_user_num)) + next_sat_user_num
 
