@@ -240,10 +240,12 @@ class ABREnv():
         self.next_sat_bw_logs[agent] = next_sat_bw_logs
         self.cur_sat_bw_logs[agent] = cur_sat_bw_logs
         self.connected_time[agent] = connected_time
+
         # this should be S_INFO number of terms
         state[0, -1] = VIDEO_BIT_RATE[self.last_bit_rate[agent]] / \
                        float(np.max(VIDEO_BIT_RATE))  # last quality
         state[1, -1] = self.buffer_size[agent] / BUFFER_NORM_FACTOR  # 10 sec
+
         if self.delay[agent] != 0:
             state[2, -1] = float(self.video_chunk_size[agent]) / \
                            float(self.delay[agent]) / M_IN_K  # kilo byte / ms
