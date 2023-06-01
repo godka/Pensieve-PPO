@@ -84,15 +84,20 @@ class Network():
 
             for i in range(self.num_agents - 1):
                 tmp_list = []
-                split_0 = tflearn.fully_connected(inputs[:, 9 + 8 * i:10 + 8 * i, -1], int(FEATURE_NUM/2), activation='relu')
-                split_1 = tflearn.fully_connected(inputs[:, 10 + 8 * i:11 + 8 * i, -1], int(FEATURE_NUM/2), activation='relu')
-
+                split_0 = tflearn.fully_connected(inputs[:, 9 + 8 * i:10 + 8 * i, -1], int(FEATURE_NUM), activation='relu')
+                split_1 = tflearn.fully_connected(inputs[:, 10 + 8 * i:11 + 8 * i, -1], int(FEATURE_NUM), activation='relu')
+                split_6 = tflearn.fully_connected(inputs[:, 15 + 8 * i:16 + 8 * i, -1], int(FEATURE_NUM),
+                                                  activation='relu')
+                split_7 = tflearn.fully_connected(inputs[:, 16 + 8 * i:17 + 8 * i, -1], int(FEATURE_NUM),
+                                                  activation='relu')
 
                 tmp_list.append(split_0)
                 tmp_list.append(split_1)
+                tmp_list.append(split_6)
+                tmp_list.append(split_7)
 
                 tmp_net = tflearn.merge(tmp_list, 'concat')
-                user_list = tflearn.fully_connected(tmp_net, int(FEATURE_NUM/2), activation='relu')
+                user_list = tflearn.fully_connected(tmp_net, int(FEATURE_NUM), activation='relu')
 
                 split_list.append(user_list)
             tmp_net = []
