@@ -11,7 +11,8 @@ from env.object.satellite import Satellite
 from env.object.user import User
 from util.constants import EPSILON, MPC_FUTURE_CHUNK_COUNT, QUALITY_FACTOR, REBUF_PENALTY, SMOOTH_PENALTY, \
     MPC_PAST_CHUNK_COUNT, HO_NUM, TOTAL_VIDEO_CHUNKS, CHUNK_TIL_VIDEO_END_CAP, DEFAULT_QUALITY, SNR_MIN, BUF_RATIO, \
-    VIDEO_CHUNCK_LEN, BITRATE_LEVELS, B_IN_MB, BITS_IN_BYTE, M_IN_K, MILLISECONDS_IN_SECOND, PAST_LEN, VIDEO_SIZE_FILE
+    VIDEO_CHUNCK_LEN, BITRATE_LEVELS, B_IN_MB, BITS_IN_BYTE, M_IN_K, MILLISECONDS_IN_SECOND, PAST_LEN, VIDEO_SIZE_FILE, \
+    MAX_SAT
 
 RANDOM_SEED = 42
 BUFFER_THRESH = 60.0 * MILLISECONDS_IN_SECOND  # millisec, max buffer limit
@@ -312,7 +313,7 @@ class Environment:
             # self.cur_sat_id[agent] = None
 
             # wait for overall clean
-            cur_sat_bw_logs, next_sat_bandwidth, next_sat_id, next_sat_bw_logs, connected_time, other_sat_users, other_sat_bw_logs = [], [], None, [], [0, 0], {}, {}
+            cur_sat_bw_logs, next_sat_bandwidth, next_sat_id, next_sat_bw_logs, connected_time, other_sat_users, other_sat_bw_logs = [], [], None, [], {}, {}, {}
         else:
             cur_sat_bw_logs, next_sat_bandwidth, next_sat_id, next_sat_bw_logs, connected_time, other_sat_users, other_sat_bw_logs = self.get_next_sat_info(
                 agent, self.mahimahi_ptr[agent])
@@ -344,7 +345,7 @@ class Environment:
                is_handover, self.get_num_of_user_sat(self.mahimahi_ptr[agent], sat_id="all"), \
                next_sat_bandwidth, next_sat_bw_logs, cur_sat_user_num, next_sat_user_num, cur_sat_bw_logs, connected_time, \
                self.cur_sat_id[
-                   agent], runner_up_sat_ids, ho_stamps, best_combos, final_rate, quality, other_sat_users, other_sat_bw_logs, \
+                   agent], next_sat_id, ho_stamps, best_combos, final_rate, quality, other_sat_users, other_sat_bw_logs, \
                np.delete(self.buffer_size, agent)
 
     def reset(self):
@@ -412,15 +413,43 @@ class Environment:
         best_sat_id = None
         best_sat_bw = 0
         best_bw_list = []
-        up_time_list = []
+        up_time_list = {}
         other_sat_users = {}
         other_sat_bw_logs = {}
+        runner_up_sat_id = self.get_runner_up_sat_id(agent, method="harmonic-mean", mahimahi_ptr=mahimahi_ptr)[0]
+        if not runner_up_sat_id:
+            runner_up_sat_id = self.get_random_runner_up_id(agent, mahimahi_ptr=mahimahi_ptr)
+
+        sat_bw = self.cooked_bw[runner_up_sat_id]
+
+        bw_list = []
+        for i in range(PAST_LEN, 1, -1):
+            if mahimahi_ptr - i >= 0 and sat_bw[mahimahi_ptr - i] != 0:
+                if len(self.cur_satellite[runner_up_sat_id].get_ue_list(mahimahi_ptr)) == 0:
+                    bw_list.append(sat_bw[mahimahi_ptr - i])
+                else:
+                    bw_list.append(sat_bw[mahimahi_ptr - i] / (
+                                len(self.cur_satellite[runner_up_sat_id].get_ue_list(mahimahi_ptr)) + 1))
+        next_sat_bws = bw_list
+        next_sat_id = runner_up_sat_id
 
         for sat_id, sat_bw in self.cooked_bw.items():
             bw_list = []
-            if sat_id == self.cur_sat_id[agent]:
-                continue
-            for i in range(5, 0, -1):
+            # up_time list
+            sat_bw = self.cooked_bw[sat_id]
+
+            up_time = 0
+            tmp_index = mahimahi_ptr - 1
+            tmp_sat_bw = sat_bw[tmp_index]
+            while tmp_sat_bw != 0 and tmp_index >= 0:
+                up_time += 1
+                tmp_index -= 1
+                tmp_sat_bw = sat_bw[tmp_index]
+
+            up_time_list[sat_id] = up_time
+            # list1.append(bw)
+
+            for i in range(PAST_LEN, 0, -1):
                 if mahimahi_ptr - i >= 0 and sat_bw[mahimahi_ptr - i] != 0:
                     if self.get_num_of_user_sat(self.mahimahi_ptr[agent], sat_id) == 0:
                         bw_list.append(sat_bw[mahimahi_ptr - i])
@@ -428,29 +457,22 @@ class Environment:
                         bw_list.append(
                             sat_bw[mahimahi_ptr - i] / (self.get_num_of_user_sat(self.mahimahi_ptr[agent], sat_id)))
             if len(bw_list) == 0:
-                continue
-            bw = sum(bw_list) / len(bw_list)
+                bw_list = [0] * PAST_LEN
             other_sat_users[sat_id] = self.get_num_of_user_sat(self.mahimahi_ptr[agent], sat_id)
 
             other_sat_bw_logs[sat_id] = bw_list
 
-            if best_sat_bw < bw:
-                best_sat_id = sat_id
-                best_sat_bw = bw
-                best_bw_list = bw_list
+        del other_sat_users[self.cur_sat_id[agent]]
+        del other_sat_bw_logs[self.cur_sat_id[agent]]
+        del other_sat_users[next_sat_id]
+        del other_sat_bw_logs[next_sat_id]
 
-        if best_sat_id is None:
-            best_sat_id = self.cur_sat_id[agent]
-
-        if best_sat_id in other_sat_users:
-            del other_sat_users[best_sat_id]
-        if best_sat_id in other_sat_bw_logs:
-            del other_sat_bw_logs[best_sat_id]
+        assert len(other_sat_bw_logs) == MAX_SAT - 2
+        assert len(other_sat_users) == MAX_SAT - 2
 
         if mahimahi_ptr is None:
             mahimahi_ptr = self.mahimahi_ptr[agent]
 
-        list1, next_sat_id, next_sat_bws = [], [], []
         bw_list = []
         sat_bw = self.cooked_bw[self.cur_sat_id[agent]]
         for i in range(PAST_LEN, 1, -1):
@@ -461,43 +483,9 @@ class Environment:
                     bw_list.append(
                         sat_bw[mahimahi_ptr - i] / len(
                             self.cur_satellite[self.cur_sat_id[agent]].get_ue_list(mahimahi_ptr)))
-
-        up_time = 0
-        tmp_index = mahimahi_ptr - 1
-        tmp_sat_bw = sat_bw[tmp_index]
-        while tmp_sat_bw != 0 and tmp_index >= 0:
-            up_time += 1
-            tmp_index -= 1
-            tmp_sat_bw = sat_bw[tmp_index]
-        up_time_list.append(up_time)
         # list1.append(bw)
         cur_sat_bws = bw_list
 
-        runner_up_sat_id = self.get_runner_up_sat_id(agent, method="harmonic-mean", mahimahi_ptr=mahimahi_ptr)[0]
-        if runner_up_sat_id:
-            bw_list = []
-            for i in range(PAST_LEN, 1, -1):
-                if mahimahi_ptr - i >= 0 and sat_bw[mahimahi_ptr - i] != 0:
-                    if len(self.cur_satellite[runner_up_sat_id].get_ue_list(mahimahi_ptr)) == 0:
-                        bw_list.append(sat_bw[mahimahi_ptr - i])
-                    else:
-                        bw_list.append(sat_bw[mahimahi_ptr - i] / (
-                                    len(self.cur_satellite[runner_up_sat_id].get_ue_list(mahimahi_ptr)) + 1))
-            next_sat_bws = bw_list
-            up_time = 0
-            tmp_index = mahimahi_ptr - 1
-            sat_bw = self.cooked_bw[runner_up_sat_id]
-            tmp_sat_bw = sat_bw[tmp_index]
-            while tmp_sat_bw != 0 and tmp_index >= 0:
-                up_time += 1
-                tmp_index -= 1
-                tmp_sat_bw = sat_bw[tmp_index]
-            up_time_list.append(up_time)
-
-            next_sat_id = runner_up_sat_id
-        else:
-            up_time_list.append(0)
-            next_sat_id = None
         # zipped_lists = zip(list1, list2)
         # sorted_pairs = sorted(zipped_lists)
 
@@ -507,6 +495,16 @@ class Environment:
         # list2 = [ list2[i] for i in range(1)]
 
         return cur_sat_bws, None, next_sat_id, next_sat_bws, up_time_list, other_sat_users, other_sat_bw_logs
+
+    def get_random_runner_up_id(self, agent, mahimahi_ptr=None):
+        if mahimahi_ptr is None:
+            mahimahi_ptr = self.mahimahi_ptr[agent]
+        sat_id_list = []
+        for sat_id, sat_bw in self.cooked_bw.items():
+            sat_id_list.append(sat_id)
+        del sat_id_list[self.cur_sat_id[agent]]
+
+        return sat_id_list[np.random.randint(len(sat_id_list))]
 
     def get_best_sat_id(self, agent, mahimahi_ptr=None):
         best_sat_id = None
@@ -781,11 +779,11 @@ class Environment:
 
         return harmonic_bw
 
-    def set_satellite(self, agent, sat=0, id_list=None):
-        if id_list is None:
+    def set_satellite(self, agent, sat=0, sat_id=None):
+        if sat_id is None:
             sat_id = self.next_sat_id[agent]
 
-        if sat == 1:
+        if sat != 0:
             if sat_id == self.cur_sat_id[agent] or sat_id is None:
                 # print("Can't do handover. Only one visible satellite")
                 return

@@ -3,7 +3,8 @@ import sys
 root_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, root_dir + '/../')
 from util.constants import CHUNK_TIL_VIDEO_END_CAP, BUFFER_NORM_FACTOR, VIDEO_BIT_RATE, REBUF_PENALTY, SMOOTH_PENALTY, \
-    DEFAULT_QUALITY, BITRATE_WEIGHT, M_IN_K, A_DIM, PAST_LEN, BITRATE_REWARD, PAST_SAT_LOG_LEN, TEST_REAL_TRACES
+    DEFAULT_QUALITY, BITRATE_WEIGHT, M_IN_K, A_DIM, PAST_LEN, BITRATE_REWARD, TEST_TRACES, PAST_SAT_LOG_LEN, \
+    TEST_REAL_TRACES, MAX_SAT
 from util.encode import encode_other_sat_info, one_hot_encode
 
 os.environ['CUDA_VISIBLE_DEVICES'] = '-1'
@@ -11,18 +12,18 @@ import numpy as np
 import tensorflow.compat.v1 as tf
 from env.multi_bw_share import fixed_env_time as env
 from env.multi_bw_share import load_trace_real as load_trace
-from models.rl_multi_bw_share.ppo_spec import ppo_cent_dist as network
+from models.rl_multi_bw_share.ppo_spec import ppo_cent_dist_v3 as network
 import structlog
 import logging
 
-A_SAT = 2
+A_SAT = 4
 ACTOR_LR_RATE = 1e-4
 # CRITIC_LR_RATE = 0.001
 RANDOM_SEED = 42
 NN_MODEL = sys.argv[1]
 USERS = int(sys.argv[2])
-SUMMARY_DIR = './test_results_imp_agg_weight_v2_real' + str(USERS)
-S_INFO = 9 + 8 * (USERS - 1) + (USERS - 1) * PAST_SAT_LOG_LEN
+SUMMARY_DIR = './test_results_imp_agg_weight_v3_real' + str(USERS)
+S_INFO = 9 + 8 * (USERS - 1) + (USERS - 1) * PAST_SAT_LOG_LEN + MAX_SAT - 2
 
 if not os.path.exists(SUMMARY_DIR):
     os.makedirs(SUMMARY_DIR)
@@ -74,6 +75,7 @@ def main():
     prev_next_sat_bw_logs = [[] for _ in range(USERS)]
     prev_cur_sat_bw_logs = [[] for _ in range(USERS)]
     prev_connected_time = [[] for _ in range(USERS)]
+    prev_other_ids = [[] for _ in range(USERS)]
 
     with tf.Session() as sess:
 
@@ -169,10 +171,9 @@ def main():
             delay, sleep_time, buffer_size, rebuf, \
             video_chunk_size, next_video_chunk_sizes, \
             end_of_video, video_chunk_remain, is_handover, _, _, next_sat_bw_logs, \
-            cur_sat_user_num, next_sat_user_num, cur_sat_bw_logs, connected_time, cur_sat_id, next_sat_ids, _, _, _, _,\
+            cur_sat_user_num, next_sat_user_num, cur_sat_bw_logs, connected_time, cur_sat_id, next_sat_id, _, _, _, _,\
             other_sat_users, other_sat_bw_logs, other_buffer_sizes = \
                 net_env.get_video_chunk(bit_rate[agent], agent, model_type=None)
-
             time_stamp[agent] += delay  # in ms
             time_stamp[agent] += sleep_time  # in ms
             
@@ -186,9 +187,7 @@ def main():
             prev_cur_sat_bw_logs[agent] = cur_sat_bw_logs
             prev_connected_time[agent] = connected_time
 
-            next_sat_id = None
-            if next_sat_ids is not None:
-                next_sat_id = next_sat_ids[agent]
+
             # reward is video quality - rebuffer penalty
             if REWARD_FUNC == "LIN":
                 reward = VIDEO_BIT_RATE[bit_rate[agent]] / M_IN_K \
@@ -229,6 +228,10 @@ def main():
                                    str(0)))
             log_file.flush()
 
+            other_user_sat_decisions, other_sat_num_users, other_sat_bws, cur_user_sat_decisions, other_ids \
+                = encode_other_sat_info(net_env.sat_decision_log, USERS, cur_sat_id, next_sat_id,
+                                        agent, other_sat_users, other_sat_bw_logs, PAST_SAT_LOG_LEN)
+            prev_other_ids[agent] = other_ids
             # retrieve previous state
             if len(s_batch[agent]) == 0:
                 state[agent] = [np.zeros((S_INFO, PAST_LEN))]
@@ -268,15 +271,21 @@ def main():
             # state[agent][8, -1] = np.array(cur_sat_user_num) / 10
             # state[agent][9, -1] = np.array(next_sat_user_num) / 10
             if prev_connected_time[agent]:
-                state[agent][8, :2] = [float(prev_connected_time[agent][0]) / BUFFER_NORM_FACTOR / 10,
-                                                float(prev_connected_time[agent][1]) / BUFFER_NORM_FACTOR / 10]
+                state[agent][8, :MAX_SAT] = [float(prev_connected_time[agent][cur_sat_id]) / BUFFER_NORM_FACTOR / 10,
+                                        float(prev_connected_time[agent][next_sat_id]) / BUFFER_NORM_FACTOR / 10,
+                                       float(prev_connected_time[agent][prev_other_ids[agent][0]]) / BUFFER_NORM_FACTOR / 10,
+                                       float(prev_connected_time[agent][prev_other_ids[agent][1]]) / BUFFER_NORM_FACTOR / 10]
+
             else:
-                state[agent][8, :2] = [0, 0]
+                state[agent][8, :MAX_SAT] = [0] * MAX_SAT
 
             # if len(next_sat_user_num) < PAST_LEN:
             #     next_sat_user_num = [0] * (PAST_LEN - len(next_sat_user_num)) + next_sat_user_num
 
             # state[agent][8, :PAST_LEN] = next_sat_user_num[:5]
+
+            for i, sat_bw in enumerate(other_sat_bws):
+                state[agent][(9 + i), :PAST_LEN] = np.array(sat_bw) / 10
 
             action_prob = actor.predict(np.reshape(state[agent], (1, S_INFO, PAST_LEN)))
             noise = np.random.gumbel(size=len(action_prob))
@@ -292,13 +301,14 @@ def main():
             bit_rate[agent] *= BITRATE_WEIGHT
 
             if not end_of_video:
-                changed_sat_id = net_env.set_satellite(agent, sat[agent])
-                if sat[agent] == 1:
-                    is_handover = True
-                    # print("Handover!!")
-                else:
+                if sat[agent] == 0:
                     is_handover = False
-                    # print("X Handover")
+                elif sat[agent] == 1:
+                    is_handover = True
+                else:
+                    assert sat[agent] >= 2
+                    sat_id = prev_other_ids[agent][sat[agent] - 2]
+                net_env.set_satellite(agent, sat[agent], sat_id=sat_id)
             s_batch[agent].append(state[agent])
 
             entropy_ = -np.dot(action_prob, np.log(action_prob))

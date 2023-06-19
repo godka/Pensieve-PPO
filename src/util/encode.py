@@ -1,8 +1,7 @@
 
 import numpy as np
-MAX_SAT = 8
-PAST_LEN = 8
 # PAST_SAT_LOG_LEN = 1
+from util.constants import PAST_LEN, MAX_SAT
 
 
 def encode_other_sat_info(sat_decision_log, num_agents, cur_sat_id, next_sat_id, agent, other_sat_users
@@ -69,7 +68,7 @@ def encode_other_sat_info(sat_decision_log, num_agents, cur_sat_id, next_sat_id,
         else:
             other_user_sat_decisions.append(tmp_logs)
 
-    return other_user_sat_decisions, other_sat_num_users, other_sat_bws, cur_user_sat_decisions
+    return other_user_sat_decisions, other_sat_num_users, other_sat_bws, cur_user_sat_decisions, other_ids
 
 
 def one_hot_encode(input_list, size):
