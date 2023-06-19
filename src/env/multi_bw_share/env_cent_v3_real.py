@@ -117,7 +117,7 @@ class ABREnv():
 
         # state[8, -1] = np.array(cur_sat_user_num) / 10
         # state[9, -1] = np.array(next_sat_user_num) / 10
-        if self.connected_time[agent]:
+        if self.connected_time[agent] and self.other_ids[agent]:
             state[8, :MAX_SAT] = [float(self.connected_time[agent][self.cur_sat_id[agent]]) / BUFFER_NORM_FACTOR / 10,
                                      float(self.connected_time[agent][self.next_sat_id[agent]]) / BUFFER_NORM_FACTOR / 10,
                                   float(self.connected_time[agent][self.other_ids[agent][0]]) / BUFFER_NORM_FACTOR / 10,
@@ -288,7 +288,7 @@ class ABREnv():
 
         state[7, :PAST_LEN] = np.array(self.cur_sat_bw_logs[agent][:PAST_LEN]) / 10
 
-        if self.connected_time[agent]:
+        if self.connected_time[agent] and self.other_ids[agent]:
             state[8, :MAX_SAT] = [float(self.connected_time[agent][self.cur_sat_id[agent]]) / BUFFER_NORM_FACTOR / 10,
                                   float(self.connected_time[agent][self.next_sat_id[agent]]) / BUFFER_NORM_FACTOR / 10,
                                   float(self.connected_time[agent][self.other_ids[agent][0]]) / BUFFER_NORM_FACTOR / 10,

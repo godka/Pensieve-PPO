@@ -444,10 +444,10 @@ class Environment:
             # self.cur_sat_id[agent] = None
 
             # wait for overall clean
-            # cur_sat_bw_logs, next_sat_bandwidth, next_sat_id, next_sat_bw_logs, connected_time, other_sat_users, other_sat_bw_logs = [], [], None, [], [0] * MAX_SAT, {}, {}
-
-        cur_sat_bw_logs, next_sat_bandwidth, next_sat_id, next_sat_bw_logs, connected_time, other_sat_users, other_sat_bw_logs = self.get_next_sat_info(
-            agent, self.mahimahi_ptr[agent])
+            cur_sat_bw_logs, next_sat_bandwidth, next_sat_id, next_sat_bw_logs, connected_time, other_sat_users, other_sat_bw_logs = [], [], self.next_sat_id[agent], [], [0] * MAX_SAT, {}, {}
+        else:
+            cur_sat_bw_logs, next_sat_bandwidth, next_sat_id, next_sat_bw_logs, connected_time, other_sat_users, other_sat_bw_logs = self.get_next_sat_info(
+                agent, self.mahimahi_ptr[agent])
         next_video_chunk_sizes = []
         for i in range(BITRATE_LEVELS):
             next_video_chunk_sizes.append(self.video_size[i][self.video_chunk_counter[agent]])
@@ -3613,7 +3613,7 @@ class Environment:
 
     def get_runner_up_sat_id(self, agent, method="holt-winter", mahimahi_ptr=None, cur_sat_id=None, past_len=None):
         best_sat_id = None
-        best_sat_bw = -1
+        best_sat_bw = 0
         if mahimahi_ptr is None:
             mahimahi_ptr = self.mahimahi_ptr[agent]
         if cur_sat_id is None:
@@ -3893,6 +3893,7 @@ class Environment:
             past_bw = self.cooked_bw[sat_id][mahimahi_ptr]
         else:
             past_bw = self.cooked_bw[sat_id][mahimahi_ptr] / num_of_user_sat
+
         if past_bw == 0:
             return 0
 

@@ -270,7 +270,7 @@ def main():
 
             # state[agent][8, -1] = np.array(cur_sat_user_num) / 10
             # state[agent][9, -1] = np.array(next_sat_user_num) / 10
-            if prev_connected_time[agent]:
+            if prev_connected_time[agent] and prev_other_ids[agent]:
                 state[agent][8, :MAX_SAT] = [float(prev_connected_time[agent][cur_sat_id]) / BUFFER_NORM_FACTOR / 10,
                                         float(prev_connected_time[agent][next_sat_id]) / BUFFER_NORM_FACTOR / 10,
                                        float(prev_connected_time[agent][prev_other_ids[agent][0]]) / BUFFER_NORM_FACTOR / 10,
