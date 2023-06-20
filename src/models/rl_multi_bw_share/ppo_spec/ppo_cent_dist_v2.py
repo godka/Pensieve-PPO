@@ -5,9 +5,9 @@ import os
 import time
 
 from util.constants import PAST_SAT_LOG_LEN
+import tflearn
 
 os.environ['CUDA_VISIBLE_DEVICES'] = '2'
-import tflearn
 
 FEATURE_NUM = 128
 PAST_LEN = 8

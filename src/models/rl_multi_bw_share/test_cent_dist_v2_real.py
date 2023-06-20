@@ -187,9 +187,6 @@ def main():
             prev_cur_sat_bw_logs[agent] = cur_sat_bw_logs
             prev_connected_time[agent] = connected_time
 
-            next_sat_id = None
-            if next_sat_ids is not None:
-                next_sat_id = next_sat_ids[agent]
             # reward is video quality - rebuffer penalty
             if REWARD_FUNC == "LIN":
                 reward = VIDEO_BIT_RATE[bit_rate[agent]] / M_IN_K \

@@ -171,6 +171,7 @@ def main():
             cur_sat_user_num, next_sat_user_num, cur_sat_bw_logs, connected_time, cur_sat_id, next_sat_id, _, _, _, _,\
             other_sat_users, other_sat_bw_logs, other_buffer_sizes = \
                 net_env.get_video_chunk(bit_rate[agent], agent, model_type=None)
+
             time_stamp[agent] += delay  # in ms
             time_stamp[agent] += sleep_time  # in ms
             

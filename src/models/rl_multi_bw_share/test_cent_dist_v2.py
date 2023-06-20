@@ -74,7 +74,7 @@ def main():
     prev_video_chunk_remain = [0 for _ in range(USERS)]
     prev_next_sat_bw_logs = [[] for _ in range(USERS)]
     prev_cur_sat_bw_logs = [[] for _ in range(USERS)]
-    prev_connected_time = [[] for _ in range(USERS)]
+    prev_connected_time = [{} for _ in range(USERS)]
 
     with tf.Session() as sess:
 
@@ -170,7 +170,7 @@ def main():
             delay, sleep_time, buffer_size, rebuf, \
             video_chunk_size, next_video_chunk_sizes, \
             end_of_video, video_chunk_remain, is_handover, _, _, next_sat_bw_logs, \
-            cur_sat_user_num, next_sat_user_num, cur_sat_bw_logs, connected_time, cur_sat_id, next_sat_ids, _, _, _, _,\
+            cur_sat_user_num, next_sat_user_num, cur_sat_bw_logs, connected_time, cur_sat_id, next_sat_id, _, _, _, _,\
             other_sat_users, other_sat_bw_logs, other_buffer_sizes = \
                 net_env.get_video_chunk(bit_rate[agent], agent, model_type=None)
 
@@ -187,9 +187,6 @@ def main():
             prev_cur_sat_bw_logs[agent] = cur_sat_bw_logs
             prev_connected_time[agent] = connected_time
 
-            next_sat_id = None
-            if next_sat_ids is not None:
-                next_sat_id = next_sat_ids[agent]
             # reward is video quality - rebuffer penalty
             if REWARD_FUNC == "LIN":
                 reward = VIDEO_BIT_RATE[bit_rate[agent]] / M_IN_K \
@@ -269,8 +266,8 @@ def main():
             # state[agent][8, -1] = np.array(cur_sat_user_num) / 10
             # state[agent][9, -1] = np.array(next_sat_user_num) / 10
             if prev_connected_time[agent]:
-                state[agent][8, :2] = [float(prev_connected_time[agent][0]) / BUFFER_NORM_FACTOR / 10,
-                                                float(prev_connected_time[agent][1]) / BUFFER_NORM_FACTOR / 10]
+                state[agent][8, :2] = [float(prev_connected_time[agent][cur_sat_id]) / BUFFER_NORM_FACTOR / 10,
+                                  float(prev_connected_time[agent][next_sat_id]) / BUFFER_NORM_FACTOR / 10]
             else:
                 state[agent][8, :2] = [0, 0]
 
