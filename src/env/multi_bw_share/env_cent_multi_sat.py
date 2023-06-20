@@ -22,9 +22,6 @@ class ABREnv():
         self.num_users = num_agents
         global S_INFO
         S_INFO = 9 + 8 * (self.num_users - 1) + (self.num_users - 1) * PAST_SAT_LOG_LEN + MAX_SAT - 2
-        # SAT_DIM = num_agents
-        # A_SAT = num_agents
-        # SAT_DIM = num_agents + 1
 
         self.is_handover = False
 

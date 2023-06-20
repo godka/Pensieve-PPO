@@ -6,25 +6,24 @@ import os
 import sys
 root_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, root_dir + '/../')
-from env.multi_bw_share.env_cent_v3 import ABREnv
-from models.rl_multi_bw_share.ppo_spec import ppo_cent_dist_v3 as network
+from env.multi_bw_share.env_cent_multi_sat_real import ABREnv
+from models.rl_multi_bw_share.ppo_spec import ppo_cent_dist_multi_sat as network
 import tensorflow.compat.v1 as tf
 import structlog
-from util.constants import A_DIM, NUM_AGENTS, TRAIN_TRACES, PAST_SAT_LOG_LEN, TRAIN_TRACES, MAX_SAT
+from util.constants import A_DIM, NUM_AGENTS, TRAIN_TRACES, PAST_SAT_LOG_LEN, TRAIN_REAL_TRACES, MAX_SAT, A_SAT
 import logging
 os.environ['CUDA_VISIBLE_DEVICES'] = '-1'
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 
-A_SAT = 4
 ACTOR_LR_RATE = 1e-4
 TRAIN_SEQ_LEN = 300  # take as a train batch
 TRAIN_EPOCH = 20000000
 MODEL_SAVE_INTERVAL = 3000
 RANDOM_SEED = 42
-SUMMARY_DIR = './ppo_imp_agg_weight_v3'
+SUMMARY_DIR = './ppo_imp_agg_weight_multi_sat_real'
 MODEL_DIR = '..'
 
-TEST_LOG_FOLDER = './test_results_imp_agg_weight_v3'
+TEST_LOG_FOLDER = './test_results_imp_agg_weight_multi_sat_real'
 PPO_TRAINING_EPO = 5
 
 import argparse
@@ -66,8 +65,8 @@ def testing(epoch, nn_model, log_file):
     if not os.path.exists(TEST_LOG_FOLDER):
         os.makedirs(TEST_LOG_FOLDER)
     # run test script
-    log.info('python test_cent_dist_v3.py ', nn_model=nn_model + ' ' + str(USERS))
-    os.system('python test_cent_dist_v3.py ' + nn_model + ' ' + str(USERS))
+    log.info('python test_cent_dist_multi_sat_real.py ', nn_model=nn_model + ' ' + str(USERS))
+    os.system('python test_cent_dist_multi_sat_real.py ' + nn_model + ' ' + str(USERS))
     log.info('End testing')
 
     # append test performance to the log
@@ -197,7 +196,7 @@ def central_agent(net_params_queues, exp_queues):
 
 
 def agent(agent_id, net_params_queue, exp_queue):
-    env = ABREnv(agent_id, num_agents=USERS, reward_func=REWARD_FUNC, train_traces=TRAIN_TRACES)
+    env = ABREnv(agent_id, num_agents=USERS, reward_func=REWARD_FUNC, train_traces=TRAIN_REAL_TRACES)
     with tf.Session() as sess:
         actor = network.Network(sess,
                                 state_dim=S_DIM, action_dim=A_DIM * A_SAT,
