@@ -10,7 +10,7 @@ from env.multi_bw_share.env_cent_v3_noaa import ABREnv
 from models.rl_multi_bw_share.ppo_spec import ppo_cent_dist_v3 as network
 import tensorflow.compat.v1 as tf
 import structlog
-from util.constants import A_DIM, NUM_AGENTS, TRAIN_TRACES, PAST_SAT_LOG_LEN, TRAIN_REAL_TRACES, MAX_SAT
+from util.constants import A_DIM, NUM_AGENTS, TRAIN_TRACES, PAST_SAT_LOG_LEN, TRAIN_NOAA_TRACES, MAX_SAT
 import logging
 os.environ['CUDA_VISIBLE_DEVICES'] = '-1'
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
@@ -197,7 +197,7 @@ def central_agent(net_params_queues, exp_queues):
 
 
 def agent(agent_id, net_params_queue, exp_queue):
-    env = ABREnv(agent_id, num_agents=USERS, reward_func=REWARD_FUNC, train_traces=TRAIN_REAL_TRACES)
+    env = ABREnv(agent_id, num_agents=USERS, reward_func=REWARD_FUNC, train_traces=TRAIN_NOAA_TRACES)
     with tf.Session() as sess:
         actor = network.Network(sess,
                                 state_dim=S_DIM, action_dim=A_DIM * A_SAT,

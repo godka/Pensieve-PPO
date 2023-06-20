@@ -3,8 +3,8 @@ import sys
 root_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, root_dir + '/../')
 from util.constants import CHUNK_TIL_VIDEO_END_CAP, BUFFER_NORM_FACTOR, VIDEO_BIT_RATE, REBUF_PENALTY, SMOOTH_PENALTY, \
-    DEFAULT_QUALITY, BITRATE_WEIGHT, M_IN_K, A_DIM, PAST_LEN, BITRATE_REWARD, TEST_TRACES, PAST_SAT_LOG_LEN, \
-    TEST_REAL_TRACES, MAX_SAT
+    DEFAULT_QUALITY, BITRATE_WEIGHT, M_IN_K, A_DIM, PAST_LEN, BITRATE_REWARD, PAST_SAT_LOG_LEN, \
+    TEST_NOAA_TRACES, MAX_SAT
 from util.encode import encode_other_sat_info, one_hot_encode
 
 os.environ['CUDA_VISIBLE_DEVICES'] = '-1'
@@ -48,7 +48,7 @@ def main():
 
     is_handover = False
 
-    all_cooked_time, all_cooked_bw, all_file_names = load_trace.load_trace(TEST_REAL_TRACES)
+    all_cooked_time, all_cooked_bw, all_file_names = load_trace.load_trace(TEST_NOAA_TRACES)
 
     net_env = env.Environment(all_cooked_time=all_cooked_time,
                               all_cooked_bw=all_cooked_bw,
