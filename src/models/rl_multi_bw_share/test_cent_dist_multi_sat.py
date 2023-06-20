@@ -3,16 +3,15 @@ import sys
 root_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, root_dir + '/../')
 from util.constants import CHUNK_TIL_VIDEO_END_CAP, BUFFER_NORM_FACTOR, VIDEO_BIT_RATE, REBUF_PENALTY, SMOOTH_PENALTY, \
-    DEFAULT_QUALITY, BITRATE_WEIGHT, M_IN_K, A_DIM, PAST_LEN, BITRATE_REWARD, TEST_TRACES, PAST_SAT_LOG_LEN, MAX_SAT, \
-    A_SAT
+    DEFAULT_QUALITY, BITRATE_WEIGHT, M_IN_K, A_DIM, PAST_LEN, BITRATE_REWARD, TEST_TRACES, PAST_SAT_LOG_LEN, SIM_MAX_SAT as MAX_SAT
 from util.encode import encode_other_sat_info, one_hot_encode
 
 os.environ['CUDA_VISIBLE_DEVICES'] = '-1'
 import numpy as np
 import tensorflow.compat.v1 as tf
-from env.multi_bw_share import fixed_env_time as env
-from env.multi_bw_share import load_trace as load_trace
-from models.rl_multi_bw_share.ppo_spec import ppo_cent_dist_multi_sat as network
+from env.tmp import fixed_env_time as env
+from env.tmp import load_trace as load_trace
+from models.rl_multi_bw_share.ppo_spec import tmp as network
 import structlog
 import logging
 
@@ -78,7 +77,7 @@ def main():
     with tf.Session() as sess:
 
         actor = network.Network(sess,
-                                state_dim=[S_INFO, PAST_LEN], action_dim=A_DIM * A_SAT,
+                                state_dim=[S_INFO, PAST_LEN], action_dim=A_DIM * MAX_SAT,
                                 learning_rate=ACTOR_LR_RATE, num_of_users=USERS)
 
         sess.run(tf.global_variables_initializer())
@@ -95,7 +94,7 @@ def main():
         bit_rate = [DEFAULT_QUALITY for _ in range(USERS)]
         sat = [0 for _ in range(USERS)]
 
-        action_vec = [np.zeros(A_DIM * A_SAT) for _ in range(USERS)]
+        action_vec = [np.zeros(A_DIM * MAX_SAT) for _ in range(USERS)]
         for i in range(USERS):
             action_vec[i][bit_rate] = 1
 
@@ -310,7 +309,6 @@ def main():
                     is_handover = True
                 else:
                     assert sat[agent] >= 2
-                    sat_id = prev_other_ids[agent][sat[agent] - 2]
                     if len(prev_other_ids[agent]) <= sat[agent] - 2:
                         # impossible choise
                         net_env.set_reward_penalty()

@@ -1,7 +1,7 @@
 
 import numpy as np
 
-from util.constants import A_SAT
+from util.constants import MAX_SAT
 
 MAX_SAT = 8
 PAST_LEN = 8
@@ -34,7 +34,7 @@ def encode_other_sat_info(sat_decision_log, num_agents, cur_sat_id, next_sat_id,
             break
         other_index_ids[other_ids[i]] = i
 
-    for i in range(A_SAT - 2):
+    for i in range(MAX_SAT - 2):
         if len(other_sat_users.keys()) <= i:
             other_sat_num_users.append(0)
             other_sat_bws.append([0, 0, 0, 0, 0, 0, 0, 0])
@@ -54,20 +54,20 @@ def encode_other_sat_info(sat_decision_log, num_agents, cur_sat_id, next_sat_id,
         i = 0
         for log_data in sat_logs:
             if log_data == cur_sat_id:
-                encoded_logs = [1] + [0] * (A_SAT - 1)
+                encoded_logs = [1] + [0] * (MAX_SAT - 1)
             elif log_data == next_sat_id:
-                encoded_logs = [0] * (A_SAT - 1) + [1]
+                encoded_logs = [0] * (MAX_SAT - 1) + [1]
             elif log_data in other_index_ids.keys() and i <= 2:
-                tmp_array = [0] * (i + 2) + [1] + [0] * (A_SAT-i-3)
+                tmp_array = [0] * (i + 2) + [1] + [0] * (MAX_SAT - i - 3)
                 i += 1
                 # tmp_array[other_index_ids[log_data] + 2] = 1
                 encoded_logs = tmp_array
             elif log_data == -1:
-                encoded_logs = [0] * A_SAT
+                encoded_logs = [0] * MAX_SAT
             else:
                 # print("Warning: More than 8 visible satellites?!")
                 # encoded_logs = [0, 0, 0, 0, 0, 0, 0, 0]
-                encoded_logs = [0] * A_SAT
+                encoded_logs = [0] * MAX_SAT
             # encoded_logs = encoded_logs + [0] * 3
             tmp_logs.append(encoded_logs)
         if i_agent == agent:

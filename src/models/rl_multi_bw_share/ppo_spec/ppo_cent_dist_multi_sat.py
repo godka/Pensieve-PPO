@@ -4,7 +4,7 @@ import tensorflow.compat.v1 as tf
 import os
 import time
 
-from util.constants import PAST_SAT_LOG_LEN, PAST_LEN, A_SAT
+from util.constants import PAST_SAT_LOG_LEN, PAST_LEN, MAX_SAT
 import tflearn
 
 os.environ['CUDA_VISIBLE_DEVICES'] = '2'
@@ -28,9 +28,9 @@ class Network():
             split_5 = tflearn.fully_connected(inputs[:, 5:6, -1], FEATURE_NUM, activation='relu')
             split_6 = tflearn.conv_1d(inputs[:, 6:7, :PAST_LEN], FEATURE_NUM, DIM_SIZE, activation='relu')
             split_7 = tflearn.conv_1d(inputs[:, 7:8, :PAST_LEN], FEATURE_NUM, DIM_SIZE, activation='relu')
-            split_9 = tflearn.conv_1d(inputs[:, 8:9, :A_SAT], FEATURE_NUM, DIM_SIZE, activation='relu')
+            split_9 = tflearn.conv_1d(inputs[:, 8:9, :MAX_SAT], FEATURE_NUM, DIM_SIZE, activation='relu')
             other_sat_list = []
-            for i in range(A_SAT - 2):
+            for i in range(MAX_SAT - 2):
                 split_tmp = tflearn.conv_1d(inputs[:, 9 + i:
                                            9 + i + 1, :PAST_LEN], FEATURE_NUM, DIM_SIZE, activation='relu')
                 split_flat_tmp = tflearn.flatten(split_tmp)
@@ -64,11 +64,11 @@ class Network():
             split_5 = tflearn.fully_connected(inputs[:, 5:6, -1], FEATURE_NUM, activation='relu')
             split_6 = tflearn.conv_1d(inputs[:, 6:7, :PAST_LEN], FEATURE_NUM, DIM_SIZE, activation='relu')
             split_7 = tflearn.conv_1d(inputs[:, 7:8, :PAST_LEN], FEATURE_NUM, DIM_SIZE, activation='relu')
-            split_9 = tflearn.conv_1d(inputs[:, 8:9, :A_SAT], FEATURE_NUM, DIM_SIZE, activation='relu')
+            split_9 = tflearn.conv_1d(inputs[:, 8:9, :MAX_SAT], FEATURE_NUM, DIM_SIZE, activation='relu')
             split_10 = tflearn.conv_1d(inputs[:, 10:11, :PAST_LEN], FEATURE_NUM, DIM_SIZE, activation='relu')
             split_11 = tflearn.conv_1d(inputs[:, 11:12, :PAST_LEN], FEATURE_NUM, DIM_SIZE, activation='relu')
             other_sat_list = []
-            for i in range(A_SAT - 2):
+            for i in range(MAX_SAT - 2):
                 split_tmp = tflearn.conv_1d(inputs[:, 9 + 8 * (self.num_agents - 1) + (self.num_agents - 1) * PAST_SAT_LOG_LEN + i:
                                            9 + 8 * (self.num_agents - 1) + (self.num_agents - 1) * PAST_SAT_LOG_LEN+i+1, :PAST_LEN], FEATURE_NUM, DIM_SIZE, activation='relu')
                 split_flat_tmp = tflearn.flatten(split_tmp)

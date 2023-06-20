@@ -10,7 +10,7 @@ from env.multi_bw_share.env_time_multi_sat import ABREnv
 from models.rl_multi_bw_share.ppo_spec import ppo_implicit_multi_sat as network
 import tensorflow.compat.v1 as tf
 import structlog
-from util.constants import A_DIM, NUM_AGENTS, TRAIN_TRACES, MAX_SAT, A_SAT
+from util.constants import A_DIM, NUM_AGENTS, TRAIN_TRACES, MAX_SAT
 import logging
 
 os.environ['CUDA_VISIBLE_DEVICES'] = '-1'
@@ -117,7 +117,7 @@ def central_agent(net_params_queues, exp_queues):
         summary_ops, summary_vars = build_summaries()
         best_rewards = -1000
         actor = network.Network(sess,
-                                state_dim=S_DIM, action_dim=A_DIM * A_SAT,
+                                state_dim=S_DIM, action_dim=A_DIM * MAX_SAT,
                                 learning_rate=ACTOR_LR_RATE)
 
         sess.run(tf.global_variables_initializer())
@@ -199,7 +199,7 @@ def agent(agent_id, net_params_queue, exp_queue):
     env = ABREnv(agent_id, num_agents=USERS, reward_func=REWARD_FUNC, train_traces=TRAIN_TRACES)
     with tf.Session() as sess:
         actor = network.Network(sess,
-                                state_dim=S_DIM, action_dim=A_DIM * A_SAT,
+                                state_dim=S_DIM, action_dim=A_DIM * MAX_SAT,
                                 learning_rate=ACTOR_LR_RATE)
 
         # initial synchronization of the network parameters from the coordinator
@@ -244,7 +244,7 @@ def agent(agent_id, net_params_queue, exp_queue):
 
                 obs[agent], rew, done, info = env.step(bit_rate[agent], agent)
 
-                action_vec = np.zeros(A_DIM * A_SAT)
+                action_vec = np.zeros(A_DIM * MAX_SAT)
                 action_vec[bit_rate[agent]] = 1
                 a_batch_user[agent].append(action_vec)
                 r_batch_user[agent].append(rew)

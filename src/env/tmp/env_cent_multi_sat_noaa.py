@@ -6,7 +6,7 @@ from util.constants import DEFAULT_QUALITY, REBUF_PENALTY, SMOOTH_PENALTY, VIDEO
     MAX_SAT
 from util.encode import encode_other_sat_info
 from . import core_cent_time as abrenv
-from . import load_trace as load_trace
+from . import load_trace_noaa as load_trace
 
 # bit_rate, buffer_size, next_chunk_size, bandwidth_measurement(throughput and time), chunk_til_video_end
 RANDOM_SEED = 42
@@ -118,13 +118,10 @@ class ABREnv():
         # state[8, -1] = np.array(cur_sat_user_num) / 10
         # state[9, -1] = np.array(next_sat_user_num) / 10
         if self.connected_time[agent] and self.other_ids[agent]:
-            conn_tims_list = [float(self.connected_time[agent][self.cur_sat_id[agent]]) / BUFFER_NORM_FACTOR / 10,
-                                     float(self.connected_time[agent][self.next_sat_id[agent]]) / BUFFER_NORM_FACTOR / 10]
-            for i in range(len(self.other_ids[agent])):
-                conn_tims_list.append(float(self.connected_time[agent][self.other_ids[agent][i]]) / BUFFER_NORM_FACTOR / 10)
-            if len(conn_tims_list) < MAX_SAT:
-                conn_tims_list += [0] * (MAX_SAT - len(conn_tims_list))
-            state[8, :MAX_SAT] = conn_tims_list
+            state[8, :MAX_SAT] = [float(self.connected_time[agent][self.cur_sat_id[agent]]) / BUFFER_NORM_FACTOR / 10,
+                                     float(self.connected_time[agent][self.next_sat_id[agent]]) / BUFFER_NORM_FACTOR / 10,
+                                  float(self.connected_time[agent][self.other_ids[agent][0]]) / BUFFER_NORM_FACTOR / 10,
+                                  float(self.connected_time[agent][self.other_ids[agent][1]]) / BUFFER_NORM_FACTOR / 10]
         else:
             state[8, :MAX_SAT] = [0] * MAX_SAT
 
@@ -210,11 +207,7 @@ class ABREnv():
             self.is_handover = True
         else:
             assert sat >= 2
-            if len(self.other_ids[agent]) <= sat-2:
-                # impossible choise
-                self.net_env.set_reward_penalty()
-            else:
-                sat_id = self.other_ids[agent][sat-2]
+            sat_id = self.other_ids[agent][sat-2]
         self.net_env.set_satellite(agent, sat, sat_id=sat_id)
 
     def step(self, action, agent):
@@ -248,9 +241,6 @@ class ABREnv():
                      - 8 * rebuf - np.abs(BITRATE_REWARD[bit_rate] - BITRATE_REWARD[self.last_bit_rate[agent]])
         else:
             raise Exception
-
-        # Give penalty when impossible choices
-        reward += self.net_env.get_reward_penalty()
 
         self.last_bit_rate[agent] = bit_rate
         state = np.roll(self.state[agent], -1, axis=1)
@@ -302,15 +292,13 @@ class ABREnv():
         state[7, :PAST_LEN] = np.array(self.cur_sat_bw_logs[agent][:PAST_LEN]) / 10
 
         if self.connected_time[agent] and self.other_ids[agent]:
-            conn_tims_list = [float(self.connected_time[agent][self.cur_sat_id[agent]]) / BUFFER_NORM_FACTOR / 10,
-                                     float(self.connected_time[agent][self.next_sat_id[agent]]) / BUFFER_NORM_FACTOR / 10]
-            for i in range(len(self.other_ids[agent])):
-                conn_tims_list.append(float(self.connected_time[agent][self.other_ids[agent][i]]) / BUFFER_NORM_FACTOR / 10)
-            if len(conn_tims_list) < MAX_SAT:
-                conn_tims_list += [0] * (MAX_SAT - len(conn_tims_list))
-            state[8, :MAX_SAT] = conn_tims_list
+            state[8, :MAX_SAT] = [float(self.connected_time[agent][self.cur_sat_id[agent]]) / BUFFER_NORM_FACTOR / 10,
+                                  float(self.connected_time[agent][self.next_sat_id[agent]]) / BUFFER_NORM_FACTOR / 10,
+                                  float(self.connected_time[agent][self.other_ids[agent][0]]) / BUFFER_NORM_FACTOR / 10,
+                                  float(self.connected_time[agent][self.other_ids[agent][1]]) / BUFFER_NORM_FACTOR / 10]
         else:
             state[8, :MAX_SAT] = [0] * MAX_SAT
+
         i = 0
         for u_id in range(self.num_users - 1):
             if u_id == agent:
