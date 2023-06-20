@@ -4,14 +4,12 @@ import tensorflow.compat.v1 as tf
 import os
 import time
 
-from util.constants import PAST_SAT_LOG_LEN
-
-os.environ['CUDA_VISIBLE_DEVICES'] = '2'
+from util.constants import PAST_SAT_LOG_LEN, PAST_LEN, A_SAT
 import tflearn
 
+os.environ['CUDA_VISIBLE_DEVICES'] = '2'
+
 FEATURE_NUM = 128
-PAST_LEN = 8
-A_SAT = 4
 GAMMA = 0.99
 # PPO2
 EPS = 0.2
@@ -31,6 +29,12 @@ class Network():
             split_6 = tflearn.conv_1d(inputs[:, 6:7, :PAST_LEN], FEATURE_NUM, DIM_SIZE, activation='relu')
             split_7 = tflearn.conv_1d(inputs[:, 7:8, :PAST_LEN], FEATURE_NUM, DIM_SIZE, activation='relu')
             split_9 = tflearn.conv_1d(inputs[:, 8:9, :A_SAT], FEATURE_NUM, DIM_SIZE, activation='relu')
+            other_sat_list = []
+            for i in range(A_SAT - 2):
+                split_tmp = tflearn.conv_1d(inputs[:, 9 + i:
+                                           9 + i + 1, :PAST_LEN], FEATURE_NUM, DIM_SIZE, activation='relu')
+                split_flat_tmp = tflearn.flatten(split_tmp)
+                other_sat_list.append(split_flat_tmp)
 
             split_2_flat = tflearn.flatten(split_2)
             split_3_flat = tflearn.flatten(split_3)
@@ -39,9 +43,10 @@ class Network():
             split_7_flat = tflearn.flatten(split_7)
             split_9_flat = tflearn.flatten(split_9)
 
-            merge_net = tflearn.merge(
-                [split_0, split_1, split_2_flat, split_3_flat, split_4_flat, split_5, split_6_flat, split_7_flat,
-                 split_9_flat], 'concat')
+            result_net = [split_0, split_1, split_2_flat, split_3_flat, split_4_flat, split_5, split_6_flat, split_7_flat,
+                 split_9_flat]
+            result_net.extend(other_sat_list)
+            merge_net = tflearn.merge(result_net, 'concat')
 
             pi_net = tflearn.fully_connected(merge_net, FEATURE_NUM, activation='relu')
             # pi_net2 = tflearn.fully_connected(pi_net, int(FEATURE_NUM/2), activation='relu')
@@ -62,10 +67,12 @@ class Network():
             split_9 = tflearn.conv_1d(inputs[:, 8:9, :A_SAT], FEATURE_NUM, DIM_SIZE, activation='relu')
             split_10 = tflearn.conv_1d(inputs[:, 10:11, :PAST_LEN], FEATURE_NUM, DIM_SIZE, activation='relu')
             split_11 = tflearn.conv_1d(inputs[:, 11:12, :PAST_LEN], FEATURE_NUM, DIM_SIZE, activation='relu')
-            split_12 = tflearn.conv_1d(inputs[:, 9 + 8 * (self.num_agents - 1) + (self.num_agents - 1) * PAST_SAT_LOG_LEN:
-                                       9 + 8 * (self.num_agents - 1) + (self.num_agents - 1) * PAST_SAT_LOG_LEN+1, :PAST_LEN], FEATURE_NUM, DIM_SIZE, activation='relu')
-            split_13 = tflearn.conv_1d(inputs[:, 9 + 8 * (self.num_agents - 1) + (self.num_agents - 1) * PAST_SAT_LOG_LEN+1:
-                                       9 + 8 * (self.num_agents - 1) + (self.num_agents - 1) * PAST_SAT_LOG_LEN+2, :PAST_LEN], FEATURE_NUM, DIM_SIZE, activation='relu')
+            other_sat_list = []
+            for i in range(A_SAT - 2):
+                split_tmp = tflearn.conv_1d(inputs[:, 9 + 8 * (self.num_agents - 1) + (self.num_agents - 1) * PAST_SAT_LOG_LEN + i:
+                                           9 + 8 * (self.num_agents - 1) + (self.num_agents - 1) * PAST_SAT_LOG_LEN+i+1, :PAST_LEN], FEATURE_NUM, DIM_SIZE, activation='relu')
+                split_flat_tmp = tflearn.flatten(split_tmp)
+                other_sat_list.append(split_flat_tmp)
 
             split_2_flat = tflearn.flatten(split_2)
             split_3_flat = tflearn.flatten(split_3)
@@ -75,8 +82,6 @@ class Network():
             split_9_flat = tflearn.flatten(split_9)
             split_10_flat = tflearn.flatten(split_10)
             split_11_flat = tflearn.flatten(split_11)
-            split_12_flat = tflearn.flatten(split_12)
-            split_13_flat = tflearn.flatten(split_13)
 
             tmp_list.append(split_0)
             tmp_list.append(split_1)
@@ -89,8 +94,7 @@ class Network():
             tmp_list.append(split_9_flat)
             tmp_list.append(split_10_flat)
             tmp_list.append(split_11_flat)
-            tmp_list.append(split_12_flat)
-            tmp_list.append(split_13_flat)
+            tmp_list.extend(other_sat_list)
 
             tmp_net = tflearn.merge(tmp_list, 'concat')
             user_list = tflearn.fully_connected(tmp_net, int(FEATURE_NUM), activation='relu')

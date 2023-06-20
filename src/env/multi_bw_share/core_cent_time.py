@@ -112,6 +112,9 @@ class Environment:
         self.last_delay = [MPC_PAST_CHUNK_COUNT for _ in range(self.num_agents)]
         self.unexpected_change = True
 
+        self.reward_penalty = False
+
+
     def get_video_chunk(self, quality, agent, model_type, runner_up_sat_id=None, ho_stamp=None, do_mpc=False):
 
         assert quality >= 0
@@ -387,6 +390,7 @@ class Environment:
             self.update_sat_info(cur_sat_id, self.last_mahimahi_time[agent], agent, 1)
 
         self.last_delay = [MPC_PAST_CHUNK_COUNT for _ in range(self.num_agents)]
+        self.reward_penalty = False
 
     def check_end(self):
         # End if all users finish
@@ -441,6 +445,8 @@ class Environment:
             up_time = 0
             tmp_index = mahimahi_ptr - 1
             tmp_sat_bw = sat_bw[tmp_index]
+            # if tmp_sat_bw == 0:
+            #     continue
             while tmp_sat_bw != 0 and tmp_index >= 0:
                 up_time += 1
                 tmp_index -= 1
@@ -466,9 +472,8 @@ class Environment:
         del other_sat_bw_logs[self.cur_sat_id[agent]]
         del other_sat_users[next_sat_id]
         del other_sat_bw_logs[next_sat_id]
-
-        assert len(other_sat_bw_logs) == MAX_SAT - 2
-        assert len(other_sat_users) == MAX_SAT - 2
+        # assert len(other_sat_bw_logs) <= MAX_SAT - 2
+        # assert len(other_sat_users) <= MAX_SAT - 2
 
         if mahimahi_ptr is None:
             mahimahi_ptr = self.mahimahi_ptr[agent]
@@ -502,7 +507,8 @@ class Environment:
         sat_id_list = []
         for sat_id, sat_bw in self.cooked_bw.items():
             sat_id_list.append(sat_id)
-        del sat_id_list[self.cur_sat_id[agent]]
+
+        sat_id_list.remove(self.cur_sat_id[agent])
 
         return sat_id_list[np.random.randint(len(sat_id_list))]
 
@@ -810,6 +816,16 @@ class Environment:
                 reward += self.get_simulated_penalty(i, last_bit_rate[i], prev_sat_id, cur_sat_id) / self.num_agents / 10
 
         return reward
+
+    def set_reward_penalty(self):
+        self.reward_penalty = True
+
+    def get_reward_penalty(self):
+        if self.reward_penalty:
+            self.reward_penalty = False
+            return 10
+        else:
+            return 0
 
     def get_simulated_penalty(self, agent, quality, prev_sat_id, next_sat_id):
         assert quality >= 0
