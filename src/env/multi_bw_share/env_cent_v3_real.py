@@ -47,7 +47,7 @@ class ABREnv():
         self.video_chunk_remain = [0 for _ in range(self.num_users)]
         self.next_sat_bw_logs = [[] for _ in range(self.num_users)]
         self.cur_sat_bw_logs = [[] for _ in range(self.num_users)]
-        self.connected_time = [[] for _ in range(self.num_users)]
+        self.connected_time = [{} for _ in range(self.num_users)]
         self.cur_sat_id = [0 for _ in range(self.num_users)]
         self.next_sat_id = [0 for _ in range(self.num_users)]
         self.other_ids = [[] for _ in range(self.num_users)]
@@ -151,7 +151,7 @@ class ABREnv():
 
             state[15 + 8*i, :PAST_LEN] = np.array(self.cur_sat_bw_logs[u_id][:PAST_LEN]) / 10
             if self.connected_time[u_id]:
-                state[16 + 8 * i, -1] = float(self.connected_time[u_id][0]) / BUFFER_NORM_FACTOR / 10
+                state[16 + 8 * i, -1] = float(self.connected_time[u_id][self.cur_sat_id[u_id]]) / BUFFER_NORM_FACTOR / 10
             else:
                 state[16 + 8 * i, -1] = 0
             i += 1
@@ -184,7 +184,7 @@ class ABREnv():
         self.video_chunk_remain = [0 for _ in range(self.num_users)]
         self.next_sat_bw_logs = [[] for _ in range(self.num_users)]
         self.cur_sat_bw_logs = [[] for _ in range(self.num_users)]
-        self.connected_time = [[] for _ in range(self.num_users)]
+        self.connected_time = [{} for _ in range(self.num_users)]
         self.other_ids = [[] for _ in range(self.num_users)]
 
         return self.state
@@ -252,8 +252,11 @@ class ABREnv():
         self.next_sat_bw_logs[agent] = next_sat_bw_logs
         self.cur_sat_bw_logs[agent] = cur_sat_bw_logs
         self.connected_time[agent] = connected_time
+        self.cur_sat_id[agent] = cur_sat_id
+        self.next_sat_id[agent] = next_sat_id
+
         other_user_sat_decisions, other_sat_num_users, other_sat_bws, cur_user_sat_decisions, other_ids \
-            = encode_other_sat_info(self.net_env.sat_decision_log, self.num_users, cur_sat_id, next_sat_id,
+            = encode_other_sat_info(self.net_env.sat_decision_log, self.num_users, self.cur_sat_id[agent], self.next_sat_id[agent] ,
                                     agent, other_sat_users, other_sat_bw_logs, PAST_SAT_LOG_LEN)
 
         self.other_ids[agent] = other_ids
@@ -322,7 +325,7 @@ class ABREnv():
 
             state[15 + 8 * i, :PAST_LEN] = np.array(self.cur_sat_bw_logs[u_id][:PAST_LEN]) / 10
             if self.connected_time[u_id]:
-                state[16 + 8 * i, -1] = float(self.connected_time[u_id][0]) / BUFFER_NORM_FACTOR / 10
+                state[16 + 8 * i, -1] = float(self.connected_time[u_id][self.cur_sat_id[u_id]]) / BUFFER_NORM_FACTOR / 10
             else:
                 state[16 + 8 * i, -1] = 0
             i += 1

@@ -74,7 +74,7 @@ def main():
     prev_video_chunk_remain = [0 for _ in range(USERS)]
     prev_next_sat_bw_logs = [[] for _ in range(USERS)]
     prev_cur_sat_bw_logs = [[] for _ in range(USERS)]
-    prev_connected_time = [[] for _ in range(USERS)]
+    prev_connected_time = [{} for _ in range(USERS)]
     prev_other_ids = [[] for _ in range(USERS)]
 
     with tf.Session() as sess:
@@ -299,7 +299,7 @@ def main():
             # bit_rate[agent] = int(bit_rate[agent])
             # bit_rate[agent] *= BITRATE_WEIGHT
             bit_rate[agent] *= BITRATE_WEIGHT
-
+            sat_id = None
             if not end_of_video:
                 if sat[agent] == 0:
                     is_handover = False
