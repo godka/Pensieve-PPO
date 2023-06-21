@@ -48,7 +48,10 @@ class ABREnv():
         self.video_chunk_remain = [0 for _ in range(self.num_users)]
         self.next_sat_bw_logs = [[] for _ in range(self.num_users)]
         self.cur_sat_bw_logs = [[] for _ in range(self.num_users)]
-        self.connected_time = [[] for _ in range(self.num_users)]
+        self.connected_time = [{} for _ in range(self.num_users)]
+        self.cur_sat_id = [0 for _ in range(self.num_users)]
+        self.next_sat_id = [0 for _ in range(self.num_users)]
+        self.other_ids = [[] for _ in range(self.num_users)]
 
         self.state = [np.zeros((S_INFO, PAST_LEN)) for _ in range(self.num_users)]
         self.reward_func = reward_func
@@ -61,7 +64,7 @@ class ABREnv():
 
         delay, sleep_time, self.buffer_size[agent], rebuf, video_chunk_size, next_video_chunk_sizes, \
             end_of_video, video_chunk_remain, is_handover, num_of_user_sat, next_sat_bandwidth, next_sat_bw_logs, \
-            cur_sat_user_num, next_sat_user_num, cur_sat_bw_logs, connected_time, cur_sat_id, next_sat_ids, _, _, _, _, \
+            cur_sat_user_num, next_sat_user_num, cur_sat_bw_logs, connected_time, cur_sat_id, next_sat_id, _, _, _, _, \
         other_sat_users, other_sat_bw_logs, other_buffer_sizes = \
             self.net_env.get_video_chunk(bit_rate[agent], agent, None)
 
@@ -74,6 +77,9 @@ class ABREnv():
         self.next_sat_bw_logs[agent] = next_sat_bw_logs
         self.cur_sat_bw_logs[agent] = cur_sat_bw_logs
         self.connected_time[agent] = connected_time
+        self.cur_sat_id[agent] = cur_sat_id
+        self.next_sat_id[agent] = next_sat_id
+
         # this should be S_INFO number of terms
         state[0, -1] = VIDEO_BIT_RATE[self.last_bit_rate[agent]] / \
                                float(np.max(VIDEO_BIT_RATE))  # last quality
@@ -108,8 +114,8 @@ class ABREnv():
         # state[8, -1] = np.array(cur_sat_user_num) / 10
         # state[9, -1] = np.array(next_sat_user_num) / 10
         if self.connected_time[agent]:
-            state[8, :2] = [float(self.connected_time[agent][0]) / BUFFER_NORM_FACTOR / 10,
-                                     float(self.connected_time[agent][1]) / BUFFER_NORM_FACTOR / 10]
+            state[8, :2] = [float(self.connected_time[agent][self.cur_sat_id[agent]]) / BUFFER_NORM_FACTOR / 10,
+                                     float(self.connected_time[agent][self.next_sat_id[agent]]) / BUFFER_NORM_FACTOR / 10]
         else:
             state[8, :2] = [0, 0]
         
@@ -139,14 +145,11 @@ class ABREnv():
 
             state[15 + 8*i, :PAST_LEN] = np.array(self.cur_sat_bw_logs[u_id][:PAST_LEN]) / 10
             if self.connected_time[u_id]:
-                state[16 + 8 * i, -1] = float(self.connected_time[u_id][0]) / BUFFER_NORM_FACTOR / 10
+                state[16 + 8 * i, -1] = float(self.connected_time[u_id][self.cur_sat_id[u_id]]) / BUFFER_NORM_FACTOR / 10
             else:
                 state[16 + 8 * i, -1] = 0
             i += 1
-        next_sat_id = None
-        if next_sat_ids is not None:
-            next_sat_id = next_sat_ids[agent]
-        other_user_sat_decisions, other_sat_num_users, other_sat_bws, cur_user_sat_decisions \
+        other_user_sat_decisions, other_sat_num_users, other_sat_bws, cur_user_sat_decisions, other_ids \
             = encode_other_sat_info(self.net_env.sat_decision_log, self.num_users, cur_sat_id, next_sat_id,
                                     agent, other_sat_users, other_sat_bw_logs, PAST_SAT_LOG_LEN)
 
@@ -176,7 +179,8 @@ class ABREnv():
         self.video_chunk_remain = [0 for _ in range(self.num_users)]
         self.next_sat_bw_logs = [[] for _ in range(self.num_users)]
         self.cur_sat_bw_logs = [[] for _ in range(self.num_users)]
-        self.connected_time = [[] for _ in range(self.num_users)]
+        self.connected_time = [{} for _ in range(self.num_users)]
+        self.other_ids = [[] for _ in range(self.num_users)]
 
         return self.state
 
@@ -212,7 +216,7 @@ class ABREnv():
         # this is to make the framework similar to the real
         delay, sleep_time, self.buffer_size[agent], rebuf, video_chunk_size, next_video_chunk_sizes, \
         end_of_video, video_chunk_remain, is_handover, num_of_user_sat, next_sat_bandwidth, next_sat_bw_logs, \
-        cur_sat_user_num, next_sat_user_num, cur_sat_bw_logs, connected_time, cur_sat_id, next_sat_ids, _, _, _, _, \
+        cur_sat_user_num, next_sat_user_num, cur_sat_bw_logs, connected_time, cur_sat_id, next_sat_id, _, _, _, _, \
         other_sat_users, other_sat_bw_logs, other_buffer_sizes = \
             self.net_env.get_video_chunk(bit_rate, agent, None)
         self.time_stamp += delay  # in ms
@@ -241,10 +245,12 @@ class ABREnv():
         self.next_sat_bw_logs[agent] = next_sat_bw_logs
         self.cur_sat_bw_logs[agent] = cur_sat_bw_logs
         self.connected_time[agent] = connected_time
+
         # this should be S_INFO number of terms
         state[0, -1] = VIDEO_BIT_RATE[self.last_bit_rate[agent]] / \
                        float(np.max(VIDEO_BIT_RATE))  # last quality
         state[1, -1] = self.buffer_size[agent] / BUFFER_NORM_FACTOR  # 10 sec
+
         if self.delay[agent] != 0:
             state[2, -1] = float(self.video_chunk_size[agent]) / \
                            float(self.delay[agent]) / M_IN_K  # kilo byte / ms
@@ -271,8 +277,8 @@ class ABREnv():
 
         state[7, :PAST_LEN] = np.array(self.cur_sat_bw_logs[agent][:PAST_LEN]) / 10
         if self.connected_time[agent]:
-            state[8, :2] = [float(self.connected_time[agent][0]) / BUFFER_NORM_FACTOR / 10,
-                             float(self.connected_time[agent][1]) / BUFFER_NORM_FACTOR / 10]
+            state[8, :2] = [float(self.connected_time[agent][self.cur_sat_id[agent]]) / BUFFER_NORM_FACTOR / 10,
+                             float(self.connected_time[agent][self.next_sat_id[agent]]) / BUFFER_NORM_FACTOR / 10]
         else:
             state[8, :2] = [0, 0]
 
@@ -302,14 +308,13 @@ class ABREnv():
 
             state[15 + 8 * i, :PAST_LEN] = np.array(self.cur_sat_bw_logs[u_id][:PAST_LEN]) / 10
             if self.connected_time[u_id]:
-                state[16 + 8 * i, -1] = float(self.connected_time[u_id][0]) / BUFFER_NORM_FACTOR / 10
+                state[16 + 8 * i, -1] = float(self.connected_time[u_id][self.cur_sat_id[u_id]]) / BUFFER_NORM_FACTOR / 10
             else:
                 state[16 + 8 * i, -1] = 0
             i += 1
         next_sat_id = None
-        if next_sat_ids is not None:
-            next_sat_id = next_sat_ids[agent]
-        other_user_sat_decisions, other_sat_num_users, other_sat_bws, cur_user_sat_decisions \
+
+        other_user_sat_decisions, other_sat_num_users, other_sat_bws, cur_user_sat_decisions, other_ids \
             = encode_other_sat_info(self.net_env.sat_decision_log, self.num_users, cur_sat_id, next_sat_id,
                                     agent, other_sat_users, other_sat_bw_logs, PAST_SAT_LOG_LEN)
 

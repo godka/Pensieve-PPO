@@ -73,7 +73,8 @@ def main():
     prev_video_chunk_remain = [0 for _ in range(USERS)]
     prev_next_sat_bw_logs = [[] for _ in range(USERS)]
     prev_cur_sat_bw_logs = [[] for _ in range(USERS)]
-    prev_connected_time = [[] for _ in range(USERS)]
+    prev_connected_time = [{} for _ in range(USERS)]
+    prev_cur_sat_id = [0 for _ in range(USERS)]
 
     with tf.Session() as sess:
 
@@ -169,7 +170,7 @@ def main():
             delay, sleep_time, buffer_size, rebuf, \
             video_chunk_size, next_video_chunk_sizes, \
             end_of_video, video_chunk_remain, is_handover, _, _, next_sat_bw_logs, \
-            cur_sat_user_num, next_sat_user_num, cur_sat_bw_logs, connected_time, cur_sat_id, next_sat_ids, _, _, _, _,\
+            cur_sat_user_num, next_sat_user_num, cur_sat_bw_logs, connected_time, cur_sat_id, next_sat_id, _, _, _, _,\
             other_sat_users, other_sat_bw_logs, other_buffer_sizes = \
                 net_env.get_video_chunk(bit_rate[agent], agent, model_type=None)
 
@@ -185,10 +186,8 @@ def main():
             prev_next_sat_bw_logs[agent] = next_sat_bw_logs
             prev_cur_sat_bw_logs[agent] = cur_sat_bw_logs
             prev_connected_time[agent] = connected_time
+            prev_cur_sat_id[agent] = cur_sat_id
 
-            next_sat_id = None
-            if next_sat_ids is not None:
-                next_sat_id = next_sat_ids[agent]
             # reward is video quality - rebuffer penalty
             if REWARD_FUNC == "LIN":
                 reward = VIDEO_BIT_RATE[bit_rate[agent]] / M_IN_K \
@@ -239,26 +238,21 @@ def main():
             state[agent] = np.roll(state[agent], -1, axis=1)
 
             # this should be S_INFO number of terms
-            state[agent][0, -1] = VIDEO_BIT_RATE[last_bit_rate[agent]] / float(
-                np.max(VIDEO_BIT_RATE))  # last quality
+            state[agent][0, -1] = VIDEO_BIT_RATE[last_bit_rate[agent]] / float(np.max(VIDEO_BIT_RATE))  # last quality
             state[agent][1, -1] = prev_buffer_size[agent] / BUFFER_NORM_FACTOR  # 10 sec
             if prev_delay[agent] != 0:
-                state[agent][2, -1] = float(prev_video_chunk_size[agent]) / \
-                                              float(prev_delay[agent]) / M_IN_K  # kilo byte / ms
+                state[agent][2, -1] = float(prev_video_chunk_size[agent]) / float(prev_delay[agent]) / M_IN_K  # kilo byte / ms
             else:
                 state[agent][2, -1] = 0
             state[agent][3, -1] = float(prev_delay[agent]) / M_IN_K / BUFFER_NORM_FACTOR  # 10 sec
             # state[4, :A_DIM] = np.array(next_video_chunk_sizes) / M_IN_K / M_IN_K  # mega byte
             if prev_next_video_chunk_sizes[agent]:
-                state[agent][4, :A_DIM] = np.array(
-                    [prev_next_video_chunk_sizes[agent][index] for index in [0, 2, 4]]) / M_IN_K / M_IN_K  # mega byte
+                state[agent][4, :A_DIM] = np.array([prev_next_video_chunk_sizes[agent][index] for index in [0, 2, 4]]) / M_IN_K / M_IN_K  # mega byte
             else:
                 state[agent][4, :A_DIM] = [0, 0, 0]
-            state[agent][5, -1] = np.minimum(prev_video_chunk_remain[agent],
-                                                     CHUNK_TIL_VIDEO_END_CAP) / float(CHUNK_TIL_VIDEO_END_CAP)
+            state[agent][5, -1] = np.minimum(prev_video_chunk_remain[agent], CHUNK_TIL_VIDEO_END_CAP) / float(CHUNK_TIL_VIDEO_END_CAP)
             if len(prev_next_sat_bw_logs[agent]) < PAST_LEN:
-                prev_next_sat_bw_logs[agent] = [0] * (PAST_LEN - len(prev_next_sat_bw_logs[agent])) + prev_next_sat_bw_logs[
-                    agent]
+                prev_next_sat_bw_logs[agent] = [0] * (PAST_LEN - len(prev_next_sat_bw_logs[agent])) + prev_next_sat_bw_logs[agent]
 
             state[agent][6, :PAST_LEN] = np.array(prev_next_sat_bw_logs[agent][:PAST_LEN]) / 10
 
@@ -268,8 +262,8 @@ def main():
             state[agent][7, :PAST_LEN] = np.array(prev_cur_sat_bw_logs[agent][:PAST_LEN]) / 10
 
             if prev_connected_time[agent]:
-                state[agent][8, :2] = [float(prev_connected_time[agent][0]) / BUFFER_NORM_FACTOR / 10,
-                                                float(prev_connected_time[agent][1]) / BUFFER_NORM_FACTOR / 10]
+                state[agent][8, :2] = [float(prev_connected_time[agent][cur_sat_id]) / BUFFER_NORM_FACTOR / 10,
+                                  float(prev_connected_time[agent][next_sat_id]) / BUFFER_NORM_FACTOR / 10]
             else:
                 state[agent][8, :2] = [0, 0]
             i = 0
@@ -298,14 +292,11 @@ def main():
 
                 state[agent][15 + 8 * i, :PAST_LEN] = np.array(prev_cur_sat_bw_logs[u_id][:PAST_LEN]) / 10
                 if prev_connected_time[u_id]:
-                    state[agent][16 + 8 * i, -1] = float(prev_connected_time[u_id][0]) / BUFFER_NORM_FACTOR / 10
+                    state[agent][16 + 8 * i, -1] = float(prev_connected_time[u_id][prev_cur_sat_id[u_id]]) / BUFFER_NORM_FACTOR / 10
                 else:
                     state[agent][16 + 8 * i, -1] = 0
                 i += 1
-            next_sat_id = None
-            if next_sat_ids is not None:
-                next_sat_id = next_sat_ids[agent]
-            other_user_sat_decisions, other_sat_num_users, other_sat_bws, cur_user_sat_decisions \
+            other_user_sat_decisions, other_sat_num_users, other_sat_bws, cur_user_sat_decisions, _ \
                 = encode_other_sat_info(net_env.sat_decision_log, USERS, cur_sat_id, next_sat_id,
                                         agent, other_sat_users, other_sat_bw_logs, PAST_SAT_LOG_LEN)
 
