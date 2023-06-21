@@ -32,6 +32,7 @@ parser = argparse.ArgumentParser(description='PyTorch Synthetic Benchmark',
 parser.add_argument('--user', type=int, default=1)
 args = parser.parse_args()
 USERS = args.user
+NUM_AGENTS = int(20 / USERS)
 # A_SAT = USERS + 1
 
 TEST_LOG_FOLDER += str(USERS) + '/'

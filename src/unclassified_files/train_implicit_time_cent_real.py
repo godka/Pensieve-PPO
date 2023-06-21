@@ -12,7 +12,7 @@ import tensorflow.compat.v1 as tf
 import structlog
 import logging
 
-from util.constants import A_DIM, NUM_AGENTS, MAX_SAT, PAST_SAT_LOG_LEN, TRAIN_REAL_TRACES
+from util.constants import A_DIM, MAX_SAT, PAST_SAT_LOG_LEN, TRAIN_REAL_TRACES
 
 os.environ['CUDA_VISIBLE_DEVICES'] = '-1'
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
@@ -35,6 +35,7 @@ parser = argparse.ArgumentParser(description='PyTorch Synthetic Benchmark',
 parser.add_argument('--user', type=int, default=5)
 args = parser.parse_args()
 USERS = args.user
+NUM_AGENTS = int(20 / USERS)
 # A_SAT = USERS + 1\
 TEST_LOG_FOLDER += str(USERS) + '/'
 SUMMARY_DIR += str(USERS)

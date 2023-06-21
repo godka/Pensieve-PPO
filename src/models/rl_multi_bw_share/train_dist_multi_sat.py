@@ -10,7 +10,7 @@ from env.multi_bw_share.env_time_multi_sat import ABREnv
 from models.rl_multi_bw_share.ppo_spec import ppo_implicit_multi_sat as network
 import tensorflow.compat.v1 as tf
 import structlog
-from util.constants import A_DIM, NUM_AGENTS, TRAIN_TRACES, MAX_SAT
+from util.constants import A_DIM, TRAIN_TRACES, MAX_SAT
 import logging
 
 os.environ['CUDA_VISIBLE_DEVICES'] = '-1'
@@ -35,6 +35,7 @@ parser = argparse.ArgumentParser(description='PyTorch Synthetic Benchmark',
 parser.add_argument('--user', type=int, default=3)
 args = parser.parse_args()
 USERS = args.user
+NUM_AGENTS = int(20 / USERS)
 # A_SAT = USERS + 1
 
 TEST_LOG_FOLDER += str(USERS) + '/'
