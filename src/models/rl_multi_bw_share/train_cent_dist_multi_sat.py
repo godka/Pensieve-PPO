@@ -6,11 +6,11 @@ import os
 import sys
 root_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, root_dir + '/../')
-from env.tmp.env_cent_multi_sat import ABREnv
+from env.multi_bw_share.env_cent_multi_sat import ABREnv
 from models.rl_multi_bw_share.ppo_spec import ppo_cent_dist_multi_sat as network
 import tensorflow.compat.v1 as tf
 import structlog
-from util.constants import A_DIM, PAST_SAT_LOG_LEN, TRAIN_TRACES, SIM_MAX_SAT as MAX_SAT
+from util.constants import A_DIM, PAST_SAT_LOG_LEN, TRAIN_TRACES, MAX_SAT
 import logging
 os.environ['CUDA_VISIBLE_DEVICES'] = '-1'
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
