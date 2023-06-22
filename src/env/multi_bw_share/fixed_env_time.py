@@ -446,11 +446,11 @@ class Environment:
             # self.cur_sat_id[agent] = None
 
             # wait for overall clean
-            # cur_sat_bw_logs, next_sat_bandwidth, next_sat_id, next_sat_bw_logs, connected_time, other_sat_users,\
-            # other_sat_bw_logs = [], [], self.next_sat_id[agent], [], {}, {}, {}
-        # else:
-        cur_sat_bw_logs, next_sat_bandwidth, next_sat_id, next_sat_bw_logs, connected_time, other_sat_users, other_sat_bw_logs = self.get_next_sat_info(
-            agent, self.mahimahi_ptr[agent])
+            cur_sat_bw_logs, next_sat_bandwidth, next_sat_id, next_sat_bw_logs, connected_time, other_sat_users,\
+            other_sat_bw_logs = [], [], self.next_sat_id[agent], [], {}, {}, {}
+        else:
+            cur_sat_bw_logs, next_sat_bandwidth, next_sat_id, next_sat_bw_logs, connected_time, other_sat_users, other_sat_bw_logs = self.get_next_sat_info(
+                agent, self.mahimahi_ptr[agent])
         next_video_chunk_sizes = []
         for i in range(BITRATE_LEVELS):
             next_video_chunk_sizes.append(self.video_size[i][self.video_chunk_counter[agent]])
