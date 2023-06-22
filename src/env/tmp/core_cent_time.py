@@ -823,7 +823,7 @@ class Environment:
     def get_reward_penalty(self):
         if self.reward_penalty:
             self.reward_penalty = False
-            return 10
+            return -10
         else:
             return 0
 

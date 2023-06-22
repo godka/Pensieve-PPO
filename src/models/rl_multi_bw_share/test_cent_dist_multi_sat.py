@@ -311,7 +311,7 @@ def main():
                 else:
                     assert sat[agent] >= 2
                     if len(prev_other_ids[agent]) <= sat[agent] - 2:
-                        # impossible choise
+                        # impossible choice
                         net_env.set_reward_penalty()
                     else:
                         sat_id = prev_other_ids[agent][sat[agent] - 2]
