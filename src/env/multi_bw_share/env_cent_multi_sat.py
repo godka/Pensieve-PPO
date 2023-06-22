@@ -215,7 +215,10 @@ class ABREnv():
                 self.net_env.set_reward_penalty()
             else:
                 sat_id = self.other_ids[agent][sat-2]
-        self.net_env.set_satellite(agent, sat, sat_id=sat_id)
+                self.is_handover = True
+        if self.is_handover:
+            self.net_env.set_satellite(agent, sat, sat_id=sat_id)
+            self.is_handover = False
 
     def step(self, action, agent):
         bit_rate = int(action) % A_DIM

@@ -11,7 +11,7 @@ import numpy as np
 import tensorflow.compat.v1 as tf
 from env.tmp import fixed_env_time as env
 from env.tmp import load_trace as load_trace
-from models.rl_multi_bw_share.ppo_spec import tmp as network
+from models.rl_multi_bw_share.ppo_spec import ppo_cent_dist_multi_sat as network
 import structlog
 import logging
 
@@ -303,6 +303,7 @@ def main():
             # bit_rate[agent] *= BITRATE_WEIGHT
             bit_rate[agent] *= BITRATE_WEIGHT
             sat_id = None
+            is_handover = False
             if not end_of_video:
                 if sat[agent] == 0:
                     is_handover = False
@@ -313,9 +314,12 @@ def main():
                     if len(prev_other_ids[agent]) <= sat[agent] - 2:
                         # impossible choice
                         net_env.set_reward_penalty()
+                        is_handover = False
                     else:
                         sat_id = prev_other_ids[agent][sat[agent] - 2]
-                net_env.set_satellite(agent, sat[agent], sat_id=sat_id)
+                        is_handover = True
+                if is_handover:
+                    net_env.set_satellite(agent, sat[agent], sat_id=sat_id)
             s_batch[agent].append(state[agent])
 
             entropy_ = -np.dot(action_prob, np.log(action_prob))

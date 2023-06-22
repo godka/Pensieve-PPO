@@ -80,7 +80,7 @@ def main():
     with tf.Session() as sess:
 
         actor = network.Network(sess,
-                                state_dim=[S_INFO, PAST_LEN], action_dim=A_DIM * A_SAT,
+                                state_dim=[S_INFO, PAST_LEN], action_dim=A_DIM * MAX_SAT,
                                 learning_rate=ACTOR_LR_RATE, num_of_users=USERS)
 
         sess.run(tf.global_variables_initializer())
@@ -97,7 +97,7 @@ def main():
         bit_rate = [DEFAULT_QUALITY for _ in range(USERS)]
         sat = [0 for _ in range(USERS)]
 
-        action_vec = [np.zeros(A_DIM * A_SAT) for _ in range(USERS)]
+        action_vec = [np.zeros(A_DIM * MAX_SAT) for _ in range(USERS)]
         for i in range(USERS):
             action_vec[i][bit_rate] = 1
 
@@ -174,6 +174,7 @@ def main():
             cur_sat_user_num, next_sat_user_num, cur_sat_bw_logs, connected_time, cur_sat_id, next_sat_id, _, _, _, _,\
             other_sat_users, other_sat_bw_logs, other_buffer_sizes = \
                 net_env.get_video_chunk(bit_rate[agent], agent, model_type=None)
+
             time_stamp[agent] += delay  # in ms
             time_stamp[agent] += sleep_time  # in ms
             
@@ -186,7 +187,6 @@ def main():
             prev_next_sat_bw_logs[agent] = next_sat_bw_logs
             prev_cur_sat_bw_logs[agent] = cur_sat_bw_logs
             prev_connected_time[agent] = connected_time
-
 
             # reward is video quality - rebuffer penalty
             if REWARD_FUNC == "LIN":
@@ -207,6 +207,9 @@ def main():
                 tmp_reward_3.append(-np.abs(BITRATE_REWARD[bit_rate[agent]] - BITRATE_REWARD[last_bit_rate[agent]]))
             else:
                 raise Exception
+
+            # Give penalty when impossible choices
+            reward += net_env.get_reward_penalty()
 
             r_batch[agent].append(reward)
             tmp_results.append(reward)
@@ -271,10 +274,13 @@ def main():
             # state[agent][8, -1] = np.array(cur_sat_user_num) / 10
             # state[agent][9, -1] = np.array(next_sat_user_num) / 10
             if prev_connected_time[agent] and prev_other_ids[agent]:
-                state[agent][8, :MAX_SAT] = [float(prev_connected_time[agent][cur_sat_id]) / BUFFER_NORM_FACTOR / 10,
-                                        float(prev_connected_time[agent][next_sat_id]) / BUFFER_NORM_FACTOR / 10,
-                                       float(prev_connected_time[agent][prev_other_ids[agent][0]]) / BUFFER_NORM_FACTOR / 10,
-                                       float(prev_connected_time[agent][prev_other_ids[agent][1]]) / BUFFER_NORM_FACTOR / 10]
+                conn_tims_list = [float(prev_connected_time[agent][cur_sat_id]) / BUFFER_NORM_FACTOR / 10,
+                                  float(prev_connected_time[agent][next_sat_id]) / BUFFER_NORM_FACTOR / 10]
+                for i in range(len(prev_other_ids[agent])):
+                    conn_tims_list.append(float(prev_connected_time[agent][prev_other_ids[agent][i]]) / BUFFER_NORM_FACTOR / 10)
+                if len(conn_tims_list) < MAX_SAT:
+                    conn_tims_list += [0] * (MAX_SAT - len(conn_tims_list))
+                state[agent][8, :MAX_SAT] = conn_tims_list
 
             else:
                 state[agent][8, :MAX_SAT] = [0] * MAX_SAT
@@ -300,6 +306,7 @@ def main():
             # bit_rate[agent] *= BITRATE_WEIGHT
             bit_rate[agent] *= BITRATE_WEIGHT
             sat_id = None
+            is_handover = False
             if not end_of_video:
                 if sat[agent] == 0:
                     is_handover = False
@@ -307,8 +314,15 @@ def main():
                     is_handover = True
                 else:
                     assert sat[agent] >= 2
-                    sat_id = prev_other_ids[agent][sat[agent] - 2]
-                net_env.set_satellite(agent, sat[agent], sat_id=sat_id)
+                    if len(prev_other_ids[agent]) <= sat[agent] - 2:
+                        # impossible choice
+                        net_env.set_reward_penalty()
+                        is_handover = False
+                    else:
+                        sat_id = prev_other_ids[agent][sat[agent] - 2]
+                        is_handover = True
+                if is_handover:
+                    net_env.set_satellite(agent, sat[agent], sat_id=sat_id)
             s_batch[agent].append(state[agent])
 
             entropy_ = -np.dot(action_prob, np.log(action_prob))
