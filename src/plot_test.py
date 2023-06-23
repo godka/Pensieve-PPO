@@ -4,18 +4,13 @@ import numpy as np
 import matplotlib.pyplot as plt
 from itertools import compress
 
-LOG_PATH = '../data/test_results_pensieve1/log_sim_pensieve_rss_Chicago_2022-9-21-10-00-00'
-SAT_PATH = 'data/sat_data/test/rss_Chicago_2022-9-21-10-00-00.csv'
-LOG_PATH = '../data/test_results_imp_agg_weight5/log_sim_ppo_rss_Chicago_2022-9-21-10-00-00'
-# LOG_PATH = '../data/test_results_imp5/log_sim_ppo_rss_Chicago_2022-9-21-10-00-00'
+LOG_PATH = 'real/cent_rl_cd/5/test_results_imp_agg_weight_v2_real5/log_sim_ppo_dataset_uk_11'
+SAT_PATH = 'data/sat_data/real_test/dataset_uk_11.csv'
+# LOG_PATH = 'real/dist_mpc/5/log_sim_cent_dataset_uk_11'
 
-# LOG_PATH = '../data/test_results_pensieve5/log_sim_pensieve_rss_Chicago_2022-9-21-10-00-00'
-# LOG_PATH = '../data/MPC_dist5/log_sim_cent_rss_Chicago_2022-9-21-10-00-00'
-
-# LOG_PATH = 'results/log_sim_mpc_truth_naive_london'
 # PLOT_SAMPLES = 300
 
-AGENT_ID = 0
+AGENT_ID = 1
 
 cooked_time = []
 satellite_bw = {}
@@ -24,8 +19,6 @@ with open(SAT_PATH, 'r') as f:
     line_count = 0
 
     for row in csv_reader:
-        if int(row["time"]) >= 100:
-            break
         if line_count == 0:
             # Get Satellite ID
             satellite_id = list(row.keys())[2:]
@@ -36,14 +29,18 @@ with open(SAT_PATH, 'r') as f:
         for sat_id in satellite_id:
             # satellite_bw[int(sat_id)].append(float(row[sat_id]))
             satellite_bw[int(sat_id)].append(float(row[sat_id]) * 1/20)
-        cooked_time.append(int(row["time"]))
+        cooked_time.append(int(row['']))
 
 for time_index in cooked_time:
     num_of_sats = 0
     for sat_id in satellite_bw:
         if satellite_bw[sat_id][time_index] != 0:
             num_of_sats += 1
-plt.plot(cooked_time, satellite_bw[int(satellite_id[1])], linestyle="-", marker="o", markersize=3)
+
+plt.plot(cooked_time, satellite_bw[int(satellite_id[0])], linestyle="-", marker="o", markersize=3)
+# plt.plot(cooked_time, satellite_bw[int(satellite_id[1])], linestyle="-", marker="o", markersize=3)
+# plt.plot(cooked_time, satellite_bw[int(satellite_id[2])], linestyle="-", marker="o", markersize=3)
+
 plt.legend()
 plt.show()
 
@@ -96,8 +93,8 @@ axs[0, 0].plot(time_stamp, avg_download, linestyle="-", marker="o", markersize=1
 time_handover = list(compress(time_stamp, is_handover))
 bw_handover = list(compress(avg_download, is_handover))
 axs[0, 0].plot(time_handover, bw_handover, 'r*', markersize=10, label="HO point")
+
 sat_log = ""
-print(sat_history[AGENT_ID])
 i = 0
 for sat_his in sat_history[AGENT_ID]:
     sat_log += "->" + sat_his
@@ -105,6 +102,7 @@ for sat_his in sat_history[AGENT_ID]:
 axs[0, 0].scatter(time_stamp[0]+30, 0.05, s=15000, c=15000,
                   marker=r"$ {} $".format(sat_log), edgecolors='none')
 i += 1
+
 axs[0, 0].set_ylim([0.0, 0.6])
 axs[0, 0].set_title("Download Time")
 

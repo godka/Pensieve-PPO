@@ -131,16 +131,18 @@ class Network():
                 tmp_net.append(split_tmp)
                 tmp_net.append(split_tmp_1)
 
-            tmp_net = tflearn.merge(tmp_net, 'concat')
-            decision_list = tflearn.fully_connected(tmp_net, int(FEATURE_NUM), activation='relu')
-            split_list.append(decision_list)
-
-            value_net = tflearn.merge(split_list, 'concat')
+            if tmp_net:
+                tmp_net = tflearn.merge(tmp_net, 'concat')
+                decision_list = tflearn.fully_connected(tmp_net, int(FEATURE_NUM), activation='relu')
+                split_list.append(decision_list)
+                value_net = tflearn.merge(split_list, 'concat')
+                value = tflearn.fully_connected(value_net, 1, activation='linear')
+            else:
+                value = tflearn.fully_connected(user_list, 1, activation='linear')
 
             # pi_net2 = tflearn.fully_connected(value_net, int(FEATURE_NUM / 2), activation='relu')
             # value_net3 = tflearn.fully_connected(value_net2, int(FEATURE_NUM/4), activation='relu')
 
-            value = tflearn.fully_connected(value_net, 1, activation='linear')
             return pi, value
 
     def get_network_params(self):
