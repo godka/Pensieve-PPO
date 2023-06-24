@@ -240,8 +240,7 @@ def main():
             #     state[agent][9:10, 0:S_LEN] = np.zeros((1, S_LEN))
             # state[agent][8:9, -1] = np.array(cur_sat_user_num) / 10
             # state[agent][9:10, -1] = np.array(next_sat_user_num) / 10
-            if connected_time:
-                state[agent][8, :2] = [float(connected_time[cur_sat_id]) / BUFFER_NORM_FACTOR / 10,
+≈                state[agent][8, :2] = [float(connected_time[cur_sat_id]) / BUFFER_NORM_FACTOR / 10,
                                         float(connected_time[next_sat_id]) / BUFFER_NORM_FACTOR / 10]
 
             # if len(next_sat_user_num) < PAST_LEN:
