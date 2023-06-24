@@ -95,7 +95,6 @@ class Network():
             split_list.append(user_list)
 
             for i in range(self.num_agents - 1):
-                print(i)
                 tmp_list = []
                 split_0 = tflearn.fully_connected(inputs[:, 9 + 8 * i:10 + 8 * i, -1], int(FEATURE_NUM), activation='relu')
                 split_1 = tflearn.fully_connected(inputs[:, 10 + 8 * i:11 + 8 * i, -1], int(FEATURE_NUM), activation='relu')

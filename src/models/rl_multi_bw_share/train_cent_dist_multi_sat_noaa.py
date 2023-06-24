@@ -30,7 +30,7 @@ import argparse
 
 parser = argparse.ArgumentParser(description='PyTorch Synthetic Benchmark',
                                  formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-parser.add_argument('--user', type=int, default=1)
+parser.add_argument('--user', type=int, default=10)
 args = parser.parse_args()
 USERS = args.user
 NUM_AGENTS = int(20 / USERS)

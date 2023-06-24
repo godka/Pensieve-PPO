@@ -185,6 +185,7 @@ class User:
             except IndexError:
                 print(len(self.snr_noise))
                 print(mahimahi_ptr)
+                exit(1)
         else:
             return self.snr_noise[self.index]
 

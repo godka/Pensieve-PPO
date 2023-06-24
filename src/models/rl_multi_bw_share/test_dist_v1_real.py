@@ -159,7 +159,7 @@ def main():
             delay, sleep_time, buffer_size, rebuf, \
             video_chunk_size, next_video_chunk_sizes, \
             end_of_video, video_chunk_remain, is_handover, _, _, next_sat_bw_logs, \
-            cur_sat_user_num, next_sat_user_num, cur_sat_bw_logs, connected_time, cur_sat_id, _, _, _, _, _, _, _, _ = \
+            cur_sat_user_num, next_sat_user_num, cur_sat_bw_logs, connected_time, cur_sat_id, next_sat_id, _, _, _, _, _, _, _ = \
                 net_env.get_video_chunk(bit_rate[agent], agent, model_type=None)
 
             time_stamp[agent] += delay  # in ms
@@ -240,8 +240,8 @@ def main():
             #     state[agent][9:10, 0:S_LEN] = np.zeros((1, S_LEN))
             # state[agent][8:9, -1] = np.array(cur_sat_user_num) / 10
             # state[agent][9:10, -1] = np.array(next_sat_user_num) / 10
-            state[agent][8, :2] = [float(connected_time[0]) / BUFFER_NORM_FACTOR / 10,
-                                    float(connected_time[1]) / BUFFER_NORM_FACTOR / 10]
+            state[agent][8, :2] = [float(connected_time[cur_sat_id]) / BUFFER_NORM_FACTOR / 10,
+                                    float(connected_time[next_sat_id]) / BUFFER_NORM_FACTOR / 10]
 
             # if len(next_sat_user_num) < PAST_LEN:
             #     next_sat_user_num = [0] * (PAST_LEN - len(next_sat_user_num)) + next_sat_user_num
