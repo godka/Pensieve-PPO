@@ -34,7 +34,7 @@ parser = argparse.ArgumentParser(description='PyTorch Synthetic Benchmark',
 parser.add_argument('--user', type=int, default=3)
 args = parser.parse_args()
 USERS = args.user
-NUM_AGENTS = int(20 / USERS)
+NUM_AGENTS = int(12 / USERS)
 # A_SAT = USERS + 1
 S_DIM = [9 + 8 * (USERS - 1) + (USERS - 1) * PAST_SAT_LOG_LEN, 8]
 
