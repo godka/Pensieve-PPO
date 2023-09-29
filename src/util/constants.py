@@ -65,7 +65,7 @@ VIDEO_SIZE_FILE = '../../data/video_data/envivio/video_size_'
 BUF_RATIO = 0.7
 BUF_RATIO_COMBO = 0.8
 
-A_DIM = 3
+A_DIM = 6
 PAST_LEN = 8
 SAT_CANDIDATES = 5
 

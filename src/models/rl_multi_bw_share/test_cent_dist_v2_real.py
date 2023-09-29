@@ -246,7 +246,13 @@ def main():
             state[agent][3, -1] = float(prev_delay[agent]) / M_IN_K / BUFFER_NORM_FACTOR  # 10 sec
             # state[4, :A_DIM] = np.array(next_video_chunk_sizes) / M_IN_K / M_IN_K  # mega byte
             if prev_next_video_chunk_sizes[agent]:
-                state[agent][4, :A_DIM] = np.array([prev_next_video_chunk_sizes[agent][index] for index in [0, 2, 4]]) / M_IN_K / M_IN_K  # mega byte
+                if A_DIM == 3:
+                    state[agent][4, :A_DIM] = np.array([prev_next_video_chunk_sizes[agent][index] for index in [0, 2, 4]]) / M_IN_K / M_IN_K  # mega byte
+                elif A_DIM == 6:
+                    state[agent][4, :A_DIM] = np.array(prev_next_video_chunk_sizes[agent]) / M_IN_K / M_IN_K  # mega byte
+                else:
+                    exit(1)
+
             else:
                 state[agent][4, :A_DIM] = [0, 0, 0]
             state[agent][5, -1] = np.minimum(prev_video_chunk_remain[agent], CHUNK_TIL_VIDEO_END_CAP) / float(CHUNK_TIL_VIDEO_END_CAP)
