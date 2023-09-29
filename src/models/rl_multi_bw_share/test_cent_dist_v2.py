@@ -293,7 +293,8 @@ def main():
             # bit_rate[agent] /= BITRATE_WEIGHT
             # bit_rate[agent] = int(bit_rate[agent])
             # bit_rate[agent] *= BITRATE_WEIGHT
-            bit_rate[agent] *= BITRATE_WEIGHT
+            if A_DIM == 3:
+                bit_rate[agent] *= BITRATE_WEIGHT
 
             if not end_of_video:
                 changed_sat_id = net_env.set_satellite(agent, sat[agent])

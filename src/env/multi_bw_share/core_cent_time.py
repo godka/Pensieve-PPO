@@ -114,12 +114,10 @@ class Environment:
 
         self.reward_penalty = False
 
-
     def get_video_chunk(self, quality, agent, model_type, runner_up_sat_id=None, ho_stamp=None, do_mpc=False):
 
         assert quality >= 0
-        assert quality < BITRATE_LEVELS
-        assert quality in [0, 2, 4]
+        assert quality < BITRATE_LEVELS, print(quality)
 
         runner_up_sat_ids, ho_stamps, best_combos, best_user_info, final_rate = None, None, None, None, None
 

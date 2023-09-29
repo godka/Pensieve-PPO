@@ -213,7 +213,8 @@ class ABREnv():
         # For testing with mpc
         # bit_rate /= BITRATE_WEIGHT
         # bit_rate = int(bit_rate)
-        bit_rate *= BITRATE_WEIGHT
+        if A_DIM == 3:
+            bit_rate *= BITRATE_WEIGHT
 
         # 0 -> select current satellite // 1 -> select another satellite
         # the action is from the last decision

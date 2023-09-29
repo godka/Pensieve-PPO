@@ -140,7 +140,7 @@ class Environment:
 
         assert quality >= 0
         assert quality < BITRATE_LEVELS
-        assert quality in [0, 2, 4]
+        # assert quality in [0, 2, 4]
 
         is_handover = False
         if model_type is not None and model_type in CENT_MPC_MODELS and (agent == 0 or do_mpc or self.unexpected_change) and self.end_of_video[agent] is not True:
