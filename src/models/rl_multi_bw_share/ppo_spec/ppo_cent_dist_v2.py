@@ -117,7 +117,10 @@ class Network():
                 decision_list = tflearn.fully_connected(tmp_net, int(FEATURE_NUM), activation='relu')
                 split_list.append(decision_list)
 
-                value_net = tflearn.merge(split_list, 'concat')
+            if len(split_list) == 1:
+                split_list = split_list[0]
+
+            value_net = tflearn.merge(split_list, 'concat')
 
             # pi_net2 = tflearn.fully_connected(value_net, int(FEATURE_NUM / 2), activation='relu')
             # value_net3 = tflearn.fully_connected(value_net2, int(FEATURE_NUM/4), activation='relu')
