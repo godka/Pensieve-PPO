@@ -114,7 +114,7 @@ class Environment:
 
         assert quality >= 0
         assert quality < BITRATE_LEVELS
-        assert quality in [0, 2, 4]
+        # assert quality in [0, 2, 4]
 
         runner_up_sat_ids, ho_stamps, best_combos, best_user_info, final_rate = None, None, None, None, None
 
