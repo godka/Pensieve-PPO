@@ -220,9 +220,14 @@ def main():
             state[agent][2, -1] = float(video_chunk_size) / float(delay) / M_IN_K  # kilo byte / ms
             state[agent][3, -1] = float(delay) / M_IN_K / BUFFER_NORM_FACTOR  # 10 sec
             # state[agent][4, :A_DIM] = np.array(next_video_chunk_sizes) / M_IN_K / M_IN_K  # mega byte
-            state[agent][4, :A_DIM] = np.array(
-                [next_video_chunk_sizes[index] for index in [0, 2, 4]]) / M_IN_K / M_IN_K  # mega byte
 
+            if A_DIM == 3:
+                state[agent][4, :A_DIM] = np.array(
+                    [next_video_chunk_sizes[index] for index in [0, 2, 4]]) / M_IN_K / M_IN_K  # mega byte
+            elif A_DIM == 6:
+                state[agent][4, :A_DIM] = np.array(next_video_chunk_sizes) / M_IN_K / M_IN_K  # mega byte
+            else:
+                exit(1)
             state[agent][5, -1] = np.minimum(video_chunk_remain, CHUNK_TIL_VIDEO_END_CAP) / float(
                 CHUNK_TIL_VIDEO_END_CAP)
             if len(next_sat_bw_logs) < PAST_LEN:
@@ -260,7 +265,8 @@ def main():
             # bit_rate[agent] /= BITRATE_WEIGHT
             # bit_rate[agent] = int(bit_rate[agent])
             # bit_rate[agent] *= BITRATE_WEIGHT
-            bit_rate[agent] *= BITRATE_WEIGHT
+            if A_DIM == 3:
+                bit_rate[agent] *= BITRATE_WEIGHT
 
             if not end_of_video:
                 changed_sat_id = net_env.set_satellite(agent, sat[agent])
