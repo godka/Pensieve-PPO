@@ -112,7 +112,7 @@ class Network():
 
                 tmp_net.append(split_tmp)
                 tmp_net.append(split_tmp_1)
-            if not tmp_net:
+            if tmp_net:
                 tmp_net = tflearn.merge(tmp_net, 'concat')
                 decision_list = tflearn.fully_connected(tmp_net, int(FEATURE_NUM), activation='relu')
                 split_list.append(decision_list)
