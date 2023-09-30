@@ -254,7 +254,7 @@ def main():
                     exit(1)
 
             else:
-                state[agent][4, :A_DIM] = [0, 0, 0]
+                state[agent][4, :A_DIM] = [0] * A_DIM
             state[agent][5, -1] = np.minimum(prev_video_chunk_remain[agent], CHUNK_TIL_VIDEO_END_CAP) / float(CHUNK_TIL_VIDEO_END_CAP)
             if len(prev_next_sat_bw_logs[agent]) < PAST_LEN:
                 prev_next_sat_bw_logs[agent] = [0] * (PAST_LEN - len(prev_next_sat_bw_logs[agent])) + prev_next_sat_bw_logs[agent]
