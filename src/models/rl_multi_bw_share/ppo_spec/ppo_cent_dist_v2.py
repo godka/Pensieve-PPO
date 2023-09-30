@@ -100,8 +100,8 @@ class Network():
                 user_list = tflearn.fully_connected(tmp_net, int(FEATURE_NUM), activation='relu')
 
                 split_list.append(user_list)
+            tmp_net = []
             for i in range((self.num_agents - 1) * PAST_SAT_LOG_LEN):
-                tmp_net = []
                 split_tmp = tflearn.fully_connected(
                     inputs[:, 9 + 8 * (self.num_agents - 1) + i:9 + 8 * (self.num_agents - 1) + i + 1, 0],
                     FEATURE_NUM, activation='relu')
@@ -112,10 +112,11 @@ class Network():
 
                 tmp_net.append(split_tmp)
                 tmp_net.append(split_tmp_1)
-                user_list = tflearn.fully_connected(tmp_net, int(FEATURE_NUM), activation='relu')
 
-                split_list.append(user_list)
-            assert split_list, split_list
+            tmp_net = tflearn.merge(tmp_net, 'concat')
+            decision_list = tflearn.fully_connected(tmp_net, int(FEATURE_NUM), activation='relu')
+            split_list.append(decision_list)
+
             value_net = tflearn.merge(split_list, 'concat')
 
             # pi_net2 = tflearn.fully_connected(value_net, int(FEATURE_NUM / 2), activation='relu')
