@@ -64,8 +64,12 @@ class ABREnv():
             float(delay) / M_IN_K  # kilo byte / ms
         state[3, -1] = float(delay) / M_IN_K / BUFFER_NORM_FACTOR  # 10 sec
         # state[4, :A_DIM] = np.array(next_video_chunk_sizes) / M_IN_K / M_IN_K  # mega byte
-        state[4, :A_DIM] = np.array([next_video_chunk_sizes[index] for index in [0,2,4]]) / M_IN_K / M_IN_K  # mega byte
-
+        if A_DIM == 3:
+            state[4, :A_DIM] = np.array([next_video_chunk_sizes[index] for index in [0,2,4]]) / M_IN_K / M_IN_K  # mega byte
+        elif A_DIM == 6:
+            state[4, :A_DIM] = np.array(next_video_chunk_sizes) / M_IN_K / M_IN_K  # mega byte
+        else:
+            exit(1)
         state[5, -1] = np.minimum(video_chunk_remain,
                                 CHUNK_TIL_VIDEO_END_CAP) / float(CHUNK_TIL_VIDEO_END_CAP)
         if len(next_sat_bw_logs) < PAST_LEN:
@@ -153,7 +157,8 @@ class ABREnv():
         # For testing with mpc
         # bit_rate /= BITRATE_WEIGHT
         # bit_rate = int(bit_rate)
-        bit_rate *= BITRATE_WEIGHT
+        if A_DIM == 3:
+            bit_rate *= BITRATE_WEIGHT
 
         # 0 -> select current satellite // 1 -> select another satellite
         # the action is from the last decision
@@ -188,7 +193,12 @@ class ABREnv():
             float(delay) / M_IN_K  # kilo byte / ms
         state[3, -1] = float(delay) / M_IN_K / BUFFER_NORM_FACTOR  # 10 sec
         # state[4, :A_DIM] = np.array(next_video_chunk_sizes) / M_IN_K / M_IN_K  # mega byte
-        state[4, :A_DIM] = np.array([next_video_chunk_sizes[index] for index in [0,2,4]]) / M_IN_K / M_IN_K  # mega byte
+        if A_DIM == 3:
+            state[4, :A_DIM] = np.array([next_video_chunk_sizes[index] for index in [0,2,4]]) / M_IN_K / M_IN_K  # mega byte
+        elif A_DIM == 6:
+            state[4, :A_DIM] = np.array(next_video_chunk_sizes) / M_IN_K / M_IN_K  # mega byte
+        else:
+            exit(1)
         state[5, -1] = np.minimum(video_chunk_remain,
                                   CHUNK_TIL_VIDEO_END_CAP) / float(CHUNK_TIL_VIDEO_END_CAP)
         if len(next_sat_bw_logs) < PAST_LEN:

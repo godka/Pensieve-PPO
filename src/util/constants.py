@@ -27,6 +27,7 @@ MAX_RATIO = 0.9
 B_IN_MB = 1000000
 BITS_IN_BYTE = 8.0
 BITRATE_LEVELS = 6
+BITRATE_WEIGHT = 1
 PAST_LEN = 8
 
 VIDEO_CHUNCK_LEN = 2000.0  # millisec, every time add this amount to buffer
@@ -48,7 +49,7 @@ HO_NUM = 10
 SNR_MIN = 70
 
 PAST_SAT_LOG_LEN = 3
-BITRATE_WEIGHT = 2
+
 NO_EXHAUSTIVE = True
 ADAPTIVE_BUF = False
 TEST_TRACES = '../../data/sat_data/test/'
