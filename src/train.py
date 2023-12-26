@@ -6,6 +6,7 @@ import sys
 from abr import ABREnv
 import ppo2 as network
 import tensorflow.compat.v1 as tf
+from tqdm import tqdm
 
 os.environ['CUDA_VISIBLE_DEVICES'] = '3'
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
@@ -14,13 +15,16 @@ S_DIM = [6, 8]
 A_DIM = 6
 ACTOR_LR_RATE =1e-4
 CRITIC_LR_RATE = 1e-3
-NUM_AGENTS = 16
-TRAIN_SEQ_LEN = 1000  # take as a train batch
-TRAIN_EPOCH = 1000000
+# NUM_AGENTS = 16
+NUM_AGENTS = 2
+TRAIN_SEQ_LEN = 1200  # take as a train batch
+TRAIN_EPOCH = 1000
+# TRAIN_EPOCH = 1000000
 MODEL_SAVE_INTERVAL = 300
 RANDOM_SEED = 42
 RAND_RANGE = 10000
-SUMMARY_DIR = './auto'
+# SUMMARY_DIR = './auto'
+SUMMARY_DIR = './tb2'
 MODEL_DIR = './models'
 TRAIN_TRACES = './cooked_traces/'
 TEST_LOG_FOLDER = './test_results/'
@@ -35,7 +39,10 @@ NN_MODEL = None
 
 def testing(epoch, nn_model, log_file):
     # clean up the test results folder
-    os.system('rm -r ' + TEST_LOG_FOLDER)
+
+
+    os.system('rmdir /s /q ' + TEST_LOG_FOLDER.replace("./", "").replace("/", "")) # windows上的
+    # os.system('rm -r ' + TEST_LOG_FOLDER) # linux上的
     #os.system('mkdir ' + TEST_LOG_FOLDER)
 
     if not os.path.exists(TEST_LOG_FOLDER):
@@ -102,7 +109,10 @@ def central_agent(net_params_queues, exp_queues):
             saver.restore(sess, nn_model)
             print("Model restored.")
         
-        for epoch in range(TRAIN_EPOCH):
+
+        for epoch in tqdm(range(TRAIN_EPOCH)):
+        # for epoch in tqdm(range(TRAIN_EPOCH), total=TRAIN_EPOCH, desc="Epoch Progress", unit="epoch"):
+        # for epoch in range(TRAIN_EPOCH):
             # synchronize the network parameters of work agent
             actor_net_params = actor.get_network_params()
             for i in range(NUM_AGENTS):
@@ -136,8 +146,14 @@ def central_agent(net_params_queues, exp_queues):
                     summary_vars[2]: avg_entropy
                 })
 
+                # print("actor._entropy:/n", actor._entropy)
+                # print("actor.avg_reward:/n", avg_reward)
+                # print("actor.avg_reward:/n", avg_entropy)
+                # print("summary_str:\n", summary_str)
                 writer.add_summary(summary_str, epoch)
                 writer.flush()
+                print("ok")
+
 
 def agent(agent_id, net_params_queue, exp_queue):
     env = ABREnv(agent_id)
@@ -190,7 +206,7 @@ def build_summaries():
 
     summary_vars = [td_loss, eps_total_reward, entropy]
     summary_ops = tf.summary.merge_all()
-
+    
     return summary_ops, summary_vars
 
 def main():
@@ -225,3 +241,4 @@ def main():
 
 if __name__ == '__main__':
     main()
+    print("finish")

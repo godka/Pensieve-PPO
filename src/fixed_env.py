@@ -44,7 +44,9 @@ class Environment:
             with open(VIDEO_SIZE_FILE + str(bitrate)) as f:
                 for line in f:
                     self.video_size[bitrate].append(int(line.split()[0]))
-
+        
+        stop = 0
+        
     def get_video_chunk(self, quality):
 
         assert quality >= 0

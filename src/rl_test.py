@@ -8,6 +8,9 @@ import load_trace
 import ppo2 as network
 import fixed_env as env
 
+if not os.path.exists("./test_results"):
+    os.makedirs("./test_results")
+
 
 S_INFO = 6  # bit_rate, buffer_size, next_chunk_size, bandwidth_measurement(throughput and time), chunk_til_video_end
 S_LEN = 8  # take how many frames in the past
@@ -25,6 +28,7 @@ RANDOM_SEED = 42
 RAND_RANGE = 1000
 LOG_FILE = './test_results/log_sim_rl'
 TEST_TRACES = './test/'
+TEST_MODEL = './model'
 # log in format of time_stamp bit_rate buffer_size rebuffer_time chunk_size download_time reward
 NN_MODEL = sys.argv[1]
     
@@ -52,9 +56,9 @@ def main():
         saver = tf.train.Saver()  # save neural net parameters
 
         # restore neural net parameters
-        if NN_MODEL is not None:  # NN_MODEL is the path to file
-            saver.restore(sess, NN_MODEL)
-            print("Testing model restored.")
+        # if NN_MODEL is not None:  # NN_MODEL is the path to file
+        #     saver.restore(sess, NN_MODEL)
+        #     print("Testing model restored.")
 
         time_stamp = 0
 
@@ -83,7 +87,7 @@ def main():
             time_stamp += sleep_time  # in ms
 
             # reward is video quality - rebuffer penalty - smoothness
-            reward = VIDEO_BIT_RATE[bit_rate] / M_IN_K \
+            reward = VIDEO_BIT_RATE[bit_rate] /M_IN_K \
                      - REBUF_PENALTY * rebuf \
                      - SMOOTH_PENALTY * np.abs(VIDEO_BIT_RATE[bit_rate] -
                                                VIDEO_BIT_RATE[last_bit_rate]) / M_IN_K
@@ -107,7 +111,7 @@ def main():
             if len(s_batch) == 0:
                 state = [np.zeros((S_INFO, S_LEN))]
             else:
-                state = np.array(s_batch[-1], copy=True)
+                state = np.array(s_batch[-1], copy=True) # state，从3维变成2维；因为本来是[(6,8)]最外面的一个维度现在没用了就去掉；
 
             # dequeue history record
             state = np.roll(state, -1, axis=1)
