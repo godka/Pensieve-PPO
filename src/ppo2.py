@@ -1,145 +1,160 @@
-import math
+import torch
+import torch.nn as nn
+import torch.nn.functional as F
+import torch.optim as optim
 import numpy as np
-import tensorflow.compat.v1 as tf
-import os
-import time
-os.environ['CUDA_VISIBLE_DEVICES'] = '2'
-import tflearn
 
 FEATURE_NUM = 128
 ACTION_EPS = 1e-4
 GAMMA = 0.99
-# PPO2
-EPS = 0.2
+EPS = 0.2  # PPO2 epsilon
 
-class Network():
-    def CreateNetwork(self, inputs):
-        with tf.variable_scope('actor'):
-            split_0 = tflearn.fully_connected(inputs[:, 0:1, -1], FEATURE_NUM, activation='relu')
-            split_1 = tflearn.fully_connected(inputs[:, 1:2, -1], FEATURE_NUM, activation='relu')
-            split_2 = tflearn.conv_1d(inputs[:, 2:3, :], FEATURE_NUM, 1, activation='relu')
-            split_3 = tflearn.conv_1d(inputs[:, 3:4, :], FEATURE_NUM, 1, activation='relu')
-            split_4 = tflearn.conv_1d(inputs[:, 4:5, :self.a_dim], FEATURE_NUM, 1, activation='relu')
-            split_5 = tflearn.fully_connected(inputs[:, 5:6, -1], FEATURE_NUM, activation='relu')
-
-            split_2_flat = tflearn.flatten(split_2)
-            split_3_flat = tflearn.flatten(split_3)
-            split_4_flat = tflearn.flatten(split_4)
-
-            merge_net = tflearn.merge(
-                [split_0, split_1, split_2_flat, split_3_flat, split_4_flat, split_5], 'concat')
-
-            pi_net = tflearn.fully_connected(merge_net, FEATURE_NUM, activation='relu')
-            pi = tflearn.fully_connected(pi_net, self.a_dim, activation='softmax')
-
-        with tf.variable_scope('critic'):
-            split_0 = tflearn.fully_connected(inputs[:, 0:1, -1], FEATURE_NUM, activation='relu')
-            split_1 = tflearn.fully_connected(inputs[:, 1:2, -1], FEATURE_NUM, activation='relu')
-            split_2 = tflearn.conv_1d(inputs[:, 2:3, :], FEATURE_NUM, 1, activation='relu')
-            split_3 = tflearn.conv_1d(inputs[:, 3:4, :], FEATURE_NUM, 1, activation='relu')
-            split_4 = tflearn.conv_1d(inputs[:, 4:5, :self.a_dim], FEATURE_NUM, 1, activation='relu')
-            split_5 = tflearn.fully_connected(inputs[:, 5:6, -1], FEATURE_NUM, activation='relu')
-            
-            split_2_flat = tflearn.flatten(split_2)
-            split_3_flat = tflearn.flatten(split_3)
-            split_4_flat = tflearn.flatten(split_4)
-
-            merge_net = tflearn.merge(
-                [split_0, split_1, split_2_flat, split_3_flat, split_4_flat, split_5], 'concat')
-
-            value_net = tflearn.fully_connected(merge_net, FEATURE_NUM, activation='relu')
-            value = tflearn.fully_connected(value_net, 1, activation='linear')
-            return pi, value
-            
-    def get_network_params(self):
-        return self.sess.run(self.network_params)
-
-    def set_network_params(self, input_network_params):
-        self.sess.run(self.set_network_params_op, feed_dict={
-            i: d for i, d in zip(self.input_network_params, input_network_params)
-        })
-
-    def r(self, pi_new, pi_old, acts):
-        return tf.reduce_sum(tf.multiply(pi_new, acts), reduction_indices=1, keepdims=True) / \
-                tf.reduce_sum(tf.multiply(pi_old, acts), reduction_indices=1, keepdims=True)
-
-    def __init__(self, sess, state_dim, action_dim, learning_rate):
+class Actor(nn.Module):
+    def __init__(self, state_dim, action_dim):
+        super(Actor, self).__init__()
+        # Actor network
         self.s_dim = state_dim
         self.a_dim = action_dim
-        self.lr_rate = learning_rate
-        self.sess = sess
-        self._entropy_weight = np.log(self.a_dim)
+
+        self.fc1_actor = nn.Linear(1, FEATURE_NUM)
+        self.fc2_actor = nn.Linear(1, FEATURE_NUM)
+        self.conv1_actor = nn.Linear(self.s_dim[1], FEATURE_NUM)
+        self.conv2_actor = nn.Linear(self.s_dim[1], FEATURE_NUM)
+        self.conv3_actor = nn.Linear(self.a_dim, FEATURE_NUM)
+        self.fc3_actor = nn.Linear(1, FEATURE_NUM)
+        self.fc4_actor = nn.Linear(FEATURE_NUM * self.s_dim[0], FEATURE_NUM)
+        self.pi_head = nn.Linear(FEATURE_NUM, action_dim)
+
+    def forward(self, inputs):
+        split_0 = F.relu(self.fc1_actor(inputs[:, 0:1, -1]))
+        split_1 = F.relu(self.fc2_actor(inputs[:, 1:2, -1]))
+        split_2 = F.relu(self.conv1_actor(inputs[:, 2:3, :]).view(-1, FEATURE_NUM))
+        split_3 = F.relu(self.conv2_actor(inputs[:, 3:4, :]).view(-1, FEATURE_NUM))
+        split_4 = F.relu(self.conv3_actor(inputs[:, 4:5, :self.a_dim]).view(-1, FEATURE_NUM))
+        split_5 = F.relu(self.fc3_actor(inputs[:, 5:6, -1]))
+
+        merge_net = torch.cat([split_0, split_1, split_2, split_3, split_4, split_5], 1)
+
+        pi_net = F.relu(self.fc4_actor(merge_net))
+        pi = F.softmax(self.pi_head(pi_net), dim=-1)
+        pi = torch.clamp(pi, ACTION_EPS, 1. - ACTION_EPS)
+        return pi
+
+
+class Critic(nn.Module):
+    def __init__(self, state_dim, action_dim):
+        super(Critic, self).__init__()
+        # Critic network
+        self.s_dim = state_dim
+        self.a_dim = action_dim
+
+        self.fc1_actor = nn.Linear(1, FEATURE_NUM)
+        self.fc2_actor = nn.Linear(1, FEATURE_NUM)
+        self.conv1_actor = nn.Linear(self.s_dim[1], FEATURE_NUM)
+        self.conv2_actor = nn.Linear(self.s_dim[1], FEATURE_NUM)
+        self.conv3_actor = nn.Linear(self.a_dim, FEATURE_NUM)
+        self.fc3_actor = nn.Linear(1, FEATURE_NUM)
+        self.fc4_actor = nn.Linear(FEATURE_NUM * self.s_dim[0], FEATURE_NUM)
+        self.val_head = nn.Linear(FEATURE_NUM, 1)
+
+    def forward(self, inputs):
+        split_0 = F.relu(self.fc1_actor(inputs[:, 0:1, -1]))
+        split_1 = F.relu(self.fc2_actor(inputs[:, 1:2, -1]))
+        split_2 = F.relu(self.conv1_actor(inputs[:, 2:3, :]).view(-1, FEATURE_NUM))
+        split_3 = F.relu(self.conv2_actor(inputs[:, 3:4, :]).view(-1, FEATURE_NUM))
+        split_4 = F.relu(self.conv3_actor(inputs[:, 4:5, :self.a_dim]).view(-1, FEATURE_NUM))
+        split_5 = F.relu(self.fc3_actor(inputs[:, 5:6, -1]))
+
+        merge_net = torch.cat([split_0, split_1, split_2, split_3, split_4, split_5], 1)
+
+        value_net = F.relu(self.fc4_actor(merge_net))
+        value = self.val_head(value_net)
+        return value
+    
+class Network():
+    def __init__(self, state_dim, action_dim, learning_rate):
+
+        self.s_dim = state_dim
+        self.action_dim = action_dim
+        self._entropy_weight = np.log(action_dim)
         self.H_target = 0.1
+        self.PPO_TRAINING_EPO = 5
 
-        self.R = tf.placeholder(tf.float32, [None, 1])
-        self.inputs = tf.placeholder(tf.float32, [None, self.s_dim[0], self.s_dim[1]])
-        self.old_pi = tf.placeholder(tf.float32, [None, self.a_dim])
-        self.acts = tf.placeholder(tf.float32, [None, self.a_dim])
-        self.entropy_weight = tf.placeholder(tf.float32)
-        self.pi, self.val = self.CreateNetwork(inputs=self.inputs)
-        self.real_out = tf.clip_by_value(self.pi, ACTION_EPS, 1. - ACTION_EPS)
-        
-        self.entropy = -tf.reduce_sum(tf.multiply(self.real_out, tf.log(self.real_out)), reduction_indices=1, keepdims=True)
-        self.adv = tf.stop_gradient(self.R - self.val)
-        self.ppo2loss = tf.minimum(self.r(self.real_out, self.old_pi, self.acts) * self.adv, 
-                            tf.clip_by_value(self.r(self.real_out, self.old_pi, self.acts), 1 - EPS, 1 + EPS) * self.adv
-                        )
-        self.dual_loss = tf.where(tf.less(self.adv, 0.), tf.maximum(self.ppo2loss, 3. * self.adv), self.ppo2loss)
+        self.actor = Actor(state_dim, action_dim)
+        self.critic = Critic(state_dim, action_dim)
+        self.lr_rate = learning_rate
+        self.optimizer = optim.Adam(list(self.actor.parameters()) + \
+                                    list(self.critic.parameters()), lr=learning_rate)
 
-        # Get all network parameters
-        self.network_params = \
-            tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES, scope='actor')
-        self.network_params += \
-            tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES, scope='critic')
+    def get_network_params(self):
+        return [self.actor.state_dict(), self.critic.state_dict()]
+    
+    def set_network_params(self, input_network_params):
+        actor_net_params, critic_net_params = input_network_params
+        self.actor.load_state_dict(actor_net_params)
+        self.critic.load_state_dict(critic_net_params)
 
-        # Set all network parameters
-        self.input_network_params = []
-        for param in self.network_params:
-            self.input_network_params.append(
-                tf.placeholder(tf.float32, shape=param.get_shape()))
-        self.set_network_params_op = []
-        for idx, param in enumerate(self.input_network_params):
-            self.set_network_params_op.append(
-                self.network_params[idx].assign(param))
-        
-        self.policy_loss = - tf.reduce_sum(self.dual_loss) - self.entropy_weight * tf.reduce_sum(self.entropy)
-        self.policy_opt = tf.train.AdamOptimizer(self.lr_rate).minimize(self.policy_loss)
-        self.val_loss = tflearn.mean_square(self.val, self.R)
-        self.val_opt = tf.train.AdamOptimizer(self.lr_rate * 10.).minimize(self.val_loss)
+    def r(self, pi_new, pi_old, acts):
+        return torch.sum(pi_new * acts, dim=1, keepdim=True) / \
+               torch.sum(pi_old * acts, dim=1, keepdim=True)
+
+    def train(self, s_batch, a_batch, p_batch, v_batch, epoch):
+        s_batch = torch.from_numpy(s_batch).to(torch.float32)
+        a_batch = torch.from_numpy(a_batch).to(torch.float32)
+        p_batch = torch.from_numpy(p_batch).to(torch.float32)
+        v_batch = torch.from_numpy(v_batch).to(torch.float32)
+
+        for _ in range(self.PPO_TRAINING_EPO):
+            pi = self.actor.forward(s_batch)
+            val = self.critic.forward(s_batch)
+
+            # loss
+            adv = v_batch - val.detach()
+            ratio = self.r(pi, p_batch, a_batch)
+            ppo2loss = torch.min(ratio * adv, torch.clamp(ratio, 1 - EPS, 1 + EPS) * adv)
+            # Dual-PPO
+            dual_loss = torch.where(adv < 0, torch.max(ppo2loss, 3. * adv), ppo2loss)
+            loss_entropy = torch.sum(-pi * torch.log(pi), dim=1, keepdim=True)
+
+            loss = -dual_loss.mean() + 10. * F.mse_loss(val, v_batch) - self._entropy_weight * loss_entropy.mean()
+
+            self.optimizer.zero_grad()
+            loss.backward()
+            self.optimizer.step()
+
+        # Update entropy weight
+        _H = (-(torch.log(p_batch) * p_batch).sum(dim=1)).mean().item()
+        _g = _H - self.H_target
+        self._entropy_weight -= self.lr_rate * _g * 0.1 * self.PPO_TRAINING_EPO
+        self._entropy_weight = max(self._entropy_weight, 1e-2)
 
     def predict(self, input):
-        action = self.sess.run(self.real_out, feed_dict={
-            self.inputs: input
-        })
-        return action[0]
-    
-    def train(self, s_batch, a_batch, p_batch, v_batch, epoch):
-        self.sess.run([self.policy_opt, self.val_opt], feed_dict={
-            self.inputs: s_batch,
-            self.acts: a_batch,
-            self.R: v_batch, 
-            self.old_pi: p_batch,
-            self.entropy_weight: self._entropy_weight
-        })
-        # adaptive entropy weight
-        # https://arxiv.org/abs/2003.13590
-        p_batch = np.clip(p_batch, ACTION_EPS, 1. - ACTION_EPS)
-        _H = np.mean(np.sum(-np.log(p_batch) * p_batch, axis=1))
-        _g = _H - self.H_target
-        self._entropy_weight -= self.lr_rate * _g * 0.1
+        with torch.no_grad():
+            input = torch.from_numpy(input).to(torch.float32)
+            pi = self.actor.forward(input)[0]
+            return pi.numpy()
+
+    def load_model(self, nn_model):
+        actor_model_params, critic_model_params = torch.load(nn_model)
+        self.actor.load_state_dict(actor_model_params)
+        self.critic.load_state_dict(critic_model_params)
+
+    def save_model(self, nn_model):
+        model_params = [self.actor.state_dict(), self.critic.state_dict()]
+        torch.save(model_params, nn_model)
 
     def compute_v(self, s_batch, a_batch, r_batch, terminal):
-        ba_size = len(s_batch)
-        R_batch = np.zeros([len(r_batch), 1])
+        R_batch = np.zeros_like(r_batch)
 
         if terminal:
-            R_batch[-1, 0] = 0  # terminal state
-        else:    
-            v_batch = self.sess.run(self.val, feed_dict={
-                self.inputs: s_batch
-            })
-            R_batch[-1, 0] = v_batch[-1, 0]  # boot strap from last state
-        for t in reversed(range(ba_size - 1)):
-            R_batch[t, 0] = r_batch[t] + GAMMA * R_batch[t + 1, 0]
+            # in this case, the terminal reward will be assigned as r_batch[-1]
+            R_batch[-1] = r_batch[-1]  # terminal state
+        else:
+            val = self.critic.forward(s_batch)
+            R_batch[-1] = val[-1]  # bootstrap from last state
+
+        for t in reversed(range(len(r_batch) - 1)):
+            R_batch[t] = r_batch[t] + GAMMA * R_batch[t + 1]
 
         return list(R_batch)
+           

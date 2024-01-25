@@ -37,7 +37,6 @@ def inlist(filename, traces):
     return ret
 
 def bitrate_smo(outputs):
-    os.system('cp ./test_results/* ' + LOG)
     SCHEMES = ['bb', 'rl', 'mpc', 'hyb', 'bola', 'rb', 'quetra', 'elastic', 'ppo']
     labels = ['BBA', 'Pensieve', 'RobustMPC', 'HYB', 'BOLA', 'Rate-based', 'QUETRA', 'Elastic', 'Pen-PPO']
     markers = ['o','x','v','^','>','<','s','p','*','h','H','D','d','1']
@@ -100,7 +99,7 @@ def bitrate_smo(outputs):
     # ax.invert_yaxis()
 
     fig.savefig(outputs + '.png')
-    fig.savefig(outputs + '.pdf')
+    # fig.savefig(outputs + '.pdf')
     plt.close()
 
 def smo_rebuf(outputs):
@@ -167,7 +166,7 @@ def smo_rebuf(outputs):
     ax.invert_yaxis()
 
     fig.savefig(outputs + '.png')
-    fig.savefig(outputs + '.pdf')
+    # fig.savefig(outputs + '.pdf')
     plt.close()
 
 def bitrate_rebuf(outputs):
@@ -234,10 +233,11 @@ def bitrate_rebuf(outputs):
     ax.invert_xaxis()
 
     fig.savefig(outputs + '.png')
-    fig.savefig(outputs + '.pdf')
+    # fig.savefig(outputs + '.pdf')
     plt.close()
 
 if __name__ == '__main__':
+    os.system('cp ./test_results/* ' + LOG)
     bitrate_rebuf(sys.argv[1] + '-br')
     smo_rebuf(sys.argv[1] + '-sr')
     bitrate_smo(sys.argv[1] + '-bs')
