@@ -32,7 +32,7 @@ tensorboard --logdir=./
 
 ## Pretrained Model
 
-We have also added a pretrained model, which can be found at [this link](https://github.com/godka/Pensieve-PPO/tree/master/src/pretrain). This model demonstrates a substantial improvement of 7.03% (from 0.924 to 0.989) in average Quality of Experience (QoE) compared to the original Pensieve model [1]. For a more detailed performance analysis, refer to the figures below:
+We have also added a pretrained model, which can be found at [this link](https://github.com/godka/Pensieve-PPO/tree/torch/src/pretrain). This model demonstrates a substantial improvement of 7.03% (from 0.924 to 0.989) in average Quality of Experience (QoE) compared to the original Pensieve model [1]. For a more detailed performance analysis, refer to the figures below:
 
 <p align="center">
     <img src="src/baselines-br.png" width="33%"><img src="src/baselines-sr.png" width="33%"><img src="src/baselines-bs.png" width="33%">
