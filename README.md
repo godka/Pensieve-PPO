@@ -4,7 +4,7 @@
 
 **Jan. 26, 2024:** We are excited to announce significant updates to Pensieve-PPO! We have replaced TensorFlow with PyTorch, and we have achieved a similar training speed while training models that rival in performance.
 
-For the TensorFlow verion, please check [Pensieve-PPO TF Branch](https://github.com/godka/Pensieve-PPO/tree/master).
+*For the TensorFlow version, please check [Pensieve-PPO TF Branch](https://github.com/godka/Pensieve-PPO/tree/master).*
 
 **Dec. 28, 2021:** In a previous update, we enhanced Pensieve-PPO with several state-of-the-art technologies, including Dual-Clip PPO and adaptive entropy decay.
 
@@ -24,7 +24,7 @@ The results will be evaluated on the test set (from HSDPA) every 300 epochs.
 
 ## Tensorboard Integration
 
-To monitor the training process in real-time, you can leverage Tensorboard. Simply run the following command:
+To monitor the training process in real time, you can leverage Tensorboard. Simply run the following command:
 
 ```
 tensorboard --logdir=./
