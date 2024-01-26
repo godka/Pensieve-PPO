@@ -238,6 +238,6 @@ def bitrate_rebuf(outputs):
 
 if __name__ == '__main__':
     os.system('cp ./test_results/* ' + LOG)
-    bitrate_rebuf(sys.argv[1] + '-br')
-    smo_rebuf(sys.argv[1] + '-sr')
-    bitrate_smo(sys.argv[1] + '-bs')
+    bitrate_rebuf('baselines-br')
+    smo_rebuf('baselines-sr')
+    bitrate_smo('baselines-bs')
